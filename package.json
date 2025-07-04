@@ -1,0 +1,10 @@
+{
+  "name": "elora-bet-api",
+  "version": "1.0.0",
+  "description": "Elora Bet API for placing bets on-chain",
+  "main": "api/place-bet.js",
+  "scripts": {},
+  "dependencies": {
+    "ethers": "^6.7.0"
+  }
+}
