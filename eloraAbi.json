@@ -281,6 +281,11 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_player",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "_amount",
         "type": "uint256"
