@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "api/*.js": {
+      "includeFiles": [
+        "abi/elora.json"
+      ]
+    }
+  }
+}
