@@ -37,7 +37,8 @@ module.exports = async function handler(req, res) {
 
   try {
     const tx = await contract.placeBet(
-      amount,
+      wallet.address,
+amount,
       matchId,
       matchName,
       betType,
