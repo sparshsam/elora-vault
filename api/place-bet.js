@@ -13,14 +13,13 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "Only POST allowed" });
   }
 
-  const { matchId, matchName, betType, selection, line, odds, stake } = req.body;
+  const { matchId, matchName, betType, selection, odds, stake } = req.body;
 
   console.log("Payload Received:", {
     matchId,
     matchName,
     betType,
     selection,
-    line,
     odds,
     stake,
   });
@@ -38,12 +37,11 @@ module.exports = async function handler(req, res) {
   try {
     const tx = await contract.placeBet(
       wallet.address,
-amount,
+      amount,
       matchId,
       matchName,
       betType,
       selection,
-line,
       oddsInt
     );
 
