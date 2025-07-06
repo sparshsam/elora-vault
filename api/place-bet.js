@@ -42,6 +42,7 @@ module.exports = async function handler(req, res) {
       matchName,
       betType,
       selection,
+line,
       oddsInt
     );
 
