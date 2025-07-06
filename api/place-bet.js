@@ -1,13 +1,14 @@
-import { ethers } from "ethers";
-import contractABI from "./elora.json";
+const { ethers } = require("ethers");
+const contractABI = require("./elora.json");
 
-const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS_HERE";
+const CONTRACT_ADDRESS = "0xC866f7F09534D8632f5F8075175b69427F6e25c4";
+const PRIVATE_KEY = "e599a5a823c3b0bcbfe8f93ca7f62b3254ef7a8d7fb7be1e2361cdf5207c2f11";
 
 const provider = new ethers.providers.JsonRpcProvider("https://rpc-mumbai.maticvigil.com/");
-const signer = new ethers.Wallet("YOUR_PRIVATE_KEY_HERE", provider);
-const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, wallet);
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Only POST allowed" });
   }
@@ -24,8 +25,8 @@ export default async function handler(req, res) {
     stake,
   });
 
-  const amount = Math.round(parseFloat(stake) * 1_000_000); // for USDC-style 6 decimal logic
-  const oddsInt = Math.round(parseFloat(odds) * 100);       // e.g. 1.85 → 185
+  const amount = Math.round(parseFloat(stake) * 1_000_000); // USDC-style format
+  const oddsInt = Math.round(parseFloat(odds) * 100); // Convert 1.85 → 185
 
   if (
     !matchId || !matchName || !betType || !selection ||
@@ -57,4 +58,4 @@ export default async function handler(req, res) {
     console.error("Contract call failed:", err);
     return res.status(500).json({ error: "Contract call failed", details: err.message });
   }
-}
+};
