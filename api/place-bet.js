@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import contractABI from "../../abi/elora.json";
+import contractABI from "./elora.json";
 
 const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS_HERE";
 
