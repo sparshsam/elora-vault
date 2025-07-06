@@ -5,6 +5,17 @@
   "main": "api/place-bet.js",
   "scripts": {},
   "dependencies": {
-    "ethers": "^6.7.0"
-  }
+    "ethers": "^5.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sparshsam/elora-bet-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sparshsam/elora-bet-api/issues"
+  },
+  "homepage": "https://github.com/sparshsam/elora-bet-api#readme"
 }
