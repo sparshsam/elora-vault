@@ -1,42 +1,60 @@
-import { ethers } from 'ethers';
-import eloraAbi from '../eloraAbi.json';
+import { ethers } from "ethers";
+import contractABI from "../../abi/elora.json";
+
+const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS_HERE";
+
+const provider = new ethers.providers.JsonRpcProvider("https://rpc-mumbai.maticvigil.com/");
+const signer = new ethers.Wallet("YOUR_PRIVATE_KEY_HERE", provider);
+const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Only POST allowed" });
+  }
+
+  const { matchId, matchName, betType, selection, line, odds, stake } = req.body;
+
+  console.log("Payload Received:", {
+    matchId,
+    matchName,
+    betType,
+    selection,
+    line,
+    odds,
+    stake,
+  });
+
+  const amount = Math.round(parseFloat(stake) * 1_000_000); // for USDC-style 6 decimal logic
+  const oddsInt = Math.round(parseFloat(odds) * 100);       // e.g. 1.85 → 185
+
+  if (
+    !matchId || !matchName || !betType || !selection ||
+    isNaN(amount) || isNaN(oddsInt)
+  ) {
+    return res.status(400).json({ error: "Invalid payload inputs" });
   }
 
   try {
-    const {
-      matchId,
-      matchName,
-      betType,
-      selection,
-      odds,
-      amount
-    } = req.body;
-
-    const provider = new ethers.JsonRpcProvider(`https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`);
-    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-    const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, eloraAbi, wallet);
-
-    const scaledAmount = ethers.parseUnits(amount.toString(), 6); // USDC has 6 decimals
-    const scaledOdds = Math.floor(odds * 100);
-
     const tx = await contract.placeBet(
-      scaledAmount,
+      amount,
       matchId,
       matchName,
       betType,
       selection,
-      scaledOdds
+      oddsInt
     );
 
-    await tx.wait();
+    console.log("Tx sent:", tx.hash);
 
-    res.status(200).json({ txHash: tx.hash });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Bet logging failed', details: error.message });
+    const receipt = await tx.wait();
+
+    return res.status(200).json({
+      message: "Bet placed successfully",
+      txHash: receipt.transactionHash,
+    });
+
+  } catch (err) {
+    console.error("Contract call failed:", err);
+    return res.status(500).json({ error: "Contract call failed", details: err.message });
   }
 }
