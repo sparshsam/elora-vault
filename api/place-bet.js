@@ -47,11 +47,9 @@ module.exports = async function handler(req, res) {
 
     console.log("Tx sent:", tx.hash);
 
-    const receipt = await tx.wait();
-
     return res.status(200).json({
-      message: "Bet placed successfully",
-      txHash: receipt.transactionHash,
+      message: "Bet sent (not yet confirmed)",
+      txHash: tx.hash,
     });
 
   } catch (err) {
