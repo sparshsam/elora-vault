@@ -4,7 +4,7 @@ const contractABI = require("./elora.json");
 const CONTRACT_ADDRESS = "0xC866f7F09534D8632f5F8075175b69427F6e25c4";
 const PRIVATE_KEY = "e599a5a823c3b0bcbfe8f93ca7f62b3254ef7a8d7fb7be1e2361cdf5207c2f11";
 
-const provider = new ethers.providers.JsonRpcProvider("https://polygon-mumbai-bor.publicnode.com");
+const provider = new ethers.providers.JsonRpcProvider("https://polygon-amoy.g.alchemy.com/v2/mJeNalyxWmI_7azEYtjWaF3sVRN9PFRV");
 const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, wallet);
 
