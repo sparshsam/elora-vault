@@ -1,5 +1,6 @@
 /**
- * Liability Engine — pure functions for bankroll vault calculations.
+ * Liability Engine v0.2 — pure functions for Elora vault calculations.
+ * The "house" is virtual. User losses become savings in their vault.
  */
 
 /**
@@ -15,107 +16,108 @@ export function calculateProfit(odds: number, stake: number): number {
 }
 
 /**
- * Maximum allowable stake given house balance.
- * Returns the max stake where potential profit <= house balance.
+ * Calculate total return (stake + profit).
  */
-export function maxAllowableStake(
-  odds: number,
-  houseBalance: number,
-): number {
-  if (houseBalance <= 0) return 0;
-  if (odds > 0) {
-    return houseBalance / (odds / 100);
-  }
-  return houseBalance / (100 / Math.abs(odds));
+export function calculateTotalReturn(odds: number, stake: number): number {
+  return stake + calculateProfit(odds, stake);
 }
 
 /**
- * Validate a potential bet against the vault.
+ * Validate a potential bet against user balance only (no house liability cap).
  */
 export function validateBet(
   odds: number,
   stake: number,
-  houseBalance: number,
-): { valid: boolean; reason?: string; maxStake: number; profit: number } {
+  userBalance: number,
+): { valid: boolean; reason?: string; profit: number; totalReturn: number } {
   const profit = calculateProfit(odds, stake);
-  const maxStake = maxAllowableStake(odds, houseBalance);
+  const totalReturn = calculateTotalReturn(odds, stake);
 
   if (stake <= 0) {
-    return { valid: false, reason: "Stake must be greater than 0", maxStake, profit };
+    return { valid: false, reason: "Stake must be greater than 0", profit, totalReturn };
   }
 
   if (odds === 0) {
-    return { valid: false, reason: "Odds cannot be zero", maxStake, profit };
+    return { valid: false, reason: "Odds cannot be zero", profit, totalReturn };
   }
 
-  if (profit > houseBalance) {
+  if (stake > userBalance) {
     return {
       valid: false,
-      reason: `Potential profit ($${profit.toFixed(2)}) exceeds house balance ($${houseBalance.toFixed(2)})`,
-      maxStake,
+      reason: `Stake ($${stake.toFixed(2)}) exceeds your balance ($${userBalance.toFixed(2)})`,
       profit,
+      totalReturn,
     };
   }
 
-  return { valid: true, maxStake, profit };
+  return { valid: true, profit, totalReturn };
 }
 
 /**
  * Settlement calculations for a winning bet.
+ * User gets stake + profit back. Virtual house pays the profit.
  */
 export function settleWin(
   houseBalance: number,
+  userBalance: number,
+  savingsVault: number,
   stake: number,
   profit: number,
 ): {
   newHouseBalance: number;
-  withdrawableProfit: number;
-  amountSaved: number;
+  newUserBalance: number;
+  newSavingsVault: number;
+  withdrawableWinnings: number;
 } {
-  // Stake goes back to user + profit paid from house
-  // The liability (profit) was already reserved when bet was placed
-  // On win: house pays the profit, stake + profit -> user withdrawable
   const newHouseBalance = houseBalance - profit;
-  const withdrawableProfit = stake + profit;
-  const amountSaved = 0;
+  const newUserBalance = userBalance + stake + profit;
+  const withdrawableWinnings = profit;
+  const newSavingsVault = savingsVault;
 
-  return { newHouseBalance, withdrawableProfit, amountSaved };
+  return { newHouseBalance, newUserBalance, newSavingsVault, withdrawableWinnings };
 }
 
 /**
  * Settlement calculations for a losing bet.
+ * Stake goes to savings vault. Virtual house gains the stake.
  */
 export function settleLoss(
   houseBalance: number,
+  userBalance: number,
+  savingsVault: number,
   stake: number,
 ): {
   newHouseBalance: number;
-  withdrawableProfit: number;
-  amountSaved: number;
+  newUserBalance: number;
+  newSavingsVault: number;
+  withdrawableWinnings: number;
 } {
-  // When user loses: the stake gets absorbed into house balance
-  // A portion goes to saved-from-losses (the "savings mechanic")
-  // The stake is fully absorbed
-  const amountSaved = stake;
   const newHouseBalance = houseBalance + stake;
-  const withdrawableProfit = 0;
+  const newUserBalance = userBalance; // already deducted when bet was placed
+  const newSavingsVault = savingsVault + stake;
+  const withdrawableWinnings = 0;
 
-  return { newHouseBalance, withdrawableProfit, amountSaved };
+  return { newHouseBalance, newUserBalance, newSavingsVault, withdrawableWinnings };
 }
 
 /**
- * Settlement for a push (tie) — stake returned, no change.
+ * Settlement for a push (tie) — stake returned to user balance.
  */
 export function settlePush(
   houseBalance: number,
+  userBalance: number,
+  savingsVault: number,
+  stake: number,
 ): {
   newHouseBalance: number;
-  withdrawableProfit: number;
-  amountSaved: number;
+  newUserBalance: number;
+  newSavingsVault: number;
+  withdrawableWinnings: number;
 } {
-  return {
-    newHouseBalance: houseBalance,
-    withdrawableProfit: 0,
-    amountSaved: 0,
-  };
+  const newHouseBalance = houseBalance;
+  const newUserBalance = userBalance + stake;
+  const newSavingsVault = savingsVault;
+  const withdrawableWinnings = 0;
+
+  return { newHouseBalance, newUserBalance, newSavingsVault, withdrawableWinnings };
 }

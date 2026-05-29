@@ -9,6 +9,9 @@ import {
   History,
   Settings,
   LogOut,
+  List,
+  ArrowDownToLine,
+  Wallet,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -20,14 +23,29 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
+    href: "/deposit",
+    label: "Deposit",
+    icon: ArrowDownToLine,
+  },
+  {
     href: "/bets/new",
     label: "New Bet",
     icon: PlusCircle,
   },
   {
+    href: "/bets/open",
+    label: "Open Bets",
+    icon: List,
+  },
+  {
     href: "/history",
-    label: "History",
+    label: "Bet History",
     icon: History,
+  },
+  {
+    href: "/transactions",
+    label: "Transactions",
+    icon: Wallet,
   },
   {
     href: "/settings",
@@ -77,6 +95,13 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
+
+      {/* Footer */}
+      <div className="px-4 py-3 border-t border-white/5">
+        <p className="text-[10px] text-gray-600 leading-relaxed">
+          Every loss becomes saved capital. The house is virtual. The discipline is real.
+        </p>
+      </div>
 
       {/* Logout */}
       <div className="px-3 py-4 border-t border-white/5">

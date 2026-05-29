@@ -10,10 +10,11 @@ datasource db {
 
 enum TransactionType {
   DEPOSIT
+  BET_PLACED
   WIN_PROFIT
-  LOSS_ABSORBED
+  LOSS_TO_SAVINGS
+  PUSH_RETURN
   WITHDRAWAL
-  PUSH
 }
 
 enum BetStatus {
@@ -43,10 +44,16 @@ model Wallet {
   id                  String   @id @default(cuid())
   userId              String   @unique
   user                User     @relation(fields: [userId], references: [id])
-  totalBalance        Float    @default(0)
-  houseBalance        Float    @default(0)
-  withdrawableProfit  Float    @default(0)
-  totalSavedFromLosses Float   @default(0)
+
+  user_balance          Float   @default(0)
+  savings_vault         Float   @default(0)
+  withdrawable_winnings Float   @default(0)
+  virtual_house_balance Float   @default(1000000000)
+  total_deposited       Float   @default(0)
+  total_wagered         Float   @default(0)
+  total_saved_from_losses Float @default(0)
+  total_profit_won      Float   @default(0)
+
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
@@ -56,14 +63,22 @@ model Bet {
   userId        String
   user          User        @relation(fields: [userId], references: [id])
   sport         String
+  league        String?
+  event_name    String?
   marketType    MarketType
   selection     String
   odds          Int
   stake         Float
   potentialProfit Float
+  potential_return Float
   status        BetStatus   @default(OPEN)
   settledAt     DateTime?
-  houseBalanceAfter Float?
+  house_balance_before  Float?
+  house_balance_after   Float?
+  user_balance_before   Float?
+  user_balance_after    Float?
+  savings_vault_before  Float?
+  savings_vault_after   Float?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }

@@ -60,36 +60,64 @@ export async function PATCH(
     // Perform settlement calculations
     let settlement: {
       newHouseBalance: number;
-      withdrawableProfit: number;
-      amountSaved: number;
+      newUserBalance: number;
+      newSavingsVault: number;
+      withdrawableWinnings: number;
     };
     let transactionType: string;
     let description: string;
+    let transactionAmount: number;
 
     if (result === "WIN") {
-      settlement = settleWin(wallet.houseBalance, bet.stake, bet.potentialProfit);
+      settlement = settleWin(
+        wallet.virtual_house_balance,
+        wallet.user_balance,
+        wallet.savings_vault,
+        bet.stake,
+        bet.potentialProfit,
+      );
       transactionType = "WIN_PROFIT";
+      transactionAmount = bet.stake + bet.potentialProfit;
       description = `Bet won: ${bet.sport} - ${bet.selection} (${bet.odds > 0 ? "+" : ""}${bet.odds})`;
     } else if (result === "LOSS") {
-      settlement = settleLoss(wallet.houseBalance, bet.stake);
-      transactionType = "LOSS_ABSORBED";
-      description = `Bet lost: ${bet.sport} - ${bet.selection} ($${bet.stake.toFixed(2)} absorbed)`;
+      settlement = settleLoss(
+        wallet.virtual_house_balance,
+        wallet.user_balance,
+        wallet.savings_vault,
+        bet.stake,
+      );
+      transactionType = "LOSS_TO_SAVINGS";
+      transactionAmount = bet.stake;
+      description = `Bet lost: ${bet.sport} - ${bet.selection} — $${bet.stake.toFixed(2)} saved to vault`;
     } else {
-      settlement = settlePush(wallet.houseBalance);
-      transactionType = "PUSH";
+      settlement = settlePush(
+        wallet.virtual_house_balance,
+        wallet.user_balance,
+        wallet.savings_vault,
+        bet.stake,
+      );
+      transactionType = "PUSH_RETURN";
+      transactionAmount = bet.stake;
       description = `Bet push: ${bet.sport} - ${bet.selection} (stake returned)`;
     }
 
     const updatedWallet = await prisma.wallet.update({
       where: { id: wallet.id },
       data: {
-        houseBalance: settlement.newHouseBalance,
-        withdrawableProfit: {
-          increment: settlement.withdrawableProfit,
-        },
-        totalSavedFromLosses: {
-          increment: settlement.amountSaved,
-        },
+        virtual_house_balance: settlement.newHouseBalance,
+        user_balance: settlement.newUserBalance,
+        savings_vault: settlement.newSavingsVault,
+        withdrawable_winnings: result === "WIN"
+          ? { increment: settlement.withdrawableWinnings }
+          : result === "LOSS"
+            ? settlement.withdrawableWinnings
+            : settlement.withdrawableWinnings,
+        total_saved_from_losses: result === "LOSS"
+          ? { increment: bet.stake }
+          : undefined,
+        total_profit_won: result === "WIN"
+          ? { increment: bet.potentialProfit }
+          : undefined,
       },
     });
 
@@ -98,7 +126,9 @@ export async function PATCH(
       data: {
         status: result as "WON" | "LOST" | "PUSH",
         settledAt: new Date(),
-        houseBalanceAfter: settlement.newHouseBalance,
+        house_balance_after: settlement.newHouseBalance,
+        user_balance_after: settlement.newUserBalance,
+        savings_vault_after: settlement.newSavingsVault,
       },
     });
 
@@ -107,11 +137,11 @@ export async function PATCH(
         userId: user.id,
         type: transactionType as
           | "WIN_PROFIT"
-          | "LOSS_ABSORBED"
-          | "PUSH",
-        amount: result === "WIN" ? bet.stake + bet.potentialProfit : bet.stake,
-        balanceBefore: wallet.totalBalance,
-        balanceAfter: updatedWallet.totalBalance,
+          | "LOSS_TO_SAVINGS"
+          | "PUSH_RETURN",
+        amount: transactionAmount,
+        balanceBefore: wallet.user_balance,
+        balanceAfter: settlement.newUserBalance,
         betId: bet.id,
         description,
       },
