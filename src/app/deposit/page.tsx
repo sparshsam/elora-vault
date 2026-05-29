@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useWalletStore } from "@/store/useWalletStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowDownToLine, Wallet, PiggyBank } from "lucide-react";
+import { ArrowDownToLine, Wallet, PiggyBank, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function DepositPage() {
   const {
@@ -201,8 +201,4 @@ export default function DepositPage() {
       </div>
     </div>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }

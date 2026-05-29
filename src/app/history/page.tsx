@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { BetTable } from "@/components/bets/bet-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { History } from "lucide-react";
 
 const tabs = [
   { label: "All", value: "" },
@@ -58,18 +59,18 @@ export default function HistoryPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Bet History</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {total} {total === 1 ? "bet" : "bets"} total
+          {total} settled {total === 1 ? "bet" : "bets"} total
         </p>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-1.5">
+      {/* Filter tabs - scrollable on mobile */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
         {tabs.map((tab) => (
           <button
             key={tab.value}
             onClick={() => handleTabChange(tab.value)}
             className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+              "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap snap-start",
               activeTab === tab.value
                 ? "bg-indigo-600/15 text-indigo-400 border border-indigo-500/20"
                 : "text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent",
@@ -80,7 +81,7 @@ export default function HistoryPage() {
         ))}
       </div>
 
-      {/* Table */}
+      {/* Table / Cards */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">
@@ -91,6 +92,16 @@ export default function HistoryPage() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : bets.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+              <History className="h-8 w-8 mb-2 opacity-30" />
+              <p className="text-sm font-medium">No {activeTab ? activeTab.toLowerCase() : ""} bets yet</p>
+              <p className="text-xs mt-1 text-center max-w-xs">
+                {activeTab
+                  ? `No ${activeTab.toLowerCase()} bets found. Try a different filter or place new bets.`
+                  : "Your settled bets will appear here. Place bets against the virtual house and settle them to build your history."}
+              </p>
             </div>
           ) : (
             <BetTable bets={bets} />

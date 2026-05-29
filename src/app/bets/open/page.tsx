@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { BetTable } from "@/components/bets/bet-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, List } from "lucide-react";
 import Link from "next/link";
 import { useWalletStore } from "@/store/useWalletStore";
 
@@ -11,6 +11,7 @@ export default function OpenBetsPage() {
   const { syncFromServer } = useWalletStore();
   const [bets, setBets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchBets = useCallback(async () => {
     setLoading(true);
@@ -33,6 +34,7 @@ export default function OpenBetsPage() {
   }, [fetchBets, syncFromServer]);
 
   const handleSettle = async (id: string, result: "WIN" | "LOSS" | "PUSH") => {
+    setError(null);
     try {
       const res = await fetch(`/api/bets/${id}/settle`, {
         method: "PATCH",
@@ -48,7 +50,7 @@ export default function OpenBetsPage() {
       syncFromServer();
       fetchBets();
     } catch (err) {
-      console.error("Settlement error:", err);
+      setError(err instanceof Error ? err.message : "Settlement failed");
     } finally {
       // ignore
     }
@@ -79,6 +81,13 @@ export default function OpenBetsPage() {
         </p>
       </div>
 
+      {/* Error state */}
+      {error && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2.5">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
+      )}
+
       {/* Open bets table */}
       <Card>
         <CardHeader>
@@ -90,6 +99,14 @@ export default function OpenBetsPage() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : bets.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+              <List className="h-8 w-8 mb-2 opacity-30" />
+              <p className="text-sm font-medium">No open bets</p>
+              <p className="text-xs mt-1 text-center max-w-xs">
+                All your bets are settled. Place a new bet to track your discipline against the virtual house.
+              </p>
             </div>
           ) : (
             <BetTable
