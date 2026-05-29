@@ -8,7 +8,12 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function NewBetPage() {
-  const { houseBalance, syncFromServer } = useWalletStore();
+  const {
+    user_balance,
+    savings_vault,
+    virtual_house_balance,
+    syncFromServer,
+  } = useWalletStore();
 
   useEffect(() => {
     syncFromServer();
@@ -27,35 +32,56 @@ export default function NewBetPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">New Bet</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Place a bet backed by your vault
+            Stake against the virtual house
           </p>
         </div>
       </div>
 
-      {/* Vault summary */}
-      <Card>
-        <CardContent className="p-4 flex items-center justify-between">
-          <div>
+      {/* Balance summary */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <CardContent className="p-4">
             <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-              Available Vault
+              User Balance
             </p>
-            <p className="text-lg font-bold text-white tabular-nums">
-              ${houseBalance.toFixed(2)}
+            <p className="text-lg font-bold text-white tabular-nums mt-1">
+              ${user_balance.toFixed(2)}
             </p>
-          </div>
-          <div className="text-right">
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
             <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-              Withdrawable
+              Savings Vault
             </p>
-            <p className="text-sm text-gray-400 tabular-nums">
-              ${useWalletStore.getState().withdrawableProfit.toFixed(2)}
+            <p className="text-lg font-bold text-amber-400 tabular-nums mt-1">
+              ${savings_vault.toFixed(2)}
             </p>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Virtual House Balance */}
+      <div className="flex items-center justify-between text-sm px-1">
+        <span className="text-gray-500">Virtual House Balance</span>
+        <span className="text-indigo-400 font-semibold tabular-nums">
+          ${virtual_house_balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+      </div>
 
       {/* Bet Form */}
-      <BetForm houseBalance={houseBalance} />
+      <BetForm
+        userBalance={user_balance}
+        savingsVault={savings_vault}
+        virtualHouseBalance={virtual_house_balance}
+      />
+
+      {/* Disclaimer */}
+      <div className="rounded-lg border border-white/5 bg-black/20 px-4 py-3">
+        <p className="text-[10px] text-gray-600 leading-relaxed">
+          Elora is not a sportsbook. The house balance is virtual. This is a personal savings tool designed to gamify financial discipline. No real-money gambling occurs on this platform.
+        </p>
+      </div>
     </div>
   );
 }

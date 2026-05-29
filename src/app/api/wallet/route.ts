@@ -19,7 +19,10 @@ export async function GET() {
 
     if (!wallet) {
       wallet = await prisma.wallet.create({
-        data: { userId: user.id },
+        data: {
+          userId: user.id,
+          virtual_house_balance: 1000000000,
+        },
       });
     }
 
@@ -53,22 +56,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const wallet = await prisma.wallet.findUnique({
+    let wallet = await prisma.wallet.findUnique({
       where: { userId: user.id },
     });
 
     if (!wallet) {
-      return NextResponse.json(
-        { error: "Wallet not found. Create a wallet first." },
-        { status: 404 },
-      );
+      wallet = await prisma.wallet.create({
+        data: {
+          userId: user.id,
+          virtual_house_balance: 1000000000,
+        },
+      });
     }
 
+    // Deposit: user_balance += amount, total_deposited += amount
     const updatedWallet = await prisma.wallet.update({
       where: { id: wallet.id },
       data: {
-        totalBalance: { increment: amount },
-        houseBalance: { increment: amount },
+        user_balance: { increment: amount },
+        total_deposited: { increment: amount },
       },
     });
 
@@ -77,8 +83,8 @@ export async function POST(request: Request) {
         userId: user.id,
         type: "DEPOSIT",
         amount,
-        balanceBefore: wallet.totalBalance,
-        balanceAfter: updatedWallet.totalBalance,
+        balanceBefore: wallet.user_balance,
+        balanceAfter: updatedWallet.user_balance,
         description: `Deposit of $${amount.toFixed(2)}`,
       },
     });

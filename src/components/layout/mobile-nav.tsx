@@ -8,18 +8,30 @@ import {
   PlusCircle,
   History,
   Settings,
+  List,
+  ArrowDownToLine,
 } from "lucide-react";
 
 const navItems = [
   {
     href: "/dashboard",
-    label: "Dashboard",
+    label: "Home",
     icon: LayoutDashboard,
+  },
+  {
+    href: "/deposit",
+    label: "Deposit",
+    icon: ArrowDownToLine,
   },
   {
     href: "/bets/new",
     label: "Bet",
     icon: PlusCircle,
+  },
+  {
+    href: "/bets/open",
+    label: "Open",
+    icon: List,
   },
   {
     href: "/history",

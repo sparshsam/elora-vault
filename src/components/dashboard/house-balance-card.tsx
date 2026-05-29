@@ -19,9 +19,9 @@ export function HouseBalanceCard({ balance }: HouseBalanceCardProps) {
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-              Vault Balance
+              User Balance
             </p>
-            <p className="text-xs text-gray-600">Available to back bets</p>
+            <p className="text-xs text-gray-600">Active playable balance</p>
           </div>
         </div>
 
@@ -40,23 +40,6 @@ export function HouseBalanceCard({ balance }: HouseBalanceCardProps) {
             })}
           </span>
         </motion.div>
-
-        {/* Progress bar showing vault utilization */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
-            <span>Vault utilization</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
-              initial={{ width: 0 }}
-              animate={{
-                width: `${Math.min((balance / (balance || 1)) * 100, 100)}%`,
-              }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-            />
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

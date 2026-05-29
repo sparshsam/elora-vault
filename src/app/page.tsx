@@ -1,33 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, TrendingUp, PiggyBank, BarChart3 } from "lucide-react";
+import { Shield, PiggyBank, Target, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const features = [
   {
     icon: Shield,
-    title: "Bankroll Vault",
+    title: "Personal Savings Vault",
     description:
-      "Your deposits are locked in the vault. Every bet is backed by real capital — no overextension.",
+      "Your losing bets do not disappear — they move into your vault. Every loss becomes saved capital.",
   },
   {
-    icon: TrendingUp,
-    title: "Self-Betting Engine",
+    icon: Target,
+    title: "Virtual House Opponent",
     description:
-      "Place bets against your own discipline. The vault ensures you never wager more than you can afford.",
+      "The 'house' is a virtual opponent with a $1B starting balance. You're betting against discipline, not a real sportsbook.",
   },
   {
     icon: PiggyBank,
-    title: "Savings Mechanic",
+    title: "Loss → Savings Mechanism",
     description:
-      "Losses aren't lost — they're absorbed. Each one grows your vault and reinforces your discipline.",
+      "Every losing bet transfers your stake into a locked savings vault. Discipline isn't punished — it's stored.",
   },
   {
-    icon: BarChart3,
-    title: "Liability Protection",
+    icon: Wallet,
+    title: "Win Profits, Save Losses",
     description:
-      "Real-time risk metrics. Know exactly how much exposure each bet carries before you commit.",
+      "Win and you earn real profits. Lose and your stake becomes savings. Either way, your money works for you.",
   },
 ];
 
@@ -66,19 +66,19 @@ export default function LandingPage() {
           <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-4 py-1.5 mb-8">
             <span className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
             <span className="text-xs font-medium text-indigo-300">
-              v0.1 — Personal Bankroll Vault
+              v0.2 — Personal Savings Vault
             </span>
           </div>
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.1]">
-            Discipline,{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-              stored.
+            Every loss becomes{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-emerald-400">
+              saved capital.
             </span>
           </h1>
           <p className="mt-6 text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Elora is a personal bankroll vault that turns betting discipline
-            into a savings system. Every bet is backed, every loss is saved,
-            every win is earned.
+            Elora is a betting-inspired personal savings vault. The house is virtual.
+            Your discipline is real. Every bet you make either grows your winnings
+            or builds your savings.
           </p>
           <div className="mt-10 flex items-center justify-center gap-4">
             <Link href="/auth/signup">
@@ -106,8 +106,7 @@ export default function LandingPage() {
               Built for discipline
             </h2>
             <p className="mt-3 text-gray-400 max-w-xl mx-auto">
-              Every feature is designed to protect your bankroll and build
-              sustainable habits.
+              Every feature is designed to turn betting discipline into lasting savings.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -151,18 +150,18 @@ export default function LandingPage() {
                 Deposit
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Add funds to your vault. Every dollar becomes part of your
-                bankroll.
+                Add simulated funds to your playable balance and start with a bankroll.
               </p>
             </div>
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/10 border border-indigo-500/20">
                 <span className="text-2xl font-bold text-indigo-400">2</span>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Bet</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Place a Bet
+              </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Place bets backed by your vault. The liability engine ensures
-                you never overextend.
+                Stake against the virtual house ($1B starting balance). Only your user balance limits you.
               </p>
             </div>
             <div className="text-center">
@@ -170,11 +169,10 @@ export default function LandingPage() {
                 <span className="text-2xl font-bold text-indigo-400">3</span>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                Save or earn
+                Save or Earn
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Win and your profit grows. Lose and the stake is absorbed into
-                your savings.
+                Win → profit goes to withdrawable winnings. Lose → stake moves to your savings vault.
               </p>
             </div>
           </div>
@@ -189,8 +187,7 @@ export default function LandingPage() {
               Ready to build discipline?
             </h2>
             <p className="text-gray-400 mb-8 max-w-lg mx-auto">
-              Start your Elora vault today. Free. No casino. Just discipline,
-              stored.
+              Start your Elora vault today. Free. No sportsbook. Just discipline, stored.
             </p>
             <Link href="/auth/signup">
               <Button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl text-base font-medium transition-all shadow-lg shadow-indigo-600/20">
@@ -201,11 +198,22 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Disclaimer */}
+      <section className="py-10 px-6 border-t border-white/5">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-[10px] text-gray-600 leading-relaxed">
+            Elora is not a sportsbook. The house balance is virtual ($1B starting) and has no real-world value.
+            This is a personal savings tool designed to gamify financial discipline.
+            No real-money gambling occurs on this platform. All deposits, bets, and balances are simulated.
+          </p>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 px-6">
         <div className="mx-auto max-w-6xl text-center">
           <p className="text-sm text-gray-500">
-            Elora v0.1 — Discipline, stored.
+            Elora v0.2 — Every loss becomes saved capital.
           </p>
         </div>
       </footer>

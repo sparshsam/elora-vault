@@ -5,18 +5,26 @@ import { cn } from "@/lib/utils";
 interface Bet {
   id: string;
   sport: string;
+  league: string | null;
+  event_name: string | null;
   marketType: string;
   selection: string;
   odds: number;
   stake: number;
   potentialProfit: number;
+  potential_return: number;
   status: string;
   createdAt: string;
-  houseBalanceAfter: number | null;
+  settledAt: string | null;
+  house_balance_after: number | null;
+  user_balance_after: number | null;
+  savings_vault_after: number | null;
 }
 
 interface BetTableProps {
   bets: Bet[];
+  showActions?: boolean;
+  onSettle?: (id: string, result: "WIN" | "LOSS" | "PUSH") => void;
 }
 
 const statusColors: Record<string, string> = {
@@ -40,7 +48,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-export function BetTable({ bets }: BetTableProps) {
+export function BetTable({ bets, showActions, onSettle }: BetTableProps) {
   if (bets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-500">
@@ -59,7 +67,7 @@ export function BetTable({ bets }: BetTableProps) {
               Date
             </th>
             <th className="text-left py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">
-              Market
+              Event
             </th>
             <th className="text-left py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">
               Selection
@@ -71,14 +79,16 @@ export function BetTable({ bets }: BetTableProps) {
               Stake
             </th>
             <th className="text-right py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">
-              Profit
+              To Return
             </th>
             <th className="text-center py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">
               Result
             </th>
-            <th className="text-right py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">
-              Vault After
-            </th>
+            {showActions && (
+              <th className="text-center py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">
+                Settle
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -91,12 +101,16 @@ export function BetTable({ bets }: BetTableProps) {
                 {formatDate(bet.createdAt)}
               </td>
               <td className="py-3 px-3 text-white">
-                <span className="text-xs text-gray-500">{bet.sport}</span>
-                <span className="ml-1.5 text-xs text-gray-600">
-                  {bet.marketType}
-                </span>
+                <div className="text-white">{bet.sport}</div>
+                {bet.league && (
+                  <div className="text-[11px] text-gray-500">{bet.league}</div>
+                )}
+                {bet.event_name && (
+                  <div className="text-[11px] text-gray-600">{bet.event_name}</div>
+                )}
+                <span className="text-[10px] text-gray-600 uppercase">{bet.marketType}</span>
               </td>
-              <td className="py-3 px-3 text-white max-w-[200px] truncate">
+              <td className="py-3 px-3 text-white max-w-[180px] truncate">
                 {bet.selection}
               </td>
               <td className="py-3 px-3 text-right text-white tabular-nums">
@@ -134,11 +148,30 @@ export function BetTable({ bets }: BetTableProps) {
                   {bet.status}
                 </span>
               </td>
-              <td className="py-3 px-3 text-right text-gray-400 tabular-nums">
-                {bet.houseBalanceAfter !== null
-                  ? `$${bet.houseBalanceAfter.toFixed(2)}`
-                  : "—"}
-              </td>
+              {showActions && bet.status === "OPEN" && onSettle && (
+                <td className="py-3 px-3 text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <button
+                      onClick={() => onSettle(bet.id, "WIN")}
+                      className="px-2 py-1 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                    >
+                      Win
+                    </button>
+                    <button
+                      onClick={() => onSettle(bet.id, "LOSS")}
+                      className="px-2 py-1 rounded text-[10px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                    >
+                      Loss
+                    </button>
+                    <button
+                      onClick={() => onSettle(bet.id, "PUSH")}
+                      className="px-2 py-1 rounded text-[10px] font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20 hover:bg-gray-500/20 transition-colors"
+                    >
+                      Push
+                    </button>
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

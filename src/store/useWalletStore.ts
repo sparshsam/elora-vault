@@ -1,68 +1,53 @@
 import { create } from "zustand";
-import type { Bet, Wallet } from "@prisma/client";
+
+interface WalletData {
+  user_balance: number;
+  savings_vault: number;
+  withdrawable_winnings: number;
+  virtual_house_balance: number;
+  total_deposited: number;
+  total_wagered: number;
+  total_saved_from_losses: number;
+  total_profit_won: number;
+}
 
 interface WalletState {
-  balance: number;
-  houseBalance: number;
-  withdrawableProfit: number;
-  totalSavedFromLosses: number;
-  openBets: Bet[];
+  user_balance: number;
+  savings_vault: number;
+  withdrawable_winnings: number;
+  virtual_house_balance: number;
+  total_deposited: number;
+  total_wagered: number;
+  total_saved_from_losses: number;
+  total_profit_won: number;
   isLoading: boolean;
 
-  setWallet: (wallet: Wallet) => void;
-  deposit: (amount: number) => void;
-  placeBet: (stake: number) => void;
-  settleBetWin: (stake: number, profit: number) => void;
-  settleBetLoss: (stake: number) => void;
-  settleBetPush: () => void;
+  setWallet: (wallet: WalletData) => void;
   syncFromServer: () => Promise<void>;
 }
 
 export const useWalletStore = create<WalletState>((set) => ({
-  balance: 0,
-  houseBalance: 0,
-  withdrawableProfit: 0,
-  totalSavedFromLosses: 0,
-  openBets: [],
+  user_balance: 0,
+  savings_vault: 0,
+  withdrawable_winnings: 0,
+  virtual_house_balance: 0,
+  total_deposited: 0,
+  total_wagered: 0,
+  total_saved_from_losses: 0,
+  total_profit_won: 0,
   isLoading: false,
 
-  setWallet: (wallet: Wallet) =>
+  setWallet: (wallet: WalletData) =>
     set({
-      balance: wallet.totalBalance,
-      houseBalance: wallet.houseBalance,
-      withdrawableProfit: wallet.withdrawableProfit,
-      totalSavedFromLosses: wallet.totalSavedFromLosses,
+      user_balance: wallet.user_balance,
+      savings_vault: wallet.savings_vault,
+      withdrawable_winnings: wallet.withdrawable_winnings,
+      virtual_house_balance: wallet.virtual_house_balance,
+      total_deposited: wallet.total_deposited,
+      total_wagered: wallet.total_wagered,
+      total_saved_from_losses: wallet.total_saved_from_losses,
+      total_profit_won: wallet.total_profit_won,
     }),
-
-  deposit: (amount: number) =>
-    set((state) => ({
-      balance: state.balance + amount,
-      houseBalance: state.houseBalance + amount,
-    })),
-
-  placeBet: (stake: number) =>
-    set((state) => ({
-      balance: state.balance - stake,
-      houseBalance: state.houseBalance,
-      withdrawableProfit: state.withdrawableProfit - stake,
-    })),
-
-  settleBetWin: (stake: number, profit: number) =>
-    set((state) => ({
-      houseBalance: state.houseBalance - profit,
-      withdrawableProfit: state.withdrawableProfit + stake + profit,
-    })),
-
-  settleBetLoss: (stake: number) =>
-    set((state) => ({
-      houseBalance: state.houseBalance + stake,
-      withdrawableProfit: state.withdrawableProfit,
-      totalSavedFromLosses: state.totalSavedFromLosses + stake,
-    })),
-
-  settleBetPush: () => set((state) => ({
-    withdrawableProfit: state.withdrawableProfit,
-  })),
 
   syncFromServer: async () => {
     try {
@@ -71,10 +56,14 @@ export const useWalletStore = create<WalletState>((set) => ({
       if (res.ok) {
         const data = await res.json();
         set({
-          balance: data.totalBalance ?? 0,
-          houseBalance: data.houseBalance ?? 0,
-          withdrawableProfit: data.withdrawableProfit ?? 0,
-          totalSavedFromLosses: data.totalSavedFromLosses ?? 0,
+          user_balance: data.user_balance ?? 0,
+          savings_vault: data.savings_vault ?? 0,
+          withdrawable_winnings: data.withdrawable_winnings ?? 0,
+          virtual_house_balance: data.virtual_house_balance ?? 0,
+          total_deposited: data.total_deposited ?? 0,
+          total_wagered: data.total_wagered ?? 0,
+          total_saved_from_losses: data.total_saved_from_losses ?? 0,
+          total_profit_won: data.total_profit_won ?? 0,
         });
       }
     } catch {

@@ -6,18 +6,23 @@ import { createClient } from "@/lib/supabase/client";
 import { useWalletStore } from "@/store/useWalletStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { LogOut, DollarSign, User, Shield } from "lucide-react";
+import { LogOut, User, Wallet, BarChart3 } from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { houseBalance, withdrawableProfit, totalSavedFromLosses, syncFromServer } =
-    useWalletStore();
+  const {
+    user_balance,
+    savings_vault,
+    withdrawable_winnings,
+    virtual_house_balance,
+    total_deposited,
+    total_wagered,
+    total_saved_from_losses,
+    total_profit_won,
+    syncFromServer,
+  } = useWalletStore();
   const [email, setEmail] = useState("");
-  const [depositAmount, setDepositAmount] = useState<number | "">("");
-  const [depositing, setDepositing] = useState(false);
-  const [depositError, setDepositError] = useState<string | null>(null);
-  const [depositSuccess, setDepositSuccess] = useState(false);
 
   const getUser = async () => {
     const {
@@ -38,44 +43,12 @@ export default function SettingsPage() {
     router.refresh();
   };
 
-  const handleDeposit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!depositAmount || depositAmount <= 0) return;
-
-    setDepositing(true);
-    setDepositError(null);
-    setDepositSuccess(false);
-
-    try {
-      const res = await fetch("/api/wallet", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: depositAmount }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Deposit failed");
-      }
-
-      setDepositSuccess(true);
-      setDepositAmount("");
-      syncFromServer();
-    } catch (err) {
-      setDepositError(
-        err instanceof Error ? err.message : "Something went wrong",
-      );
-    } finally {
-      setDepositing(false);
-    }
-  };
-
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Settings</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Manage your vault and account
+          Manage your account and vault overview
         </p>
       </div>
 
@@ -106,104 +79,98 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Deposit */}
+      {/* Balance Overview */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-emerald-400" />
-            <CardTitle className="text-sm">Deposit Funds</CardTitle>
+            <Wallet className="h-4 w-4 text-emerald-400" />
+            <CardTitle className="text-sm">Balance Overview</CardTitle>
           </div>
           <CardDescription>
-            Add funds to your vault. Current vault: ${houseBalance.toFixed(2)}
+            Your complete financial picture
           </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleDeposit} className="space-y-4">
-            <div>
-              <label
-                htmlFor="deposit"
-                className="block text-sm font-medium text-gray-300 mb-1.5"
-              >
-                Amount ($)
-              </label>
-              <input
-                id="deposit"
-                type="number"
-                value={depositAmount}
-                onChange={(e) =>
-                  setDepositAmount(
-                    e.target.value === "" ? "" : Number(e.target.value),
-                  )
-                }
-                placeholder="0.00"
-                step="0.01"
-                min="0.01"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-
-            {depositError && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2.5">
-                <p className="text-sm text-red-400">{depositError}</p>
-              </div>
-            )}
-
-            {depositSuccess && (
-              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5">
-                <p className="text-sm text-emerald-400">
-                  Funds deposited successfully!
-                </p>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={depositing || !depositAmount || depositAmount <= 0}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
-            >
-              {depositing ? "Depositing..." : "Deposit"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Vault Stats */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-purple-400" />
-            <CardTitle className="text-sm">Vault Statistics</CardTitle>
-          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-lg bg-white/5 p-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">House Balance</p>
+              <p className="text-xs text-gray-500 mb-1">User Balance</p>
               <p className="text-lg font-semibold text-white tabular-nums">
-                ${houseBalance.toFixed(2)}
+                ${user_balance.toFixed(2)}
               </p>
             </div>
             <div className="rounded-lg bg-white/5 p-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">Withdrawable Profit</p>
+              <p className="text-xs text-gray-500 mb-1">Savings Vault</p>
+              <p className="text-lg font-semibold text-amber-400 tabular-nums">
+                ${savings_vault.toFixed(2)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-white/5 p-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">Withdrawable Winnings</p>
               <p className="text-lg font-semibold text-emerald-400 tabular-nums">
-                ${withdrawableProfit.toFixed(2)}
+                ${withdrawable_winnings.toFixed(2)}
               </p>
             </div>
             <div className="rounded-lg bg-white/5 p-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">Saved from Losses</p>
-              <p className="text-lg font-semibold text-purple-400 tabular-nums">
-                ${totalSavedFromLosses.toFixed(2)}
-              </p>
-            </div>
-            <div className="rounded-lg bg-white/5 p-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">Total Balance</p>
-              <p className="text-lg font-semibold text-white tabular-nums">
-                ${(houseBalance + withdrawableProfit).toFixed(2)}
+              <p className="text-xs text-gray-500 mb-1">Virtual House</p>
+              <p className="text-lg font-semibold text-indigo-400 tabular-nums">
+                ${virtual_house_balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Statistics */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-purple-400" />
+            <CardTitle className="text-sm">Statistics</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-lg bg-white/5 p-3 text-center">
+              <p className="text-xs text-gray-500 mb-1">Total Deposited</p>
+              <p className="text-sm font-semibold text-white tabular-nums">
+                ${total_deposited.toFixed(2)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-white/5 p-3 text-center">
+              <p className="text-xs text-gray-500 mb-1">Total Wagered</p>
+              <p className="text-sm font-semibold text-white tabular-nums">
+                ${total_wagered.toFixed(2)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-white/5 p-3 text-center">
+              <p className="text-xs text-gray-500 mb-1">Saved From Losses</p>
+              <p className="text-sm font-semibold text-amber-400 tabular-nums">
+                ${total_saved_from_losses.toFixed(2)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-white/5 p-3 text-center">
+              <p className="text-xs text-gray-500 mb-1">Total Profit Won</p>
+              <p className="text-sm font-semibold text-emerald-400 tabular-nums">
+                ${total_profit_won.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* UX Messaging */}
+      <div className="rounded-lg border border-indigo-500/10 bg-indigo-500/5 px-4 py-3">
+        <p className="text-xs text-indigo-300/70 italic">
+        &ldquo;The house is virtual. The discipline is real.&rdquo;
+        </p>
+      </div>
+
+      {/* Disclaimer */}
+      <div className="rounded-lg border border-white/5 bg-black/20 px-4 py-3">
+        <p className="text-[10px] text-gray-600 leading-relaxed">
+          Elora is not a sportsbook. The house balance is virtual. This is a personal savings tool designed to gamify financial discipline. No real-money gambling occurs on this platform.
+        </p>
+      </div>
     </div>
   );
 }

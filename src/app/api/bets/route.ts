@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { calculateProfit, validateBet } from "@/lib/liability";
+import { calculateProfit, calculateTotalReturn, validateBet } from "@/lib/liability";
 
 export async function GET(request: Request) {
   try {
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { sport, marketType, selection, odds, stake } = body;
+    const { sport, league, event_name, marketType, selection, odds, stake } = body;
 
     if (!sport || !marketType || !selection || !odds || !stake) {
       return NextResponse.json(
@@ -89,38 +89,61 @@ export async function POST(request: Request) {
       );
     }
 
-    const validation = validateBet(odds, stake, wallet.houseBalance);
+    // Validate stake against user_balance only (no house liability cap)
+    const validation = validateBet(odds, stake, wallet.user_balance);
     if (!validation.valid) {
       return NextResponse.json(
-        { error: validation.reason, maxStake: validation.maxStake, profit: validation.profit },
+        { error: validation.reason, profit: validation.profit, totalReturn: validation.totalReturn },
         { status: 400 },
       );
     }
 
     const profit = calculateProfit(odds, stake);
+    const totalReturn = calculateTotalReturn(odds, stake);
+
+    // Deduct stake from user balance
+    await prisma.wallet.update({
+      where: { id: wallet.id },
+      data: {
+        user_balance: { decrement: stake },
+        total_wagered: { increment: stake },
+      },
+    });
+
+    const updatedWallet = await prisma.wallet.findUnique({
+      where: { userId: user.id },
+    });
 
     const bet = await prisma.bet.create({
       data: {
         userId: user.id,
         sport,
+        league: league || null,
+        event_name: event_name || null,
         marketType,
         selection,
         odds,
         stake,
         potentialProfit: profit,
-        houseBalanceAfter: wallet.houseBalance,
+        potential_return: totalReturn,
+        user_balance_before: wallet.user_balance,
+        user_balance_after: updatedWallet?.user_balance ?? wallet.user_balance - stake,
+        house_balance_before: wallet.virtual_house_balance,
+        house_balance_after: wallet.virtual_house_balance,
+        savings_vault_before: wallet.savings_vault,
+        savings_vault_after: wallet.savings_vault,
       },
     });
 
     await prisma.transaction.create({
       data: {
         userId: user.id,
-        type: "LOSS_ABSORBED",
+        type: "BET_PLACED",
         amount: stake,
-        balanceBefore: wallet.totalBalance,
-        balanceAfter: wallet.totalBalance,
+        balanceBefore: wallet.user_balance,
+        balanceAfter: updatedWallet?.user_balance ?? wallet.user_balance - stake,
         betId: bet.id,
-        description: `Bet placed: ${sport} ${marketType} - ${selection} ($${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds})`,
+        description: `Bet placed: ${sport}${league ? " " + league : ""} ${marketType} - ${selection} ($${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds})`,
       },
     });
 
