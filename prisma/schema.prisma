@@ -15,6 +15,8 @@ enum TransactionType {
   LOSS_TO_SAVINGS
   PUSH_RETURN
   WITHDRAWAL
+  LOCK_CREATED
+  LOCK_RELEASED
 }
 
 enum BetStatus {
@@ -30,6 +32,12 @@ enum MarketType {
   TOTAL
 }
 
+enum VaultLockStatus {
+  ACTIVE
+  UNLOCKED
+  CANCELLED
+}
+
 model User {
   id        String        @id @default(cuid())
   email     String        @unique
@@ -38,6 +46,7 @@ model User {
   wallet    Wallet?
   bets      Bet[]
   transactions Transaction[]
+  vaultLocks VaultLock[]
 }
 
 model Wallet {
@@ -47,6 +56,8 @@ model Wallet {
 
   user_balance          Float   @default(0)
   savings_vault         Float   @default(0)
+  locked_vault_balance  Float   @default(0)
+  available_vault_balance Float @default(0)
   withdrawable_winnings Float   @default(0)
   virtual_house_balance Float   @default(1000000000)
   total_deposited       Float   @default(0)
@@ -92,6 +103,20 @@ model Transaction {
   balanceBefore Float
   balanceAfter  Float
   betId         String?
+  vaultLockId   String?         @unique
+  vaultLock     VaultLock?      @relation(fields: [vaultLockId], references: [id])
   description   String
   createdAt     DateTime        @default(now())
+}
+
+model VaultLock {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  amount      Float
+  createdAt   DateTime        @default(now())
+  unlockAt    DateTime
+  status      VaultLockStatus @default(ACTIVE)
+  notes       String?
+  transaction Transaction?
 }
