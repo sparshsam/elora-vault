@@ -29,3 +29,13 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# build artifacts
+dist/
+build/
+
+# screenshots (generated)
+assets/screenshots/*.png
+assets/screenshots/*.jpg
+assets/screenshots/*.jpeg
+!assets/screenshots/README.md

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ArrowDownRight, ArrowUpRight, RotateCw, TrendingUp, PiggyBank, Ban } from "lucide-react";
+import { ArrowLeft, ArrowDownRight, ArrowUpRight, RotateCw, TrendingUp, PiggyBank, Ban, Wallet } from "lucide-react";
 import Link from "next/link";
 
 interface Transaction {
@@ -33,12 +33,12 @@ const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: 
     color: "text-emerald-400",
   },
   LOSS_TO_SAVINGS: {
-    label: "Loss → Savings",
+    label: "Loss → Savings Vault",
     icon: <PiggyBank className="h-3.5 w-3.5" />,
     color: "text-amber-400",
   },
   PUSH_RETURN: {
-    label: "Push (Return)",
+    label: "Push (Stake Returned)",
     icon: <RotateCw className="h-3.5 w-3.5" />,
     color: "text-gray-400",
   },
@@ -121,64 +121,118 @@ export default function TransactionsPage() {
             </div>
           ) : transactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+              <Wallet className="h-8 w-8 mb-2 opacity-30" />
               <p className="text-sm font-medium">No transactions yet</p>
-              <p className="text-xs mt-1">Deposit funds and place bets to get started</p>
+              <p className="text-xs mt-1 text-center max-w-xs">
+                Deposit funds and place bets to start building your transaction history. Every deposit, bet placed, win, loss, and push is recorded here.
+              </p>
             </div>
           ) : (
-            <div className="divide-y divide-white/5">
-              {transactions.map((tx) => {
-                const config = typeConfig[tx.type] || {
-                  label: tx.type,
-                  icon: <ArrowUpRight className="h-3.5 w-3.5" />,
-                  color: "text-gray-400",
-                };
+            <>
+              {/* Desktop view */}
+              <div className="hidden sm:block divide-y divide-white/5">
+                {transactions.map((tx) => {
+                  const config = typeConfig[tx.type] || {
+                    label: tx.type,
+                    icon: <ArrowUpRight className="h-3.5 w-3.5" />,
+                    color: "text-gray-400",
+                  };
 
-                const isCredit = ["DEPOSIT", "WIN_PROFIT", "PUSH_RETURN"].includes(tx.type);
-                const isDebit = ["BET_PLACED", "LOSS_TO_SAVINGS", "WITHDRAWAL"].includes(tx.type);
+                  const isCredit = ["DEPOSIT", "WIN_PROFIT", "PUSH_RETURN"].includes(tx.type);
+                  const isDebit = ["BET_PLACED", "LOSS_TO_SAVINGS", "WITHDRAWAL"].includes(tx.type);
 
-                return (
-                  <div
-                    key={tx.id}
-                    className="flex items-center justify-between py-3 px-1 hover:bg-white/[0.02] transition-colors rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-lg border",
-                          config.color.replace("text-", "border-").replace("400", "500/20") +
-                            " bg-white/5",
-                        )}
-                      >
-                        <span className={config.color}>{config.icon}</span>
+                  return (
+                    <div
+                      key={tx.id}
+                      className="flex items-center justify-between py-3 px-1 hover:bg-white/[0.02] transition-colors rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            "flex h-8 w-8 items-center justify-center rounded-lg border bg-white/5",
+                            config.color.replace("text-", "border-").replace("400", "500/20"),
+                          )}
+                        >
+                          <span className={config.color}>{config.icon}</span>
+                        </div>
+                        <div>
+                          <p className="text-sm text-white font-medium">
+                            {config.label}
+                          </p>
+                          <p className="text-xs text-gray-500 max-w-[300px] truncate">
+                            {tx.description}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-white font-medium">
-                          {config.label}
+                      <div className="text-right">
+                        <p
+                          className={cn(
+                            "text-sm font-semibold tabular-nums",
+                            isCredit && "text-emerald-400",
+                            isDebit && "text-red-400",
+                            !isCredit && !isDebit && "text-white",
+                          )}
+                        >
+                          {isCredit ? "+" : ""}${tx.amount.toFixed(2)}
                         </p>
-                        <p className="text-xs text-gray-500 max-w-[300px] truncate">
-                          {tx.description}
+                        <p className="text-[10px] text-gray-600">
+                          {formatDate(tx.createdAt)}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p
-                        className={cn(
-                          "text-sm font-semibold tabular-nums",
-                          isCredit && "text-emerald-400",
-                          isDebit && "text-red-400",
-                          !isCredit && !isDebit && "text-white",
-                        )}
-                      >
-                        {isCredit ? "+" : ""}${tx.amount.toFixed(2)}
-                      </p>
-                      <p className="text-[10px] text-gray-600">
-                        {formatDate(tx.createdAt)}
-                      </p>
+                  );
+                })}
+              </div>
+
+              {/* Mobile card view */}
+              <div className="sm:hidden space-y-2">
+                {transactions.map((tx) => {
+                  const config = typeConfig[tx.type] || {
+                    label: tx.type,
+                    icon: <ArrowUpRight className="h-3.5 w-3.5" />,
+                    color: "text-gray-400",
+                  };
+
+                  const isCredit = ["DEPOSIT", "WIN_PROFIT", "PUSH_RETURN"].includes(tx.type);
+                  const isDebit = ["BET_PLACED", "LOSS_TO_SAVINGS", "WITHDRAWAL"].includes(tx.type);
+
+                  return (
+                    <div
+                      key={tx.id}
+                      className="rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm p-4"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={cn(
+                              "flex h-7 w-7 items-center justify-center rounded-lg border bg-white/5",
+                              config.color.replace("text-", "border-").replace("400", "500/20"),
+                            )}
+                          >
+                            <span className={config.color}>{config.icon}</span>
+                          </div>
+                          <span className="text-sm font-medium text-white">
+                            {config.label}
+                          </span>
+                        </div>
+                        <p
+                          className={cn(
+                            "text-sm font-semibold tabular-nums",
+                            isCredit && "text-emerald-400",
+                            isDebit && "text-red-400",
+                            !isCredit && !isDebit && "text-white",
+                          )}
+                        >
+                          {isCredit ? "+" : ""}${tx.amount.toFixed(2)}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-1">{tx.description}</p>
+                      <p className="text-[10px] text-gray-600">{formatDate(tx.createdAt)}</p>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWalletStore } from "@/store/useWalletStore";
 import { HouseBalanceCard } from "@/components/dashboard/house-balance-card";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -15,6 +15,8 @@ import {
   BarChart3,
   Award,
   Activity,
+  ClipboardList,
+  Shield,
 } from "lucide-react";
 
 interface BetSummary {
@@ -22,7 +24,24 @@ interface BetSummary {
   won: number;
   open: number;
   lost: number;
+  pushed: number;
 }
+
+const EmptyState = ({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+}) => (
+  <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+    <Icon className="h-8 w-8 mb-2 opacity-30" />
+    <p className="text-sm font-medium">{title}</p>
+    <p className="text-xs mt-1 text-center max-w-xs">{description}</p>
+  </div>
+);
 
 export default function DashboardPage() {
   const {
@@ -41,43 +60,36 @@ export default function DashboardPage() {
     won: 0,
     open: 0,
     lost: 0,
+    pushed: 0,
   });
   const [recentBets, setRecentBets] = useState([]);
   const [balanceHistory, setBalanceHistory] = useState<
     { date: string; balance: number }[]
   >([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetchRecentBets = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/bets?limit=5");
-      if (res.ok) {
-        const data = await res.json();
-        setRecentBets(data.bets || []);
-        const allBets = data.bets || [];
+      // Fetch all bets for analytics summary
+      const allRes = await fetch("/api/bets?limit=500");
+      if (allRes.ok) {
+        const allData = await allRes.json();
+        const allBets = allData.bets || [];
+        setRecentBets(allBets.slice(0, 5));
         setBetSummary({
-          total: data.total || 0,
+          total: allData.total || 0,
           won: allBets.filter((b: { status: string }) => b.status === "WON").length,
           open: allBets.filter((b: { status: string }) => b.status === "OPEN").length,
           lost: allBets.filter((b: { status: string }) => b.status === "LOST").length,
+          pushed: allBets.filter((b: { status: string }) => b.status === "PUSH").length,
         });
       }
-      // Also fetch full open count
-      const openRes = await fetch("/api/bets?status=OPEN&limit=1");
-      if (openRes.ok) {
-        const openData = await openRes.json();
-        setBetSummary((prev) => ({ ...prev, open: openData.total || 0 }));
-      }
-    } catch {
-      // silently ignore
-    }
-  };
 
-  const fetchBalanceHistory = async () => {
-    try {
-      const res = await fetch("/api/wallet/transactions?limit=50");
-      if (res.ok) {
-        const data = await res.json();
-        const txns = data.transactions || [];
+      // Fetch balance history
+      const txnRes = await fetch("/api/wallet/transactions?limit=100");
+      if (txnRes.ok) {
+        const txnData = await txnRes.json();
+        const txns = txnData.transactions || [];
         const history = [...txns].reverse().map((t: { createdAt: string; balanceAfter: number }) => ({
           date: new Date(t.createdAt).toLocaleDateString("en-US", {
             month: "short",
@@ -89,27 +101,36 @@ export default function DashboardPage() {
       }
     } catch {
       // silently ignore
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     syncFromServer();
-    fetchRecentBets();
-    fetchBalanceHistory();
-  }, [syncFromServer]);
+    fetchData();
+  }, [syncFromServer, fetchData]);
 
-  const settledBets = betSummary.total - betSummary.open;
+  const settledBets = betSummary.won + betSummary.lost + betSummary.pushed;
   const winRate =
     settledBets > 0
       ? ((betSummary.won / settledBets) * 100).toFixed(1)
       : "0.0";
 
-  // Net user position: (withdrawable_winnings + savings_vault) - total_deposited
   const netUserPosition =
     withdrawable_winnings + savings_vault - total_deposited;
 
-  // House advantage or deficit
   const houseDiff = 1000000000 - virtual_house_balance;
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -144,7 +165,7 @@ export default function DashboardPage() {
           trend={withdrawable_winnings > 0 ? "up" : "neutral"}
         />
         <StatCard
-          title="Virtual House"
+          title="Virtual House Balance"
           value={virtual_house_balance}
           icon={<BarChart3 className="h-4 w-4 text-indigo-400" />}
           formatter={(v) =>
@@ -214,30 +235,109 @@ export default function DashboardPage() {
           formatter={(v) => v.toFixed(1)}
         />
         <StatCard
-          title="Net Position"
+          title="Net User Position"
           value={netUserPosition}
           icon={<Award className="h-4 w-4 text-purple-400" />}
           trend={netUserPosition > 0 ? "up" : netUserPosition < 0 ? "down" : "neutral"}
         />
         <StatCard
-          title="House Change"
-          value={houseDiff}
-          icon={<TrendingUp className="h-4 w-4 text-red-400" />}
-          trend={houseDiff > 0 ? "down" : houseDiff < 0 ? "up" : "neutral"}
+          title="Loss-to-Savings"
+          value={houseDiff > 0 ? houseDiff : 0}
+          icon={<Shield className="h-4 w-4 text-red-400" />}
+          trend="neutral"
         />
       </div>
 
-      {/* House vs User visual comparison */}
+      {/* Analytics Section: Vault Growth + Win/Loss/Push */}
+      {betSummary.total > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-indigo-400" />
+              Bet Analytics
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+              <div className="rounded-lg bg-white/5 p-3 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Settled Bets</p>
+                <p className="text-xl font-bold text-white tabular-nums">{settledBets}</p>
+              </div>
+              <div className="rounded-lg bg-emerald-500/5 p-3 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Won</p>
+                <p className="text-xl font-bold text-emerald-400 tabular-nums">{betSummary.won}</p>
+              </div>
+              <div className="rounded-lg bg-red-500/5 p-3 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Lost</p>
+                <p className="text-xl font-bold text-red-400 tabular-nums">{betSummary.lost}</p>
+              </div>
+              <div className="rounded-lg bg-gray-500/5 p-3 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Push</p>
+                <p className="text-xl font-bold text-gray-400 tabular-nums">{betSummary.pushed}</p>
+              </div>
+            </div>
+
+            {/* Win/Loss bar */}
+            {settledBets > 0 && (
+              <div className="h-2.5 rounded-full bg-white/5 overflow-hidden flex">
+                {betSummary.won > 0 && (
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-500"
+                    style={{
+                      width: `${(betSummary.won / settledBets) * 100}%`,
+                    }}
+                  />
+                )}
+                {betSummary.lost > 0 && (
+                  <div
+                    className="h-full bg-red-500 transition-all duration-500"
+                    style={{
+                      width: `${(betSummary.lost / settledBets) * 100}%`,
+                    }}
+                  />
+                )}
+                {betSummary.pushed > 0 && (
+                  <div
+                    className="h-full bg-gray-500 transition-all duration-500"
+                    style={{
+                      width: `${(betSummary.pushed / settledBets) * 100}%`,
+                    }}
+                  />
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Vault Growth Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Vault Growth (User Balance Trend)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {balanceHistory.length === 0 ? (
+            <EmptyState
+              icon={TrendingUp}
+              title="No balance history yet"
+              description="Deposit funds and place bets to see your vault growth over time."
+            />
+          ) : (
+            <BalanceChart data={balanceHistory} />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* House vs User comparison */}
       <Card className="border-indigo-500/10">
         <CardHeader>
           <CardTitle className="text-sm">House vs User</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {/* House bar */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-500">Virtual House</span>
+                <span className="text-gray-500">Virtual House Balance</span>
                 <span className="text-indigo-400 font-semibold tabular-nums">
                   ${virtual_house_balance.toLocaleString("en-US", { minimumFractionDigits: 0 })}
                 </span>
@@ -251,8 +351,6 @@ export default function DashboardPage() {
                 />
               </div>
             </div>
-
-            {/* User bar */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="text-gray-500">User (Balance + Vault + Winnings)</span>
@@ -273,23 +371,21 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Balance Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">User Balance Trend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BalanceChart data={balanceHistory} />
-        </CardContent>
-      </Card>
-
       {/* Recent bets */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Recent Bets</CardTitle>
         </CardHeader>
         <CardContent>
-          <BetTable bets={recentBets} />
+          {recentBets.length === 0 ? (
+            <EmptyState
+              icon={Target}
+              title="No bets placed yet"
+              description="Head to the New Bet page to place your first wager against the virtual house."
+            />
+          ) : (
+            <BetTable bets={recentBets} />
+          )}
         </CardContent>
       </Card>
 
