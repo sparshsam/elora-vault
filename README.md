@@ -49,16 +49,13 @@ The "house" is a virtual opponent with a starting balance of **$1,000,000,000** 
 
 ## Screenshots
 
-> 📸 Screenshots coming soon. See `assets/screenshots/README.md` for generation instructions.
-
-<!--
 | Desktop | Mobile |
 |---------|--------|
-| ![Landing](assets/screenshots/landing.png) | ![Landing Mobile](assets/screenshots/landing-mobile.png) |
-| ![Dashboard](assets/screenshots/dashboard.png) | ![Dashboard Mobile](assets/screenshots/dashboard-mobile.png) |
-| ![New Bet](assets/screenshots/new-bet.png) | |
-| ![Open Bets](assets/screenshots/open-bets.png) | |
--->
+| ![Landing](assets/screenshots/landing-desktop.png) | — |
+| ![Dashboard](assets/screenshots/dashboard-desktop.png) | ![Dashboard Mobile](assets/screenshots/dashboard-mobile.png) |
+| ![New Bet](assets/screenshots/new-bet-desktop.png) | ![New Bet Mobile](assets/screenshots/new-bet-mobile.png) |
+| ![Open Bets](assets/screenshots/open-bets-desktop.png) | — |
+| ![Bet History](assets/screenshots/history-desktop.png) | — |
 
 ---
 
