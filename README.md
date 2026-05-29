@@ -1,23 +1,72 @@
 <div align="center">
   <br />
-  <div>
-    <img src="https://img.shields.io/badge/version-0.3.1-indigo" alt="Version" />
-    <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License" />
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome" />
-  </div>
+
+  <img src="assets/screenshots/screenshot-main.png" alt="Elora Vault — Landing" width="720" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);" />
+
+  <br /><br />
+
+  <h1>Elora Vault</h1>
+  <p>
+    <em>A personal savings vault inspired by betting mechanics.</em>
+  </p>
+
+  <p>
+    <strong>Every loss becomes stored capital.</strong><br />
+    The house is virtual. The discipline is real.
+  </p>
+
   <br />
 
-  <h1>Elora Vault — Personal Savings Vault</h1>
+  <div>
+    <img src="https://img.shields.io/badge/version-v0.4-indigo" alt="Version" />
+    <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License" />
+    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome" />
+    <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js" />
+    <img src="https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase" alt="Supabase" />
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript" alt="TypeScript" />
+  </div>
+
+  <br />
+
   <p>
-    <strong>Every loss becomes saved capital. The house is virtual. The discipline is real.</strong>
+    <a href="https://elora-bet-api.vercel.app" target="_blank"><strong>🌐 Live Demo →</strong></a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href="#quick-start"><strong>⚡ Quick Start</strong></a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href="#features"><strong>✨ Features</strong></a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href="#screenshots"><strong>📸 Screenshots</strong></a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href="#architecture"><strong>🏗️ Architecture</strong></a>
   </p>
-  <br />
-  <a href="https://elora-bet-api.vercel.app" target="_blank">
-    <strong>🌐 Live Demo →</strong>
-  </a>
-  <br />
+
   <br />
 </div>
+
+---
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/sparshsam/elora-bet-api.git
+cd elora-bet-api
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env.local
+# Edit .env.local with your Supabase credentials
+
+# Push database schema and start
+npx prisma db push
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) — done.
+
+> **Prerequisites:** Node.js 22+, a [Supabase](https://supabase.com/) free-tier project, and npm.
 
 ---
 
@@ -102,20 +151,25 @@ The house balance has **no real-world value**. It exists purely for:
 
 | Feature | Status |
 |---------|--------|
-| Savings Vault — losing bets move stake into a locked vault | ✅ v0.2 |
-| Virtual House — $1B starting opponent balance | ✅ v0.2 |
-| Live Preview — see projected win/loss/vault before committing | ✅ v0.2 |
-| Win/Loss/Push Settlement — correct balance math for all outcomes | ✅ v0.2 |
-| Dashboard — primary cards, secondary stats, house vs user comparison | ✅ v0.2 |
-| Bet History — filterable by status with pagination | ✅ v0.2 |
-| Transaction History — type-based icons with pagination | ✅ v0.2 |
-| Deposit — simulated fund addition with preset amounts | ✅ v0.2 |
-| Settings — account info and statistics overview | ✅ v0.2 |
-| Dark Mode — glassmorphism, charcoal/black/soft white | ✅ v0.2 |
-| Mobile Optimization — responsive cards, touch targets, bottom nav | ✅ v0.3 |
-| Dashboard Analytics — win/loss/push counts, vault growth chart | ✅ v0.3 |
-| Empty/Loading/Error States — contextual messaging for all pages | ✅ v0.3 |
-| SEO Metadata — Open Graph + Twitter Card tags | ✅ v0.3 |
+| **Savings Vault** — losing bets move stake into savings | ✅ v0.2 |
+| **Virtual $1B House** — fictional opponent for tracking | ✅ v0.2 |
+| **Live Preview** — see projections before committing a bet | ✅ v0.2 |
+| **Win/Loss/Push Settlement** — correct math for all outcomes | ✅ v0.2 |
+| **Dashboard** — cards, stats, house vs user comparison | ✅ v0.2 |
+| **Bet History** — filterable with pagination | ✅ v0.2 |
+| **Transaction History** — type-based icons, paginated | ✅ v0.2 |
+| **Deposit** — simulated fund addition | ✅ v0.2 |
+| **Settings** — account info + statistics overview | ✅ v0.2 |
+| **Dark Mode** — glassmorphism, charcoal/black, premium feel | ✅ v0.2 |
+| **Mobile Optimization** — responsive, touch targets, bottom nav | ✅ v0.3 |
+| **Dashboard Analytics** — win/loss/push counts, vault chart | ✅ v0.3 |
+| **Empty/Loading/Error States** — all pages | ✅ v0.3 |
+| **SEO Metadata** — Open Graph + Twitter Cards | ✅ v0.3 |
+| **Protected Capital (Vault Locking)** — lock savings for 7/30/90 days | ✅ v0.4 |
+| **Vault Timeline** — chronological lock/release activity feed | ✅ v0.4 |
+| **Auto-Unlock** — locks release automatically on expiry | ✅ v0.4 |
+| **Lock Cards** — countdown timers with progress indicators | ✅ v0.4 |
+| **Auto-Lock Losses** — optional automatic loss protection | ✅ v0.4 |
 
 ---
 
