@@ -79,7 +79,7 @@ export default function NewBetPage() {
       {/* Disclaimer */}
       <div className="rounded-lg border border-white/5 bg-black/20 px-4 py-3">
         <p className="text-[10px] text-gray-600 leading-relaxed">
-          Elora is not a sportsbook. The house balance is virtual. This is a personal savings tool designed to gamify financial discipline. No real-money gambling occurs on this platform.
+          Elora Vault is not a sportsbook. The house balance is virtual. This is a personal savings tool designed to gamify financial discipline. No real-money gambling occurs on this platform.
         </p>
       </div>
     </div>

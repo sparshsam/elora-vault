@@ -1,7 +1,7 @@
-# Elora v0.2 — Project Context
+# Elora Vault v0.2 — Project Context
 
 ## Core Concept
-Elora is a personal betting-inspired savings vault. NOT a real sportsbook.
+Elora Vault is a personal betting-inspired savings vault. NOT a real sportsbook.
 The "house" is a virtual opponent with a starting balance of $1,000,000,000. User losses become savings in their vault.
 
 ## Key Rules

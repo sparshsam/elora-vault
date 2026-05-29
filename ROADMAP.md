@@ -1,4 +1,4 @@
-# Roadmap
+# Elora Vault — Roadmap
 
 ## v0.3 ✅ — Mobile Optimization & GitHub Presentation
 - [x] Mobile-responsive bet table (card layout)

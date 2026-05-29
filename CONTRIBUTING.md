@@ -1,6 +1,6 @@
-# Contributing to Elora
+# Contributing to Elora Vault
 
-Thank you for your interest in Elora! This is a personal project, but contributions, feedback, and ideas are welcome.
+Thank you for your interest in Elora Vault! This is a personal project, but contributions, feedback, and ideas are welcome.
 
 ## Code of Conduct
 
@@ -25,7 +25,7 @@ Be respectful, constructive, and kind. This is a learning project — all skill 
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR-USERNAME/elora-bet-api.git
+git clone https://github.com/sparshsam/elora-bet-api.git
 cd elora-bet-api
 
 # Install dependencies

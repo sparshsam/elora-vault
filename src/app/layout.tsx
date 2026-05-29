@@ -8,23 +8,23 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Elora — Personal Savings Vault",
+  title: "Elora Vault — Personal Savings Vault",
   description:
-    "A personal savings vault inspired by betting mechanics. Wager against a virtual house, turn losses into saved capital, and track your discipline over time.",
+    "Elora Vault is a personal savings vault inspired by betting mechanics, where losses become stored capital and users wager against a virtual house.",
   openGraph: {
-    title: "Elora — Personal Savings Vault",
+    title: "Elora Vault — Personal Savings Vault",
     description:
-      "Every loss becomes saved capital. A personal savings vault inspired by betting mechanics.",
+      "Turn losses into saved capital. A personal savings vault inspired by betting mechanics.",
     url: "https://elora-bet-api.vercel.app",
-    siteName: "Elora",
+    siteName: "Elora Vault",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Elora — Personal Savings Vault",
+    title: "Elora Vault — Personal Savings Vault",
     description:
-      "Every loss becomes saved capital. Wager against a virtual house, turn losses into savings.",
+      "Turn losses into saved capital. A personal savings vault inspired by betting mechanics.",
   },
 };
 

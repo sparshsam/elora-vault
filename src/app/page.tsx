@@ -39,9 +39,9 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <span className="text-xs font-bold text-white">E</span>
+              <span className="text-xs font-bold text-white">EV</span>
             </div>
-            <span className="text-lg font-semibold text-white">Elora</span>
+            <span className="text-lg font-semibold text-white">Elora Vault</span>
           </div>
           <div className="flex items-center gap-4">
             <Link
@@ -66,7 +66,7 @@ export default function LandingPage() {
           <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-4 py-1.5 mb-8">
             <span className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
             <span className="text-xs font-medium text-indigo-300">
-              v0.3 — Personal Savings Vault
+              v0.3 — Elora Vault — Personal Savings Vault
             </span>
           </div>
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.1]">
@@ -76,7 +76,7 @@ export default function LandingPage() {
             </span>
           </h1>
           <p className="mt-6 text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Elora is a betting-inspired personal savings vault. The house is virtual.
+            Elora Vault is a personal savings vault inspired by betting mechanics. The house is virtual.
             Your discipline is real. Every bet you make either grows your winnings
             or builds your savings.
           </p>
@@ -187,7 +187,7 @@ export default function LandingPage() {
               Ready to build discipline?
             </h2>
             <p className="text-gray-400 mb-8 max-w-lg mx-auto">
-              Start your Elora vault today. Free. No sportsbook. Just discipline, stored.
+              Start your vault today. Free. No sportsbook. Just discipline, stored.
             </p>
             <Link href="/auth/signup">
               <Button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl text-base font-medium transition-all shadow-lg shadow-indigo-600/20">
@@ -202,7 +202,7 @@ export default function LandingPage() {
       <section className="py-10 px-6 border-t border-white/5">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-[10px] text-gray-600 leading-relaxed">
-            Elora is not a sportsbook. The house balance is virtual ($1B starting) and has no real-world value.
+            Elora Vault is not a sportsbook. The house balance is virtual ($1B starting) and has no real-world value.
             This is a personal savings tool designed to gamify financial discipline.
             No real-money gambling occurs on this platform. All deposits, bets, and balances are simulated.
           </p>
@@ -213,7 +213,7 @@ export default function LandingPage() {
       <footer className="border-t border-white/5 py-8 px-6">
         <div className="mx-auto max-w-6xl text-center">
           <p className="text-sm text-gray-500">
-            Elora v0.3 — Every loss becomes saved capital.
+            Elora Vault v0.3 — Every loss becomes saved capital.
           </p>
         </div>
       </footer>

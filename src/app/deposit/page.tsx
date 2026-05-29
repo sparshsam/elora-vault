@@ -79,7 +79,7 @@ export default function DepositPage() {
       {/* Simulated deposit disclaimer */}
       <div className="rounded-lg border border-indigo-500/10 bg-indigo-500/5 px-4 py-3">
         <p className="text-xs text-indigo-300/70 italic">
-          Simulated deposits. No real money is involved. Elora is a personal savings tool, not a sportsbook.
+          Simulated deposits. No real money is involved. Elora Vault is a personal savings tool, not a sportsbook.
         </p>
       </div>
 

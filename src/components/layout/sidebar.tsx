@@ -70,9 +70,9 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-2 px-6 py-5 border-b border-white/5">
         <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-          <span className="text-xs font-bold text-white">E</span>
+          <span className="text-xs font-bold text-white">EV</span>
         </div>
-        <span className="text-lg font-semibold text-white">Elora</span>
+        <span className="text-lg font-semibold text-white">Elora Vault</span>
       </div>
 
       {/* Nav */}
