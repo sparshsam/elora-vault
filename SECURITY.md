@@ -10,7 +10,7 @@
 
 ## Reporting a Vulnerability
 
-Elora is a personal savings tool and does not handle real money or financial transactions. However, if you discover a security vulnerability, please report it responsibly.
+Elora Vault is a personal savings tool and does not handle real money or financial transactions. However, if you discover a security vulnerability, please report it responsibly.
 
 - **Email**: [sparsh.sam@icloud.com](mailto:sparsh.sam@icloud.com)
 - **Do not** open public GitHub issues for security vulnerabilities

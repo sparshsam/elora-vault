@@ -1,13 +1,13 @@
 <div align="center">
   <br />
   <div>
-    <img src="https://img.shields.io/badge/version-0.3.0-indigo" alt="Version" />
+    <img src="https://img.shields.io/badge/version-0.3.1-indigo" alt="Version" />
     <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License" />
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome" />
   </div>
   <br />
 
-  <h1>Elora — Personal Savings Vault</h1>
+  <h1>Elora Vault — Personal Savings Vault</h1>
   <p>
     <strong>Every loss becomes saved capital. The house is virtual. The discipline is real.</strong>
   </p>
@@ -21,15 +21,15 @@
 
 ---
 
-## What is Elora?
+## What is Elora Vault?
 
-Elora is a **personal savings vault inspired by betting mechanics** — NOT a real sportsbook.
+Elora Vault is a **personal savings vault inspired by betting mechanics** — NOT a real sportsbook.
 
 The "house" is a virtual opponent with a starting balance of **$1,000,000,000** — displayed purely for personal tracking and behavioral feedback. When you "lose" a bet, your stake doesn't disappear — it moves into your savings vault. When you win, your profit grows your withdrawable winnings.
 
 **Think of it as gamified discipline.** Every bet you make either grows your winnings or builds your savings. There is no real gambling, no real-money wagering, and no third-party betting.
 
-### What Elora IS
+### What Elora Vault IS
 
 - ✅ A personal savings tool with gamified mechanics
 - ✅ A discipline tracker that turns losses into stored capital
@@ -37,7 +37,7 @@ The "house" is a virtual opponent with a starting balance of **$1,000,000,000** 
 - ✅ A way to practice bankroll management
 - ✅ A fun, risk-free way to engage with betting mechanics
 
-### What Elora IS NOT
+### What Elora Vault IS NOT
 
 - ❌ NOT a sportsbook, casino, or gambling operator
 - ❌ NOT a wagering platform or betting exchange
@@ -303,7 +303,7 @@ Vercel will automatically:
 
 ## Disclaimer
 
-> **Elora is not a sportsbook, casino, gambling operator, or wagering platform.**
+> **Elora Vault is not a sportsbook, casino, gambling operator, or wagering platform.**
 >
 > It does not provide live odds, accept third-party bets, or facilitate peer-to-peer betting. The virtual house balance ($1,000,000,000 starting) is **fictional** and exists only for personal tracking and behavioral feedback. No real-money gambling occurs on this platform. All deposits, bets, and balances are simulated.
 >
@@ -315,7 +315,7 @@ Vercel will automatically:
 
 [GNU Affero General Public License v3.0](LICENSE) © 2026 Sparsham Sam
 
-Elora is free software: you can redistribute and modify it under the terms of the AGPL-3.0. Any networked instance must make its source code available to all users. See the [LICENSE](LICENSE) file for the full text.
+Elora Vault is free software: you can redistribute and modify it under the terms of the AGPL-3.0. Any networked instance must make its source code available to all users. See the [LICENSE](LICENSE) file for the full text.
 
 ---
 

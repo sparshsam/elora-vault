@@ -1,5 +1,5 @@
 /**
- * Liability Engine v0.2 — pure functions for Elora vault calculations.
+ * Liability Engine v0.2 — pure functions for Elora Vault calculations.
  * The "house" is virtual. User losses become savings in their vault.
  */
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.3.1 — Rebrand to Elora Vault (2026-05-29)
+
+### Rebrand
+- Project renamed from "Elora" / "Elora Bet API" to "Elora Vault"
+- `package.json` name changed to `elora-vault`
+- All page metadata updated: title, description, OG, Twitter card now "Elora Vault"
+- Landing page nav brand updated to "EV" logo + "Elora Vault"
+- Hero tagline updated: "v0.3 — Elora Vault — Personal Savings Vault"
+- Sidebar brand updated to "EV" logo + "Elora Vault"
+- Login page subtitle: "Sign in to your vault"
+- All disclaimer footnotes updated to "Elora Vault"
+- Deposit disclaimer updated to "Elora Vault"
+- Footer text updated to "Elora Vault v0.3"
+- Liability engine comment updated
+- `README.md` fully rewritten with "Elora Vault" naming
+- `CLAUDE.md`, `CONTRIBUTING.md`, `SECURITY.md`, `ROADMAP.md` updated
+- Branding consistent across all routes
+
+---
+
 ## v0.3 — Mobile Optimization & GitHub Presentation (2026-05-29)
 
 ### Mobile Optimization
