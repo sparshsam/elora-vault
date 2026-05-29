@@ -3,6 +3,8 @@ import { create } from "zustand";
 interface WalletData {
   user_balance: number;
   savings_vault: number;
+  locked_vault_balance: number;
+  available_vault_balance: number;
   withdrawable_winnings: number;
   virtual_house_balance: number;
   total_deposited: number;
@@ -14,6 +16,8 @@ interface WalletData {
 interface WalletState {
   user_balance: number;
   savings_vault: number;
+  locked_vault_balance: number;
+  available_vault_balance: number;
   withdrawable_winnings: number;
   virtual_house_balance: number;
   total_deposited: number;
@@ -29,6 +33,8 @@ interface WalletState {
 export const useWalletStore = create<WalletState>((set) => ({
   user_balance: 0,
   savings_vault: 0,
+  locked_vault_balance: 0,
+  available_vault_balance: 0,
   withdrawable_winnings: 0,
   virtual_house_balance: 0,
   total_deposited: 0,
@@ -41,6 +47,8 @@ export const useWalletStore = create<WalletState>((set) => ({
     set({
       user_balance: wallet.user_balance,
       savings_vault: wallet.savings_vault,
+      locked_vault_balance: wallet.locked_vault_balance,
+      available_vault_balance: wallet.available_vault_balance,
       withdrawable_winnings: wallet.withdrawable_winnings,
       virtual_house_balance: wallet.virtual_house_balance,
       total_deposited: wallet.total_deposited,
@@ -58,6 +66,8 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({
           user_balance: data.user_balance ?? 0,
           savings_vault: data.savings_vault ?? 0,
+          locked_vault_balance: data.locked_vault_balance ?? 0,
+          available_vault_balance: data.available_vault_balance ?? 0,
           withdrawable_winnings: data.withdrawable_winnings ?? 0,
           virtual_house_balance: data.virtual_house_balance ?? 0,
           total_deposited: data.total_deposited ?? 0,

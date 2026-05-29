@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.4 — Protected Capital Vault Locking (2026-05-29)
+
+### Added
+- **VaultLock model** with ACTIVE/UNLOCKED/CANCELLED statuses
+- **Wallet split**: `locked_vault_balance` and `available_vault_balance` alongside `savings_vault`
+- **Transaction types**: `LOCK_CREATED`, `LOCK_RELEASED`
+- **POST /api/vault/locks** — create capital locks with 7/30/90 day or custom duration
+- **GET /api/vault/locks** — list locks with auto-release of expired locks
+- **GET /api/vault/locks/[id]** — single lock details
+- **Auto-unlock engine** — expired locks automatically release on any `/api/vault/locks` call
+- **LockModal component** — premium fintech dialog for protecting capital
+- **LockCard component** — matte dark card with countdown and status
+- **VaultTimeline component** — chronological vault activity view
+- **Protected Capital section** on dashboard with active locks, locked total, next unlock countdown
+- **Vault Preferences** in settings (default duration, auto-lock losses placeholder)
+- **Demo data** — 3 vault locks for demo@elora.app (2 active, 1 released)
+
+### UX Copy
+- "Protect Capital" language throughout (not "Lock Money")
+- "Discipline compounds quietly" messaging
+- "Stored today. Available later." countdown copy
+
+### Mobile
+- All vault components stack vertically on small screens
+- Lock modal is scrollable and thumb-friendly
+- Cards use min-width-0 to prevent overflow
+
 ## v0.3.1 — Rebrand to Elora Vault (2026-05-29)
 
 ### Rebrand
