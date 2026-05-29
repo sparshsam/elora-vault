@@ -34,8 +34,3 @@ next-env.d.ts
 dist/
 build/
 
-# screenshots (generated)
-assets/screenshots/*.png
-assets/screenshots/*.jpg
-assets/screenshots/*.jpeg
-!assets/screenshots/README.md
