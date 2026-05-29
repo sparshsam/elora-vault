@@ -66,7 +66,7 @@ export default function LandingPage() {
           <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-4 py-1.5 mb-8">
             <span className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
             <span className="text-xs font-medium text-indigo-300">
-              v0.2 — Personal Savings Vault
+              v0.3 — Personal Savings Vault
             </span>
           </div>
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.1]">
@@ -213,7 +213,7 @@ export default function LandingPage() {
       <footer className="border-t border-white/5 py-8 px-6">
         <div className="mx-auto max-w-6xl text-center">
           <p className="text-sm text-gray-500">
-            Elora v0.2 — Every loss becomes saved capital.
+            Elora v0.3 — Every loss becomes saved capital.
           </p>
         </div>
       </footer>
