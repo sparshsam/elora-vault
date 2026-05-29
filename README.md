@@ -2,7 +2,7 @@
   <br />
   <div>
     <img src="https://img.shields.io/badge/version-0.3.0-indigo" alt="Version" />
-    <img src="https://img.shields.io/badge/license-MIT-emerald" alt="License" />
+    <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License" />
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome" />
   </div>
   <br />
@@ -316,7 +316,9 @@ Vercel will automatically:
 
 ## License
 
-[MIT](LICENSE) © 2026 Sparsham Sam
+[GNU Affero General Public License v3.0](LICENSE) © 2026 Sparsham Sam
+
+Elora is free software: you can redistribute and modify it under the terms of the AGPL-3.0. Any networked instance must make its source code available to all users. See the [LICENSE](LICENSE) file for the full text.
 
 ---
 
