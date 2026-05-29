@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TransactionType {
+  DEPOSIT
+  WIN_PROFIT
+  LOSS_ABSORBED
+  WITHDRAWAL
+  PUSH
+}
+
+enum BetStatus {
+  OPEN
+  WON
+  LOST
+  PUSH
+}
+
+enum MarketType {
+  MONEYLINE
+  SPREAD
+  TOTAL
+}
+
+model User {
+  id        String        @id @default(cuid())
+  email     String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  wallet    Wallet?
+  bets      Bet[]
+  transactions Transaction[]
+}
+
+model Wallet {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id])
+  totalBalance        Float    @default(0)
+  houseBalance        Float    @default(0)
+  withdrawableProfit  Float    @default(0)
+  totalSavedFromLosses Float   @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Bet {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  sport         String
+  marketType    MarketType
+  selection     String
+  odds          Int
+  stake         Float
+  potentialProfit Float
+  status        BetStatus   @default(OPEN)
+  settledAt     DateTime?
+  houseBalanceAfter Float?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  type          TransactionType
+  amount        Float
+  balanceBefore Float
+  balanceAfter  Float
+  betId         String?
+  description   String
+  createdAt     DateTime        @default(now())
+}
