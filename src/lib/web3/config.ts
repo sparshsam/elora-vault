@@ -1,18 +1,43 @@
 "use client";
 
-import { http, createStorage, cookieStorage } from "wagmi";
+import { http, createStorage, cookieStorage, createConfig } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { connectorsForWallets } from "@rainbow-me/rainbowkit";
+import {
+  metaMaskWallet,
+  coinbaseWallet,
+  walletConnectWallet,
+  rainbowWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "";
 
 /**
- * Wagmi + RainbowKit configuration for Base network.
- * Supports WalletConnect, Coinbase Wallet, MetaMask, and Rainbow.
+ * Explicit wallet connectors for RainbowKit.
+ * - metaMaskWallet uses its own detection, not shared injected provider
+ * - coinbaseWallet uses Coinbase SDK
+ * - walletConnectWallet for WalletConnect deep links
+ * - rainbowWallet for Rainbow browser extension
+ *
+ * This ensures MetaMask is always listed even when Coinbase Wallet
+ * extension is also installed (both inject window.ethereum).
  */
-export const wagmiConfig = getDefaultConfig({
-  appName: "Elora Vault",
-  projectId,
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: "Popular",
+      wallets: [metaMaskWallet, coinbaseWallet, rainbowWallet, walletConnectWallet],
+    },
+  ],
+  { appName: "Elora Vault", projectId },
+);
+
+/**
+ * Wagmi + RainbowKit configuration for Base network.
+ * Supports MetaMask, Coinbase Wallet, WalletConnect, and Rainbow.
+ */
+export const wagmiConfig = createConfig({
+  connectors,
   chains: [base, baseSepolia] as const,
   transports: {
     [base.id]: http(
