@@ -23,7 +23,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-// Minimal ERC20 ABI for balanceOf and allowance
+// Minimal ERC20 ABI for balanceOf, allowance, and approve
 const ERC20_ABI = [
   {
     type: "function",
@@ -41,6 +41,16 @@ const ERC20_ABI = [
     ],
     outputs: [{ name: "remaining", type: "uint256" }],
     stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "approve",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "value", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
   },
 ] as const;
 
