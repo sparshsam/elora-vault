@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
+    "typecheck": "tsc --noEmit",
     "contracts:build": "cd contracts && forge build",
     "contracts:test": "cd contracts && forge test",
     "contracts:deploy:sepolia": "cd contracts && forge script script/DeployProtectedVault.s.sol --rpc-url base_sepolia --private-key $PRIVATE_KEY --broadcast --verify",
