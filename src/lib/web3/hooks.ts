@@ -16,6 +16,12 @@ import { VAULT_ABI, CURRENT_CHAIN } from "@/lib/contracts/contracts";
  */
 const VAULT_ADDRESS = CURRENT_CHAIN.vaultAddress;
 
+/** Safe formatUnits wrapper — returns 0 for undefined/null values */
+function safeFormat(value: bigint | undefined, decimals: number): number {
+  if (value == null) return 0;
+  return Number(formatUnits(value, decimals));
+}
+
 /**
  * Hook: Check if the vault contract is deployed and usable.
  */
@@ -214,9 +220,9 @@ export function useVaultSummary(userAddress?: `0x${string}`) {
   }
 
   return {
-    totalDeposited: Number(formatUnits(summary[0], 6)),
-    totalLocked: Number(formatUnits(summary[1], 6)),
-    totalWithdrawn: Number(formatUnits(summary[2], 6)),
+    totalDeposited: safeFormat(summary[0], 6),
+    totalLocked: safeFormat(summary[1], 6),
+    totalWithdrawn: safeFormat(summary[2], 6),
     activeLockCount: Number(summary[3]),
     isLoading,
     refetch,
@@ -253,7 +259,7 @@ export function useVaultLocks(userAddress?: `0x${string}`) {
   const locks = (data as { amount: bigint; createdAt: bigint; unlockAt: bigint; withdrawn: boolean }[]).map(
     (lock, index) => ({
       id: index,
-      amount: Number(formatUnits(lock.amount, 6)),
+      amount: safeFormat(lock.amount, 6),
       createdAt: Number(lock.createdAt) * 1000,
       unlockAt: Number(lock.unlockAt) * 1000,
       withdrawn: lock.withdrawn,
