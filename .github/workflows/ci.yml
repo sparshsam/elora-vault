@@ -25,7 +25,7 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
-        run: npx prisma generate
+        run: npm run postinstall
 
       - name: Run ESLint
         run: npm run lint
@@ -46,7 +46,7 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
-        run: npx prisma generate
+        run: npm run postinstall
 
       - name: Build Next.js
         run: npm run build
