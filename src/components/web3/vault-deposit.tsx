@@ -106,9 +106,12 @@ export function VaultDepositForm({ className }: { className?: string }) {
 
   const { deposit, hash: depositHash, isConfirmed: isDepositConfirmed, error: depositError } = useVaultDeposit();
 
-  // Approval write hook
+  // Approval write hook — explicitly chain-scoped for L2
   const { writeContract: writeApproval, data: approvalHash, error: approvalError } = useWriteContract();
-  const { isSuccess: isApprovalConfirmed } = useWaitForTransactionReceipt({ hash: approvalHash });
+  const { isSuccess: isApprovalConfirmed } = useWaitForTransactionReceipt({
+    hash: approvalHash,
+    chainId: EXPECTED_CHAIN_ID,
+  });
 
   const { syncFromServer } = useWalletStore();
   const [creditingBalance, setCreditingBalance] = useState(false);
@@ -151,13 +154,31 @@ export function VaultDepositForm({ className }: { className?: string }) {
     }
   };
 
-  // Track approval confirmation
+  // Track approval confirmation — via receipt OR allowance polling
   useEffect(() => {
-    if (!isApprovalConfirmed || step !== "approving" || approvedRef.current) return;
-    approvedRef.current = true;
-    setStep("idle");
-    refetchAllowance();
-  }, [isApprovalConfirmed, step, refetchAllowance]);
+    if (step !== "approving" || approvedRef.current) return;
+
+    // If wagmi confirms the receipt, mark as done
+    if (isApprovalConfirmed) {
+      approvedRef.current = true;
+      setStep("idle");
+      refetchAllowance();
+      return;
+    }
+
+    // Fallback: poll allowance every 3s while waiting for approval
+    const interval = setInterval(() => {
+      refetchAllowance().then(({ data: newAllowance }) => {
+        if (newAllowance && (newAllowance as bigint) >= parsedUnits) {
+          approvedRef.current = true;
+          setStep("idle");
+          clearInterval(interval);
+        }
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isApprovalConfirmed, step, refetchAllowance, parsedUnits]);
 
   // Track deposit confirmation
   useEffect(() => {
