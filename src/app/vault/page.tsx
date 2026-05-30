@@ -6,9 +6,18 @@ import { VaultSummaryCard } from "@/components/web3/vault-summary";
 import { VaultDepositForm } from "@/components/web3/vault-deposit";
 import { VaultLockForm } from "@/components/web3/vault-lock-form";
 import { VaultLocksCard } from "@/components/web3/vault-locks";
+import { Web3Provider } from "@/lib/web3/providers";
 import { Shield } from "lucide-react";
 
 export default function VaultPage() {
+  return (
+    <Web3Provider>
+      <VaultPageContent />
+    </Web3Provider>
+  );
+}
+
+function VaultPageContent() {
   const { isConnected } = useAccount();
 
   return (
