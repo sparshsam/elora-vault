@@ -5,7 +5,7 @@ import { useReadContract } from "wagmi";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatUnits } from "viem";
-import { Wallet, Shield, Lock, Unlock, ExternalLink } from "lucide-react";
+import { Wallet, Shield, Lock, ExternalLink } from "lucide-react";
 import { CURRENT_CHAIN } from "@/lib/contracts/contracts";
 
 // Minimal ERC20 ABI for balanceOf

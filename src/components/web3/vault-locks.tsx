@@ -56,14 +56,12 @@ export function VaultLocksCard({ className }: { className?: string }) {
   const {
     releaseLock,
     isPending: isReleasing,
-    isConfirming: isReleaseConfirming,
     isConfirmed: isReleaseConfirmed,
     hash: releaseHash,
   } = useReleaseLock();
   const {
     withdrawLock,
     isPending: isWithdrawing,
-    isConfirming: isWithdrawConfirming,
     isConfirmed: isWithdrawConfirmed,
     hash: withdrawHash,
   } = useWithdrawLock();

@@ -40,7 +40,7 @@ export function VaultDepositForm({ className }: { className?: string }) {
   const usdcFormatted = usdcBalanceData
     ? Number(formatUnits(usdcBalanceData as bigint, 6))
     : 0;
-  const { deposit, isPending, isConfirming, isConfirmed, hash, error } =
+  const { deposit, hash, isConfirmed, error } =
     useVaultDeposit();
 
   const [amount, setAmount] = useState("");

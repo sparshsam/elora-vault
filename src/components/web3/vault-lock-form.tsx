@@ -9,8 +9,6 @@ import { cn } from "@/lib/utils";
 import { useCreateLock, useVaultSummary } from "@/lib/web3/hooks";
 import { Shield, Lock, Clock, CheckCircle, Loader2, ExternalLink, AlertTriangle, X } from "lucide-react";
 import { CURRENT_CHAIN } from "@/lib/contracts/contracts";
-import { useSwitchChain } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
 
 function getExplorerLabel(url: string): string {
   return url.replace("https://", "").replace(".org", "").replace(".com", "");
@@ -47,7 +45,7 @@ export function VaultLockForm({ className }: { className?: string }) {
   const { isConnected, address } = useAccount();
   const queryClient = useQueryClient();
   const summary = useVaultSummary(address);
-  const { createLock, isPending, isConfirming, isConfirmed, hash, error } =
+  const { createLock, isConfirmed, hash, error } =
     useCreateLock();
 
   const [amount, setAmount] = useState("");

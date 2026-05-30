@@ -26,7 +26,7 @@ const VAULT_QUERY_KEY = "vault";
  * Hook: Check if the vault contract is deployed and usable.
  */
 export function useVaultStatus() {
-  const { data: totalDeposited, isLoading } = useReadContract({
+  const { isLoading } = useReadContract({
     address: VAULT_ADDRESS,
     abi: VAULT_ABI,
     functionName: "getVaultSummary",
