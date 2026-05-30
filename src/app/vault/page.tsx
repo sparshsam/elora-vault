@@ -1,16 +1,23 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAccount } from "wagmi";
 import { WalletInfoCard } from "@/components/web3/wallet-card";
 import { VaultSummaryCard } from "@/components/web3/vault-summary";
 import { VaultDepositForm } from "@/components/web3/vault-deposit";
 import { VaultLockForm } from "@/components/web3/vault-lock-form";
 import { VaultLocksCard } from "@/components/web3/vault-locks";
-import { Shield, ExternalLink } from "lucide-react";
+import { useWalletStore } from "@/store/useWalletStore";
+import { Shield, ExternalLink, Wallet, PiggyBank } from "lucide-react";
 import { CURRENT_CHAIN } from "@/lib/contracts/contracts";
 
 export default function VaultPage() {
   const { isConnected } = useAccount();
+  const { user_balance, savings_vault, syncFromServer } = useWalletStore();
+
+  useEffect(() => {
+    syncFromServer();
+  }, [syncFromServer]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -22,12 +29,37 @@ export default function VaultPage() {
         </p>
       </div>
 
-      {/* UX Messaging */}
-      <div className="rounded-lg border border-indigo-500/10 bg-indigo-500/5 px-4 py-3">
-        <p className="text-xs text-indigo-300/70 italic">
-          &ldquo;Stored today. Available later. Discipline compounds quietly.&rdquo;
+      {/* Unified flow explanation */}
+      <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/5 px-4 py-3">
+        <p className="text-xs text-emerald-300/80">
+          Deposited USDC goes onchain and is automatically available for wagering.
+          Wins are withdrawable, and losses become protected vault locks.
         </p>
       </div>
+
+      {/* Connected state — show both wagering balance and vault */}
+      {isConnected && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Wallet className="h-3.5 w-3.5 text-emerald-400" />
+              <p className="text-xs text-gray-500">Wagering Balance</p>
+            </div>
+            <p className="text-xl font-bold text-white tabular-nums">
+              ${user_balance.toFixed(2)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <PiggyBank className="h-3.5 w-3.5 text-amber-400" />
+              <p className="text-xs text-gray-500">Savings from Losses</p>
+            </div>
+            <p className="text-xl font-bold text-amber-400 tabular-nums">
+              ${savings_vault.toFixed(2)}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Wallet Connection Card (top-level) */}
       {isConnected && <WalletInfoCard />}

@@ -76,10 +76,12 @@ export default function DepositPage() {
         </div>
       </div>
 
-      {/* Simulated deposit disclaimer */}
-      <div className="rounded-lg border border-indigo-500/10 bg-indigo-500/5 px-4 py-3">
-        <p className="text-xs text-indigo-300/70 italic">
-          Simulated deposits. No real money is involved. Elora Vault is a personal savings tool, not a sportsbook.
+      {/* Real vs simulated deposit info */}
+      <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/5 px-4 py-3">
+        <p className="text-xs text-emerald-300/80">
+          <strong>Real USDC deposits</strong> go to <a href="/vault" className="underline hover:text-emerald-200">the vault</a> and
+          are automatically credited to your wagering balance. Use the form below for
+          <strong> simulated play funds</strong> (no real money).
         </p>
       </div>
 

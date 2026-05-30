@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { useReadContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatUnits } from "viem";
 import { useVaultDeposit } from "@/lib/web3/hooks";
 import { CURRENT_CHAIN } from "@/lib/contracts/contracts";
+import { useWalletStore } from "@/store/useWalletStore";
 import {
   ArrowDownToLine,
   ExternalLink,
@@ -18,6 +19,7 @@ import {
   AlertTriangle,
   X,
   SwitchCamera,
+  Wallet,
 } from "lucide-react";
 
 // Minimal ERC20 ABI
@@ -68,6 +70,11 @@ export function VaultDepositForm({ className }: { className?: string }) {
 
   const { deposit, hash, isConfirmed, error } =
     useVaultDeposit();
+  const { syncFromServer } = useWalletStore();
+  const [creditingBalance, setCreditingBalance] = useState(false);
+  const [balanceSyncError, setBalanceSyncError] = useState<string | null>(null);
+  // Prevent infinite loop — track whether we already synced for this confirmation
+  const confirmedRef = useRef(false);
 
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<"idle" | "signing" | "confirming" | "done">("idle");
@@ -79,6 +86,7 @@ export function VaultDepositForm({ className }: { className?: string }) {
   const handleDeposit = async () => {
     if (!isValid) return;
     setStep("signing");
+    setBalanceSyncError(null);
     try {
       await deposit(parsedAmount);
       setStep("confirming");
@@ -87,12 +95,37 @@ export function VaultDepositForm({ className }: { className?: string }) {
     }
   };
 
-  // Track confirmation + invalidate
-  if (isConfirmed && step === "confirming") {
+  // Track confirmation via useEffect to avoid ref access during render
+  useEffect(() => {
+    if (!isConfirmed || step !== "confirming" || confirmedRef.current) return;
+    confirmedRef.current = true;
     setStep("done");
     setShowSuccess(true);
     queryClient.invalidateQueries({ queryKey: ["vault"] });
-  }
+
+    // Credit the wagering balance so deposited USDC is available for betting
+    (async () => {
+      setCreditingBalance(true);
+      try {
+        const res = await fetch("/api/wallet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: parsedAmount }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Failed to sync balance");
+        }
+        await syncFromServer();
+      } catch (err) {
+        setBalanceSyncError(
+          err instanceof Error ? err.message : "Failed to credit wagering balance",
+        );
+      } finally {
+        setCreditingBalance(false);
+      }
+    })();
+  }, [isConfirmed, step, confirmedRef, parsedAmount, queryClient, syncFromServer]);
 
   // Reset on error
   if (error && step !== "idle") {
@@ -284,9 +317,24 @@ export function VaultDepositForm({ className }: { className?: string }) {
               <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <p className="text-xs text-emerald-300 font-medium">
-                    ${parsedAmount.toFixed(2)} USDC deposited to vault
-                  </p>
+                  <div>
+                    <p className="text-xs text-emerald-300 font-medium">
+                      ${parsedAmount.toFixed(2)} USDC deposited to vault
+                    </p>
+                    <p className="text-[10px] text-emerald-400/70 mt-0.5">
+                      {creditingBalance ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          Crediting wagering balance...
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Wallet className="h-2.5 w-2.5" />
+                          Now available for wagering
+                        </span>
+                      )}
+                    </p>
+                  </div>
                 </div>
                 {hash && (
                   <a
@@ -298,6 +346,12 @@ export function VaultDepositForm({ className }: { className?: string }) {
                     View on {CURRENT_CHAIN.explorerUrl.replace("https://", "").replace(".org", "").replace(".com", "")}
                     <ExternalLink className="h-2.5 w-2.5" />
                   </a>
+                )}
+                {balanceSyncError && (
+                  <p className="text-[10px] text-amber-400/80 mt-1">
+                    Note: {balanceSyncError}. The onchain deposit is confirmed,
+                    your wagering balance may need a manual refresh.
+                  </p>
                 )}
               </div>
             )}
