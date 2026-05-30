@@ -45,6 +45,56 @@ forge verify-contract \
   $(cast abi-encode "constructor(address)" "0x036CbD53842c6634e7929541eC2318f3dCF7e")
 ```
 
+## Verify via Etherscan V2 API (Multichain)
+
+The Forge method above can fail due to BaseScan API rate limits or mismatched bytecode. As a fallback, use the **Etherscan V2 API** which is a unified endpoint supporting all EVM chains via `chainid` parameter:
+
+### 1. Flatten the contract
+
+```bash
+cd contracts
+forge flatten src/ProtectedVault.sol > flattened_ProtectedVault.sol
+```
+
+### 2. Verify via cURL
+
+```bash
+curl -X POST "https://api.etherscan.io/v2/api" \
+  -d "chainid=84532" \
+  -d "module=contract" \
+  -d "action=verifysourcecode" \
+  -d "contractaddresses=0x7876A2fa21BAfD40F7b61F49390d0FED556Db1fd" \
+  -d "sourceCode=$(cat flattened_ProtectedVault.sol | jq -Rs .)" \
+  -d "codeformat=solidity-single-file" \
+  -d "contractname=ProtectedVault" \
+  -d "compilerversion=v0.8.28+commit.7893614a" \
+  -d "optimizationUsed=1" \
+  -d "runs=200" \
+  -d "evmversion=cancun" \
+  -d "constructorArguements=000000000000000000000000036cbd53842c5426634e7929541ec2318f3dcf7e" \
+  -d "apikey=$ETHERSCAN_API_KEY"
+```
+
+**Key details:**
+- **Endpoint**: `https://api.etherscan.io/v2/api?chainid=84532` (one API key works across all supported chains)
+- **Compiler version**: `v0.8.28+commit.7893614a` — use the exact version from `forge --version` output
+- **Constructor arguments**: ABI-encoded address `0x036CbD53842c6634e7929541eC2318f3dCF7e` (no `0x` prefix, lowercase)
+- **Note**: The `jq -Rs .` wraps the flattened source as a JSON string literal
+
+### 3. Check verification status
+
+```bash
+curl "https://api.etherscan.io/v2/api?chainid=84532&module=contract&action=getsourcecode&address=0x7876A2fa21BAfD40F7b61F49390d0FED556Db1fd&apikey=$ETHERSCAN_API_KEY"
+```
+
+Look for `"SourceCode":"// SPDX"` in the response — if present, the contract is verified.
+
+### 4. Clean up
+
+```bash
+rm flattened_ProtectedVault.sol
+```
+
 ### What to expect
 
 - **Success**: Forge prints the explorer URL (`https://sepolia.basescan.org/address/0x7876...`) with a `✅ Contract successfully verified` message.

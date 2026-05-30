@@ -55,8 +55,11 @@ function useVaultWrite<TArgs extends unknown[]>(
     error,
   } = useWriteContract();
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({ hash, chainId: CURRENT_CHAIN.chainId });
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    data: receiptData,
+  } = useWaitForTransactionReceipt({ hash, chainId: CURRENT_CHAIN.chainId });
 
   const execute = useCallback(
     async (args: TArgs) => {
@@ -66,6 +69,7 @@ function useVaultWrite<TArgs extends unknown[]>(
         abi: VAULT_ABI,
         functionName,
         args: args as unknown[],
+        chainId: CURRENT_CHAIN.chainId,
       });
     },
     [writeContract, functionName],
@@ -77,7 +81,7 @@ function useVaultWrite<TArgs extends unknown[]>(
     queryClient.invalidateQueries({ queryKey: ["readContract"] });
   }
 
-  return { execute, hash, isPending, isConfirming, isConfirmed, error };
+  return { execute, hash, isPending, isConfirming, isConfirmed, error, receiptData };
 }
 
 /**
@@ -86,7 +90,7 @@ function useVaultWrite<TArgs extends unknown[]>(
  */
 export function useVaultDeposit() {
   const { address } = useAccount();
-  const { execute, hash, isPending, isConfirming, isConfirmed, error } =
+  const { execute, hash, isPending, isConfirming, isConfirmed, error, receiptData } =
     useVaultWrite<[bigint]>("deposit");
 
   const deposit = useCallback(
@@ -98,7 +102,7 @@ export function useVaultDeposit() {
     [address, execute],
   );
 
-  return { deposit, hash, isPending, isConfirming, isConfirmed, error };
+  return { deposit, hash, isPending, isConfirming, isConfirmed, error, receiptData };
 }
 
 /**
