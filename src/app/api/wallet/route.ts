@@ -2,6 +2,25 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * Ensure the Prisma User record exists for the given Supabase user.
+ * Called on every wallet request so new users don't get FK errors.
+ */
+async function ensureUser(supabaseUser: { id: string; email?: string | null }) {
+  try {
+    await prisma.user.upsert({
+      where: { id: supabaseUser.id },
+      update: {},
+      create: {
+        id: supabaseUser.id,
+        email: supabaseUser.email ?? `user-${supabaseUser.id.slice(0, 8)}@placeholder.elora`,
+      },
+    });
+  } catch {
+    // Silently handled — wallet creation will fail gracefully if this does.
+  }
+}
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -12,6 +31,9 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Ensure Prisma User record exists before wallet query
+    await ensureUser(user);
 
     let wallet = await prisma.wallet.findUnique({
       where: { userId: user.id },
@@ -46,6 +68,9 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Ensure Prisma User record exists before wallet operations
+    await ensureUser(user);
 
     const { amount } = await request.json();
 
