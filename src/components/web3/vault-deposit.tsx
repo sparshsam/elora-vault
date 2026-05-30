@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { useReadContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,15 @@ import { cn } from "@/lib/utils";
 import { formatUnits } from "viem";
 import { useVaultDeposit } from "@/lib/web3/hooks";
 import { CURRENT_CHAIN } from "@/lib/contracts/contracts";
-import { ArrowDownToLine, ExternalLink, CheckCircle, Loader2, AlertTriangle, X } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ExternalLink,
+  CheckCircle,
+  Loader2,
+  AlertTriangle,
+  X,
+  SwitchCamera,
+} from "lucide-react";
 
 // Minimal ERC20 ABI
 const ERC20_ABI = [
@@ -26,20 +34,38 @@ const ERC20_ABI = [
 /**
  * Vault Deposit Form.
  * User enters amount, approves USDC, and deposits into the vault.
+ * Forces reads against CURRENT_CHAIN (Base Sepolia) regardless of wallet network.
  */
 export function VaultDepositForm({ className }: { className?: string }) {
   const { address, isConnected } = useAccount();
+  const connectedChainId = useChainId();
+  const { switchChain } = useSwitchChain();
   const queryClient = useQueryClient();
-  const { data: usdcBalanceData } = useReadContract({
+
+  const EXPECTED_CHAIN_ID = CURRENT_CHAIN.chainId;
+  const isWrongNetwork = isConnected && connectedChainId !== EXPECTED_CHAIN_ID;
+
+  const {
+    data: usdcBalanceData,
+    isLoading: isBalanceLoading,
+    isError: isBalanceError,
+    error: balanceError,
+    isFetched: isBalanceFetched,
+  } = useReadContract({
     address: CURRENT_CHAIN.usdcAddress,
     abi: ERC20_ABI,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    chainId: EXPECTED_CHAIN_ID,
+    query: {
+      enabled: !!address && !isWrongNetwork,
+    },
   });
+
   const usdcFormatted = usdcBalanceData
     ? Number(formatUnits(usdcBalanceData as bigint, 6))
     : 0;
+
   const { deposit, hash, isConfirmed, error } =
     useVaultDeposit();
 
@@ -90,81 +116,140 @@ export function VaultDepositForm({ className }: { className?: string }) {
           <p className="text-xs text-gray-500">Connect your wallet to deposit.</p>
         ) : (
           <>
+            {/* ── Wrong Network Banner ── */}
+            {isWrongNetwork && (
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-red-300 font-medium">
+                      Wrong Network
+                    </p>
+                    <p className="text-[10px] text-red-400/70 mt-0.5">
+                      Switch to {CURRENT_CHAIN.name} to deposit USDC.
+                    </p>
+                    <Button
+                      onClick={() => switchChain({ chainId: EXPECTED_CHAIN_ID })}
+                      size="sm"
+                      className="mt-2 h-7 text-[10px] bg-red-600/20 text-red-300 hover:bg-red-600/30 border border-red-500/20"
+                    >
+                      <SwitchCamera className="h-3 w-3 mr-1" />
+                      Switch to {CURRENT_CHAIN.name}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* USDC Balance */}
             <div className="rounded-lg bg-white/5 p-3 border border-white/5">
               <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
                 Wallet USDC Balance
               </p>
-              <p className="text-lg font-semibold text-white tabular-nums mt-0.5">
-                {usdcFormatted.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                USDC
-              </p>
+              {isWrongNetwork ? (
+                <p className="text-sm text-red-400/70 mt-0.5">
+                  Switch network to read balance
+                </p>
+              ) : isBalanceLoading ? (
+                <div className="flex items-center gap-2 mt-0.5">
+                  <Loader2 className="h-3.5 w-3.5 text-indigo-400 animate-spin" />
+                  <span className="text-xs text-gray-500">Reading balance...</span>
+                </div>
+              ) : isBalanceError ? (
+                <div className="flex items-start gap-2 mt-0.5">
+                  <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                  <p className="text-xs text-red-400/70">
+                    Unable to read USDC balance.{" "}
+                    {balanceError?.message?.includes("rate limit")
+                      ? "Please wait and try again."
+                      : "Check your connection and RPC."}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-lg font-semibold text-white tabular-nums mt-0.5">
+                  {usdcFormatted.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  USDC
+                </p>
+              )}
             </div>
 
-            {/* Amount Input */}
-            <div>
-              <label className="text-xs font-medium text-gray-400 mb-2 block">
-                Amount to Deposit
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                  $
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  max={usdcFormatted}
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  disabled={step !== "idle"}
-                  className="w-full h-10 rounded-lg bg-white/5 border border-white/10 text-white text-base pl-7 pr-3
-                    focus:outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/20
-                    placeholder:text-gray-600 tabular-nums disabled:opacity-50"
-                />
-              </div>
-              {/* Presets */}
-              <div className="flex gap-2 mt-2">
-                {presets.map((pct, i) => (
-                  <button
-                    key={i}
-                    onClick={() =>
-                      setAmount((usdcFormatted * pct).toFixed(2))
-                    }
-                    disabled={step !== "idle"}
+            {!isWrongNetwork && (
+              <>
+                {/* Amount Input */}
+                <div>
+                  <label className="text-xs font-medium text-gray-400 mb-2 block">
+                    Amount to Deposit
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={usdcFormatted}
+                      step="0.01"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      disabled={step !== "idle"}
+                      className="w-full h-10 rounded-lg bg-white/5 border border-white/10 text-white text-base pl-7 pr-3
+                        focus:outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/20
+                        placeholder:text-gray-600 tabular-nums disabled:opacity-50"
+                    />
+                  </div>
+                  {/* Presets */}
+                  <div className="flex gap-2 mt-2">
+                    {presets.map((pct, i) => (
+                      <button
+                        key={i}
+                        onClick={() =>
+                          setAmount((usdcFormatted * pct).toFixed(2))
+                        }
+                        disabled={step !== "idle" || isBalanceLoading || isBalanceError}
+                        className={cn(
+                          "flex-1 h-7 rounded-md text-[10px] font-medium border transition-all",
+                          parsedAmount === usdcFormatted * pct
+                            ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-400"
+                            : "border-white/5 bg-white/5 text-gray-500 hover:border-white/10 hover:text-gray-400",
+                          "disabled:opacity-50",
+                        )}
+                      >
+                        {pct === 1 ? "All" : `${(pct * 100).toFixed(0)}%`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Zero-balance hint */}
+                {isBalanceFetched && usdcFormatted === 0 && (
+                  <div className="rounded-lg border border-amber-500/10 bg-amber-500/5 px-3 py-2">
+                    <p className="text-[10px] text-amber-300/80">
+                      You may need Base Sepolia test USDC to deposit.
+                    </p>
+                  </div>
+                )}
+
+                {/* Submit */}
+                {step === "idle" && (
+                  <Button
+                    onClick={handleDeposit}
+                    disabled={!isValid || isBalanceLoading || isBalanceError}
                     className={cn(
-                      "flex-1 h-7 rounded-md text-[10px] font-medium border transition-all",
-                      parsedAmount === usdcFormatted * pct
-                        ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-400"
-                        : "border-white/5 bg-white/5 text-gray-500 hover:border-white/10 hover:text-gray-400",
-                      "disabled:opacity-50",
+                      "w-full h-10 rounded-lg text-sm font-semibold transition-all",
+                      isValid
+                        ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white hover:from-indigo-500 hover:to-indigo-400"
+                        : "bg-white/5 text-gray-500 cursor-not-allowed",
                     )}
                   >
-                    {pct === 1 ? "All" : `${(pct * 100).toFixed(0)}%`}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Submit */}
-            {step === "idle" && (
-              <Button
-                onClick={handleDeposit}
-                disabled={!isValid}
-                className={cn(
-                  "w-full h-10 rounded-lg text-sm font-semibold transition-all",
-                  isValid
-                    ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white hover:from-indigo-500 hover:to-indigo-400"
-                    : "bg-white/5 text-gray-500 cursor-not-allowed",
+                    <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />
+                    Deposit to Vault
+                  </Button>
                 )}
-              >
-                <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />
-                Deposit to Vault
-              </Button>
+              </>
             )}
 
             {step === "signing" && (

@@ -6,7 +6,8 @@ import { VaultSummaryCard } from "@/components/web3/vault-summary";
 import { VaultDepositForm } from "@/components/web3/vault-deposit";
 import { VaultLockForm } from "@/components/web3/vault-lock-form";
 import { VaultLocksCard } from "@/components/web3/vault-locks";
-import { Shield } from "lucide-react";
+import { Shield, ExternalLink } from "lucide-react";
+import { CURRENT_CHAIN } from "@/lib/contracts/contracts";
 
 export default function VaultPage() {
   const { isConnected } = useAccount();
@@ -17,7 +18,7 @@ export default function VaultPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Vault</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Self-custodied protected capital on Base
+          Self-custodied protected capital on {CURRENT_CHAIN.name}
         </p>
       </div>
 
@@ -52,9 +53,18 @@ export default function VaultPage() {
           <Shield className="h-12 w-12 mb-3 opacity-20" />
           <p className="text-base font-medium">Connect your wallet</p>
           <p className="text-sm mt-1 text-center max-w-md text-gray-600">
-            Connect your Base wallet to deposit USDC, create vault locks,
-            and protect your future capital onchain.
+            Connect your wallet to {CURRENT_CHAIN.name} to deposit USDC,
+            create vault locks, and protect your future capital onchain.
           </p>
+          <a
+            href={`${CURRENT_CHAIN.explorerUrl}/address/${CURRENT_CHAIN.usdcAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[10px] text-gray-600 hover:text-gray-500 mt-3"
+          >
+            USDC on {CURRENT_CHAIN.name}{" "}
+            <ExternalLink className="h-2.5 w-2.5" />
+          </a>
         </div>
       )}
 
