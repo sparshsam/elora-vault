@@ -4,6 +4,7 @@ import { useAccount } from "wagmi";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useVaultSummary, useVaultStatus } from "@/lib/web3/hooks";
+import { CURRENT_CHAIN } from "@/lib/contracts/contracts";
 import { Shield, Lock, Unlock, PiggyBank, AlertCircle } from "lucide-react";
 
 /**
@@ -14,6 +15,15 @@ export function VaultSummaryCard({ className }: { className?: string }) {
   const { isConnected, address } = useAccount();
   const { isDeployed } = useVaultStatus();
   const summary = useVaultSummary(address);
+  const readError = summary.readError as Error | undefined;
+
+  // Guard against NaN — ensures numeric display is always valid
+  const safeNumber = (n: number) => (isNaN(n) ? 0 : n);
+  const unlockedBalance = safeNumber(summary.totalDeposited - summary.totalLocked - summary.totalWithdrawn);
+
+  // Debug: log connected state for troubleshooting
+  console.debug("[DEBUG-ELORA] VaultSummaryCard addr=%s chain=%d summary=%o error=%o",
+    address, CURRENT_CHAIN.chainId, summary, readError);
 
   if (!isConnected || !address) {
     return (
@@ -51,7 +61,12 @@ export function VaultSummaryCard({ className }: { className?: string }) {
     );
   }
 
-  const unlockedBalance = summary.totalDeposited - summary.totalLocked - summary.totalWithdrawn;
+  // unlockedBalance is already safeNumber'd above
+
+  // Show RPC read errors if present
+  if (readError) {
+    console.debug("[DEBUG-ELORA] vault summary read error:", readError);
+  }
 
   return (
     <Card

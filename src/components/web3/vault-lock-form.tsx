@@ -77,7 +77,7 @@ export function VaultLockForm({ className }: { className?: string }) {
   if (isConfirmed && step === "confirming") {
     setStep("done");
     setShowSuccess(true);
-    queryClient.invalidateQueries({ queryKey: ["vault"] });
+    queryClient.invalidateQueries({ queryKey: ["readContract"] });
   }
 
   // Reset on error

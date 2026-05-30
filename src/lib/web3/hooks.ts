@@ -194,7 +194,7 @@ export function useVaultSummary(userAddress?: `0x${string}`) {
   const { address } = useAccount();
   const addr = userAddress ?? address;
 
-  const { data, isLoading, refetch, isStale } = useReadContract({
+  const { data, isLoading, refetch, isStale, error } = useReadContract({
     address: VAULT_ADDRESS,
     abi: VAULT_ABI,
     functionName: "getVaultSummary",
@@ -209,9 +209,13 @@ export function useVaultSummary(userAddress?: `0x${string}`) {
     },
   });
 
-  const summary = data as readonly [bigint, bigint, bigint, bigint] | undefined;
+  // viem v2.x decodes named structs as objects (not arrays).
+  // VaultSummary = { totalDeposited, totalLocked, totalWithdrawn, activeLockCount }
+  const raw = data as
+    | { totalDeposited: bigint; totalLocked: bigint; totalWithdrawn: bigint; activeLockCount: bigint }
+    | undefined;
 
-  if (!summary) {
+  if (!raw) {
     return {
       totalDeposited: 0,
       totalLocked: 0,
@@ -220,17 +224,21 @@ export function useVaultSummary(userAddress?: `0x${string}`) {
       isLoading,
       refetch,
       isStale,
+      readError: error,
     };
   }
 
+  console.debug("[DEBUG-ELORA] vault summary raw:", raw);
+
   return {
-    totalDeposited: safeFormat(summary[0], 6),
-    totalLocked: safeFormat(summary[1], 6),
-    totalWithdrawn: safeFormat(summary[2], 6),
-    activeLockCount: Number(summary[3]),
+    totalDeposited: safeFormat(raw.totalDeposited, 6),
+    totalLocked: safeFormat(raw.totalLocked, 6),
+    totalWithdrawn: safeFormat(raw.totalWithdrawn, 6),
+    activeLockCount: Number(raw.activeLockCount ?? BigInt(0)),
     isLoading,
     refetch,
     isStale,
+    readError: error,
   };
 }
 
@@ -242,7 +250,7 @@ export function useVaultLocks(userAddress?: `0x${string}`) {
   const { address } = useAccount();
   const addr = userAddress ?? address;
 
-  const { data, isLoading, refetch, isStale } = useReadContract({
+  const { data, isLoading, refetch, isStale, error } = useReadContract({
     address: VAULT_ADDRESS,
     abi: VAULT_ABI,
     functionName: "getAllLocks",
@@ -257,8 +265,10 @@ export function useVaultLocks(userAddress?: `0x${string}`) {
   });
 
   if (!data) {
-    return { locks: [], isLoading, refetch, isStale };
+    return { locks: [], isLoading, refetch, isStale, readError: error };
   }
+
+  console.debug("[DEBUG-ELORA] vault locks raw:", data);
 
   const locks = (data as { amount: bigint; createdAt: bigint; unlockAt: bigint; withdrawn: boolean }[]).map(
     (lock, index) => ({
@@ -270,5 +280,5 @@ export function useVaultLocks(userAddress?: `0x${string}`) {
     }),
   );
 
-  return { locks, isLoading, refetch, isStale };
+  return { locks, isLoading, refetch, isStale, readError: error };
 }
