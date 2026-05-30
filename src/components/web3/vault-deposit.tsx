@@ -186,7 +186,7 @@ export function VaultDepositForm({ className }: { className?: string }) {
     confirmedRef.current = true;
     setStep("done");
     setShowSuccess(true);
-    queryClient.invalidateQueries({ queryKey: ["vault"] });
+    queryClient.invalidateQueries({ queryKey: ["readContract"] });
 
     (async () => {
       setCreditingBalance(true);

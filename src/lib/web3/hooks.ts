@@ -17,12 +17,6 @@ import { VAULT_ABI, CURRENT_CHAIN } from "@/lib/contracts/contracts";
 const VAULT_ADDRESS = CURRENT_CHAIN.vaultAddress;
 
 /**
- * React Query key prefix for vault-related queries.
- * Used to invalidate all vault queries after successful writes.
- */
-const VAULT_QUERY_KEY = "vault";
-
-/**
  * Hook: Check if the vault contract is deployed and usable.
  */
 export function useVaultStatus() {
@@ -56,7 +50,7 @@ function useVaultWrite<TArgs extends unknown[]>(
   } = useWriteContract();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({ hash });
+    useWaitForTransactionReceipt({ hash, chainId: CURRENT_CHAIN.chainId });
 
   const execute = useCallback(
     async (args: TArgs) => {
@@ -71,9 +65,10 @@ function useVaultWrite<TArgs extends unknown[]>(
     [writeContract, functionName],
   );
 
-  // Invalidate vault queries on successful confirmation
+  // Refresh ALL contract reads after a successful write
+  // (wagmi uses query keys like ['readContract', {...}] not ['vault', ...])
   if (isConfirmed) {
-    queryClient.invalidateQueries({ queryKey: [VAULT_QUERY_KEY] });
+    queryClient.invalidateQueries({ queryKey: ["readContract"] });
   }
 
   return { execute, hash, isPending, isConfirming, isConfirmed, error };
