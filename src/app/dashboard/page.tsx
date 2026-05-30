@@ -11,6 +11,8 @@ import { VaultTimeline } from "@/components/vault/vault-timeline";
 import { LockModal } from "@/components/vault/lock-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { WalletInfoCard } from "@/components/web3/wallet-card";
+import { ConnectWalletButton } from "@/components/web3/connect-wallet";
 import {
   TrendingUp,
   PiggyBank,
@@ -23,6 +25,7 @@ import {
   Shield,
   Lock,
   Clock,
+  Wallet,
 } from "lucide-react";
 
 interface BetSummary {
@@ -230,6 +233,18 @@ export default function DashboardPage() {
         &ldquo;Every loss becomes saved capital. The house is virtual. The discipline is real.&rdquo;
         </p>
       </div>
+
+      {/* Wallet Connection */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Wallet className="h-4 w-4 text-gray-500" />
+          <span className="text-xs text-gray-500">Base Network</span>
+        </div>
+        <ConnectWalletButton />
+      </div>
+
+      {/* Connected Wallet Card */}
+      <WalletInfoCard />
 
       {/* Four Primary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

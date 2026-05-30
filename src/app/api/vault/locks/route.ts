@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 // Auto-unlock: find expired ACTIVE locks and release them
 async function autoReleaseLocks(userId: string) {
@@ -17,7 +18,7 @@ async function autoReleaseLocks(userId: string) {
     const wallet = await prisma.wallet.findUnique({ where: { userId } });
     if (!wallet) continue;
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.wallet.update({
         where: { userId },
         data: {
@@ -148,7 +149,7 @@ export async function POST(request: Request) {
     }
 
     // Create lock and update wallet in a transaction
-    const vaultLock = await prisma.$transaction(async (tx) => {
+    const vaultLock = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const lock = await tx.vaultLock.create({
         data: {
           userId: user.id,

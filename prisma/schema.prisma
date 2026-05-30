@@ -17,6 +17,10 @@ enum TransactionType {
   WITHDRAWAL
   LOCK_CREATED
   LOCK_RELEASED
+  ONCHAIN_DEPOSIT
+  ONCHAIN_LOCK_CREATED
+  ONCHAIN_LOCK_RELEASED
+  ONCHAIN_WITHDRAWAL
 }
 
 enum BetStatus {
@@ -53,6 +57,9 @@ model Wallet {
   id                  String   @id @default(cuid())
   userId              String   @unique
   user                User     @relation(fields: [userId], references: [id])
+
+  /// Connected Base wallet address (0x-prefixed, lowercase)
+  wallet_address        String?  @unique
 
   user_balance          Float   @default(0)
   savings_vault         Float   @default(0)
@@ -106,6 +113,10 @@ model Transaction {
   vaultLockId   String?         @unique
   vaultLock     VaultLock?      @relation(fields: [vaultLockId], references: [id])
   description   String
+
+  /// Onchain transaction hash (0x-prefixed)
+  tx_hash       String?
+
   createdAt     DateTime        @default(now())
 }
 
@@ -118,5 +129,11 @@ model VaultLock {
   unlockAt    DateTime
   status      VaultLockStatus @default(ACTIVE)
   notes       String?
+
+  /// Onchain lock index in the ProtectedVault contract
+  onchain_lock_id  Int?
+  /// Onchain transaction hash
+  tx_hash          String?
+
   transaction Transaction?
 }

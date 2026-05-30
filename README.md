@@ -18,11 +18,13 @@
   <br />
 
   <div>
-    <img src="https://img.shields.io/badge/version-v0.4-indigo" alt="Version" />
+    <img src="https://img.shields.io/badge/version-v0.5-indigo" alt="Version" />
     <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License" />
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome" />
     <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js" />
     <img src="https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase" alt="Supabase" />
+    <img src="https://img.shields.io/badge/Base-0052FF?logo=base" alt="Base" />
+    <img src="https://img.shields.io/badge/Solidity-363636?logo=solidity" alt="Solidity" />
     <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript" alt="TypeScript" />
   </div>
 
@@ -170,6 +172,16 @@ The house balance has **no real-world value**. It exists purely for:
 | **Auto-Unlock** — locks release automatically on expiry | ✅ v0.4 |
 | **Lock Cards** — countdown timers with progress indicators | ✅ v0.4 |
 | **Auto-Lock Losses** — optional automatic loss protection | ✅ v0.4 |
+| _Web3 Layer (v0.5)_ | |
+| **Wallet Connection** — RainbowKit, WalletConnect, MetaMask, Coinbase Wallet | ✅ v0.5 |
+| **ProtectedVault Contract** — Solidity vault with OpenZeppelin | ✅ v0.5 |
+| **Onchain Deposits** — deposit USDC to vault contract | ✅ v0.5 |
+| **Onchain Locks** — timed vault locks enforced by smart contract | ✅ v0.5 |
+| **Lock Release & Withdrawal** — unlock + withdraw after timer expires | ✅ v0.5 |
+| **User Ownership Isolation** — each user's vault state is independent | ✅ v0.5 |
+| **Base Network** — deployed to Base mainnet / Sepolia | ✅ v0.5 |
+| **Vault Dashboard** — onchain balances, lock timeline, unlock countdowns | ✅ v0.5 |
+| **Self-Custodied** — no pooled treasury, no admin withdrawals, no rehypothecation | ✅ v0.5 |
 
 ---
 
@@ -187,6 +199,10 @@ The house balance has **no real-world value**. It exists purely for:
 | **Animations** | [Framer Motion](https://www.framer.com/motion/) |
 | **Charts** | [Recharts](https://recharts.org/) |
 | **Icons** | [Lucide](https://lucide.dev/) |
+| **Web3** | [wagmi](https://wagmi.sh/) + [viem](https://viem.sh/) + [RainbowKit](https://www.rainbowkit.com/) |
+| **Smart Contracts** | [Solidity](https://soliditylang.org/) + [Foundry](https://book.getfoundry.sh/) |
+| **Contracts Lib** | [OpenZeppelin](https://www.openzeppelin.com/contracts) |
+| **Network** | Base (mainnet + Sepolia) |
 | **Deploy** | [Vercel](https://vercel.com/) |
 
 ---
@@ -325,6 +341,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous API key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
 | `NEXT_PUBLIC_SITE_URL` | Site URL for auth redirects |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | WalletConnect project ID (get at cloud.walletconnect.com) |
+| `NEXT_PUBLIC_BASE_RPC_URL` | Base mainnet RPC URL |
+| `NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL` | Base Sepolia RPC URL |
 
 ### Useful Commands
 
@@ -335,6 +354,120 @@ npm run start        # Start production server
 npm run lint         # Run ESLint
 npx prisma generate  # Generate Prisma client
 npx prisma db push   # Push schema to database
+```
+
+---
+
+## Smart Contracts
+
+Elora Vault uses a [Foundry](https://book.getfoundry.sh/) project in `contracts/` for Solidity development.
+
+### ProtectedVault
+
+The core contract at `contracts/src/ProtectedVault.sol` is a self-custodied vault that:
+
+- **Accepts USDC deposits** (Base native USDC, 6 decimals)
+- **Creates timed locks** (min 1 day, max 365 days) with onchain enforcement
+- **Releases locks** after unlock time expires
+- **Withdraws funds** from released locks
+- **Isolates user state** — each user's vault data is independent
+- **Emits events** — `Deposited`, `LockCreated`, `LockReleased`, `Withdrawn`, `LockWithdrawn`
+
+### Security
+
+- Uses OpenZeppelin's `ReentrancyGuard` and `SafeERC20`
+- No admin-controlled withdrawals
+- No pooled treasury — user funds are isolated
+- No rehypothecation or leverage
+- Reverts on invalid operations (zero amounts, insufficient balance, unexpired locks)
+
+### Deployment
+
+```bash
+# Navigate to contracts
+cd contracts
+
+# Build
+forge build
+
+# Test (22 tests, all passing)
+forge test
+
+# ⚠️ DEPLOY TO BASE SEPOLIA FIRST for testing
+# Deploy to Base Sepolia
+forge script script/DeployProtectedVault.s.sol \
+  --rpc-url base_sepolia \
+  --private-key $PRIVATE_KEY \
+  --broadcast --verify
+
+# Verify on Sepolia BaseScan:
+# https://sepolia.basescan.org/address/<DEPLOYED_ADDRESS>
+
+# Only after Sepolia testing is complete:
+# Deploy to Base mainnet
+forge script script/DeployProtectedVault.s.sol \
+  --rpc-url base_mainnet \
+  --private-key $PRIVATE_KEY \
+  --broadcast --verify
+
+# ⚠️ NEVER deploy to mainnet before full Sepolia testing.
+```
+
+### Architecture
+
+```
+contracts/
+├── src/
+│   └── ProtectedVault.sol    → Main vault contract
+├── test/
+│   └── ProtectedVault.t.sol  → 22 tests
+├── script/
+│   └── DeployProtectedVault.s.sol → Deployment script
+├── lib/
+│   ├── forge-std/            → Foundry standard library
+│   └── openzeppelin-contracts/ → OpenZeppelin v5.6
+├── foundry.toml              → Build config (Base RPC endpoints)
+└── remappings.txt            → Solidity import remappings
+```
+
+---
+
+## Web3 Frontend
+
+The frontend integrates with Base via wagmi, viem, and RainbowKit.
+
+### Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `Web3Provider` | `src/lib/web3/providers.tsx` | Wagmi + RainbowKit provider |
+| `ConnectWalletButton` | `src/components/web3/connect-wallet.tsx` | Wallet connect/disconnect |
+| `WalletInfoCard` | `src/components/web3/wallet-card.tsx` | Connected wallet info + USDC balance |
+| `VaultSummaryCard` | `src/components/web3/vault-summary.tsx` | Onchain vault balances |
+| `VaultDepositForm` | `src/components/web3/vault-deposit.tsx` | USDC deposit to vault |
+| `VaultLockForm` | `src/components/web3/vault-lock-form.tsx` | Create onchain locks |
+| `VaultLocksCard` | `src/components/web3/vault-locks.tsx` | Active/withdrawn locks display |
+
+### Hooks
+
+| Hook | Purpose |
+|------|---------|
+| `useVaultDeposit()` | Deposit USDC to vault |
+| `useCreateLock()` | Create a timed lock |
+| `useReleaseLock()` | Release an expired lock |
+| `useWithdrawLock()` | Withdraw from a released lock |
+| `useWithdrawUnlocked()` | Withdraw all unlocked balance |
+| `useVaultSummary()` | Get vault deposit/locked/withdrawn totals |
+| `useVaultLocks()` | Get all vault locks for user |
+| `useVaultStatus()` | Check if vault is deployed |
+
+### Configuration
+
+Update `src/lib/contracts/contracts.ts` with the deployed vault address:
+
+```ts
+export const CURRENT_CHAIN = CHAIN_CONFIG.baseMainnet;
+// After deploy: update vaultAddress
 ```
 
 ---
