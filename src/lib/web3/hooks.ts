@@ -31,6 +31,7 @@ export function useVaultStatus() {
     abi: VAULT_ABI,
     functionName: "getVaultSummary",
     args: [VAULT_ADDRESS], // placeholder — will be user's address
+    chainId: CURRENT_CHAIN.chainId,
     query: {
       enabled: VAULT_ADDRESS !== "0x0000000000000000000000000000000000000000",
     },
@@ -193,6 +194,7 @@ export function useVaultSummary(userAddress?: `0x${string}`) {
     abi: VAULT_ABI,
     functionName: "getVaultSummary",
     args: addr ? [addr] : undefined,
+    chainId: CURRENT_CHAIN.chainId,
     query: {
       enabled: !!addr && VAULT_ADDRESS !== "0x0000000000000000000000000000000000000000",
       // Return stale cached data while refetching in background
@@ -240,6 +242,7 @@ export function useVaultLocks(userAddress?: `0x${string}`) {
     abi: VAULT_ABI,
     functionName: "getAllLocks",
     args: addr ? [addr] : undefined,
+    chainId: CURRENT_CHAIN.chainId,
     query: {
       enabled: !!addr && VAULT_ADDRESS !== "0x0000000000000000000000000000000000000000",
       staleTime: 30_000,
