@@ -96,34 +96,34 @@
   --color-info: #3b82f6;
 
   /* ── shadcn Compatibility Map ──────── */
-  --background: var(--color-surface);
-  --foreground: var(--color-text-primary);
-  --card: var(--color-surface);
-  --card-foreground: var(--color-text-primary);
-  --popover: var(--color-surface);
-  --popover-foreground: var(--color-text-primary);
-  --primary: var(--color-green-500);
-  --primary-foreground: var(--color-text-inverse);
-  --secondary: var(--color-surface-subtle);
-  --secondary-foreground: var(--color-text-primary);
-  --muted: var(--color-surface-subtle);
-  --muted-foreground: var(--color-text-secondary);
-  --accent: var(--color-surface-hover);
-  --accent-foreground: var(--color-text-primary);
-  --destructive: var(--color-danger);
-  --destructive-foreground: var(--color-text-inverse);
-  --border: var(--color-border);
-  --input: var(--color-border);
-  --ring: var(--color-green-400);
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-text-primary);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text-primary);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-text-primary);
+  --color-primary: var(--color-green-500);
+  --color-primary-foreground: var(--color-text-inverse);
+  --color-secondary: var(--color-surface-subtle);
+  --color-secondary-foreground: var(--color-text-primary);
+  --color-muted: var(--color-surface-subtle);
+  --color-muted-foreground: var(--color-text-secondary);
+  --color-accent: var(--color-surface-hover);
+  --color-accent-foreground: var(--color-text-primary);
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: var(--color-text-inverse);
+  --color-border: var(--color-border);
+  --color-input: var(--color-border);
+  --color-ring: var(--color-green-400);
   --radius: 0.75rem;
-  --sidebar: var(--color-surface);
-  --sidebar-foreground: var(--color-text-primary);
-  --sidebar-primary: var(--color-green-500);
-  --sidebar-primary-foreground: var(--color-text-inverse);
-  --sidebar-accent: var(--color-surface-hover);
-  --sidebar-accent-foreground: var(--color-text-primary);
-  --sidebar-border: var(--color-border);
-  --sidebar-ring: var(--color-green-400);
+  --color-sidebar: var(--color-surface);
+  --color-sidebar-foreground: var(--color-text-primary);
+  --color-sidebar-primary: var(--color-green-500);
+  --color-sidebar-primary-foreground: var(--color-text-inverse);
+  --color-sidebar-accent: var(--color-surface-hover);
+  --color-sidebar-accent-foreground: var(--color-text-primary);
+  --color-sidebar-border: var(--color-border);
+  --color-sidebar-ring: var(--color-green-400);
 }
 
 /* ── Base Layer ──────────────────────── */
