@@ -104,7 +104,7 @@ export function VaultDepositForm({ className }: { className?: string }) {
     : 0;
   const currentAllowance = allowanceData ? (allowanceData as bigint) : BigInt(0);
 
-  const { deposit, hash: depositHash, isConfirmed: isDepositConfirmed, error: depositError } = useVaultDeposit();
+  const { deposit, hash: depositHash, isConfirmed: isDepositConfirmed, error: depositError, receiptData: depositReceipt } = useVaultDeposit();
 
   // Approval write hook — explicitly chain-scoped for L2
   const { writeContract: writeApproval, data: approvalHash, error: approvalError } = useWriteContract();
@@ -180,9 +180,18 @@ export function VaultDepositForm({ className }: { className?: string }) {
     return () => clearInterval(interval);
   }, [isApprovalConfirmed, step, refetchAllowance, parsedUnits]);
 
-  // Track deposit confirmation
+  // Track deposit confirmation — only credit balance if the onchain tx succeeded
   useEffect(() => {
     if (!isDepositConfirmed || step !== "deposit_confirming" || confirmedRef.current) return;
+
+    // Verify the transaction actually succeeded (receipt status === "success")
+    // wagmi's isConfirmed can fire for reverted transactions on some versions
+    if (depositReceipt?.status !== "success") {
+      setStep("idle");
+      setBalanceSyncError("Transaction was reverted onchain — wagering balance not credited.");
+      return;
+    }
+
     confirmedRef.current = true;
     setStep("done");
     setShowSuccess(true);
@@ -209,7 +218,7 @@ export function VaultDepositForm({ className }: { className?: string }) {
         setCreditingBalance(false);
       }
     })();
-  }, [isDepositConfirmed, step, confirmedRef, parsedAmount, queryClient, syncFromServer]);
+  }, [isDepositConfirmed, step, confirmedRef, parsedAmount, queryClient, syncFromServer, depositReceipt]);
 
   // Reset on error
   const activeError = depositError || approvalError;
