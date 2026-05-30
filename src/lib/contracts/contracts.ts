@@ -24,7 +24,7 @@ export const CHAIN_CONFIG = {
   baseSepolia: {
     chainId: 84532,
     name: "Base Sepolia",
-    usdcAddress: "0x036CbD53842c6634e7929541eC2318f3dCF7e" as const,
+    usdcAddress: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as const,
     vaultAddress: "0x7876A2fa21BAfD40F7b61F49390d0FED556Db1fd" as `0x${string}`,
     explorerUrl: "https://sepolia.basescan.org",
     rpcUrl: "https://sepolia.base.org",
