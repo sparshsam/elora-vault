@@ -201,7 +201,7 @@ export function useVaultSummary(userAddress?: `0x${string}`) {
 
   const summary = data as readonly [bigint, bigint, bigint, bigint] | undefined;
 
-  if (!summary || !summary[0] || !summary[1] || !summary[2] || summary[3] === undefined) {
+  if (!summary) {
     return {
       totalDeposited: 0,
       totalLocked: 0,
@@ -214,10 +214,10 @@ export function useVaultSummary(userAddress?: `0x${string}`) {
   }
 
   return {
-    totalDeposited: Number(formatUnits(summary[0]!, 6)),
-    totalLocked: Number(formatUnits(summary[1]!, 6)),
-    totalWithdrawn: Number(formatUnits(summary[2]!, 6)),
-    activeLockCount: Number(summary[3]!),
+    totalDeposited: Number(formatUnits(summary[0], 6)),
+    totalLocked: Number(formatUnits(summary[1], 6)),
+    totalWithdrawn: Number(formatUnits(summary[2], 6)),
+    activeLockCount: Number(summary[3]),
     isLoading,
     refetch,
     isStale,
