@@ -3,51 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  PlusCircle,
-  History,
-  Settings,
-  List,
-  ArrowDownToLine,
-  Shield,
-} from "lucide-react";
+import { Shield, History, Target } from "lucide-react";
 
 const navItems = [
-  {
-    href: "/dashboard",
-    label: "Home",
-    icon: LayoutDashboard,
-  },
-  {
-    href: "/deposit",
-    label: "Deposit",
-    icon: ArrowDownToLine,
-  },
-  {
-    href: "/bets/new",
-    label: "Bet",
-    icon: PlusCircle,
-  },
-  {
-    href: "/bets/open",
-    label: "Open",
-    icon: List,
-  },
   {
     href: "/vault",
     label: "Vault",
     icon: Shield,
   },
   {
-    href: "/history",
-    label: "History",
+    href: "/activity",
+    label: "Activity",
     icon: History,
   },
   {
-    href: "/settings",
-    label: "Settings",
-    icon: Settings,
+    href: "/intent",
+    label: "Intent",
+    icon: Target,
   },
 ];
 
@@ -55,22 +27,20 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#0a0a0f]/95 backdrop-blur-xl">
-      <div className="flex items-center justify-around py-2">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-xl safe-area-bottom">
+      <div className="flex items-center justify-around py-1.5">
         {navItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors",
+                "flex flex-col items-center gap-0.5 px-4 py-2 rounded-lg transition-colors min-h-0",
                 isActive
-                  ? "text-indigo-400"
-                  : "text-gray-500 hover:text-gray-300",
+                  ? "text-green-600"
+                  : "text-text-tertiary hover:text-text-secondary",
               )}
             >
               <item.icon className="h-5 w-5" />
