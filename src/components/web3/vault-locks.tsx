@@ -124,7 +124,7 @@ export function VaultLocksCard({ className }: { className?: string }) {
         ...prev,
         [targetId]: { step: "done", hash: hash as `0x${string}` | undefined },
       }));
-      queryClient.invalidateQueries({ queryKey: ["vault"] });
+      queryClient.invalidateQueries({ queryKey: ["readContract"] });
     }
   }
 
