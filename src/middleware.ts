@@ -30,7 +30,10 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protected routes
-  const protectedPaths = ["/dashboard", "/bets", "/history", "/settings", "/deposit", "/transactions"];
+  const protectedPaths = [
+    "/dashboard", "/bets", "/history", "/settings", "/deposit", "/transactions",
+    "/vault", "/activity", "/intent",
+  ];
   const isProtected = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path),
   );
@@ -44,7 +47,7 @@ export async function middleware(request: NextRequest) {
   // If logged in and visiting auth pages, redirect to dashboard
   if (user && request.nextUrl.pathname.startsWith("/auth")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/vault";
     return NextResponse.redirect(url);
   }
 
