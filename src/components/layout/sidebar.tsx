@@ -12,9 +12,11 @@ import {
   List,
   ArrowDownToLine,
   Wallet,
+  Shield,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { ConnectWalletButton } from "@/components/web3/connect-wallet";
 
 const navItems = [
   {
@@ -36,6 +38,11 @@ const navItems = [
     href: "/bets/open",
     label: "Open Bets",
     icon: List,
+  },
+  {
+    href: "/vault",
+    label: "Vault",
+    icon: Shield,
   },
   {
     href: "/history",
@@ -95,6 +102,11 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
+
+      {/* Connect Wallet */}
+      <div className="px-3 py-3 border-t border-white/5">
+        <ConnectWalletButton className="w-full justify-center" />
+      </div>
 
       {/* Footer */}
       <div className="px-4 py-3 border-t border-white/5">

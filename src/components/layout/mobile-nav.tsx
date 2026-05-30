@@ -10,6 +10,7 @@ import {
   Settings,
   List,
   ArrowDownToLine,
+  Shield,
 } from "lucide-react";
 
 const navItems = [
@@ -32,6 +33,11 @@ const navItems = [
     href: "/bets/open",
     label: "Open",
     icon: List,
+  },
+  {
+    href: "/vault",
+    label: "Vault",
+    icon: Shield,
   },
   {
     href: "/history",
