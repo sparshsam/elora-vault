@@ -473,7 +473,7 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
             <TrendingUp className="h-6 w-6 text-green-600" />
           </div>
           <p className="text-sm font-medium text-text-primary">Bet logged successfully.</p>
-          <p className="text-small text-text-tertiary mt-2">${formatUSD(numericStake)} at risk. Good luck.</p>
+          <p className="text-small text-text-tertiary mt-2">${formatUSD(numericStake)} committed. Good luck.</p>
           <button type="button" onClick={handleClose}
             className="mt-6 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors">
             Done
@@ -752,7 +752,7 @@ export default function SessionsPage() {
             <div>
               <h1 className="text-display text-text-primary">Sessions</h1>
               <p className="text-body text-text-secondary mt-1">
-                Track bets, manage at-risk capital, and settle results.
+                Track bets, manage committed capital, and settle results.
               </p>
             </div>
             <button
@@ -768,7 +768,7 @@ export default function SessionsPage() {
 
         {/* ── Summary Cards ── */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-          <SummaryCard label="At Risk" value={`$${formatUSD(summary.atRisk)}`} subtext="Capital in open bets" iconKey="atRisk" />
+          <SummaryCard label="Committed" value={`$${formatUSD(summary.atRisk)}`} subtext="Capital in open bets" iconKey="atRisk" />
           <SummaryCard label="Open Bets" value={String(summary.openCount)} subtext="Awaiting settlement" iconKey="open" />
           <SummaryCard label="Potential Return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If all open bets win" iconKey="potential" />
           <SummaryCard
