@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Clock, ExternalLink } from "lucide-react";
+import { Clock, ExternalLink, Shield } from "lucide-react";
 
 interface LockItem {
   id: string;
@@ -20,13 +20,14 @@ function LockCard({ lock }: { lock: LockItem }) {
     <div className="rounded-lg border border-green-200 bg-surface shadow-sm p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
         <span className="text-lg font-semibold text-green-700">${lock.amount}</span>
-        <span className="text-tiny font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-tiny font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+          <Shield className="h-3 w-3" />
           Protected
         </span>
       </div>
       <div className="flex items-center gap-1.5 text-tiny text-text-secondary mb-3">
         <Clock className="h-3 w-3" />
-        <span>Releases {lock.releaseDate}</span>
+        <span>Horizon ends {lock.releaseDate}</span>
       </div>
       <div className="h-1.5 rounded-full bg-green-200 overflow-hidden">
         <div
@@ -53,7 +54,7 @@ export function ProtectedCapitalPanel({ locks, className }: ProtectedCapitalPane
   if (locks.length === 0) {
     return (
       <div className={cn("rounded-xl border border-dashed border-border p-8 text-center", className)}>
-        <p className="text-body text-text-tertiary">No capital is locked right now.</p>
+        <p className="text-body text-text-tertiary">No active horizons.</p>
       </div>
     );
   }

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, createElement } from "react";
 import type { ComponentType } from "react";
+import { useCapitalState } from "@/lib/capital-state";
 import { PageShell } from "@/components/layout/page-shell";
 import {
   ArrowDownToLine,
@@ -55,17 +56,18 @@ const SUMMARY_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   protected: Lock,
   locks: RefreshCw,
   released: CheckCircle,
-  movement: History,
+  activity: History,
 };
 
 const SUMMARY_COLORS: Record<string, string> = {
   protected: "text-green-700 bg-green-100 border-green-200",
   locks: "text-green-600 bg-green-50 border-green-200",
   released: "text-green-600 bg-green-100 border-green-200",
-  movement: "text-text-secondary bg-surface-subtle border-border",
+  activity: "text-text-secondary bg-surface-subtle border-border",
 };
 
 /* ── Mock Data ─────────────────────────────── */
+/* Updated microcopy: betting-origin references are subtle, mature, restrained. */
 
 const MOCK_EVENTS: ActivityEvent[] = [
   {
@@ -75,7 +77,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-28T14:30:00Z",
     status: "complete",
-    description: "Deposit from connected wallet.",
+    description: "Bankroll allocation deposited.",
     txHash: "0xabcd...ef01",
   },
   {
@@ -85,7 +87,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-28T14:35:00Z",
     status: "complete",
-    description: "Capital protected for 30 days.",
+    description: "Session gains protected for 30 days.",
     txHash: "0xabcd...ef02",
   },
   {
@@ -95,7 +97,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-29T09:15:00Z",
     status: "complete",
-    description: "Deposit from connected wallet.",
+    description: "Bankroll allocation deposited.",
     txHash: "0xabcd...ef03",
   },
   {
@@ -105,7 +107,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-29T09:20:00Z",
     status: "complete",
-    description: "Capital protected for 7 days.",
+    description: "Session balance moved into protection.",
     txHash: "0xabcd...ef04",
   },
   {
@@ -115,7 +117,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-30T14:35:00Z",
     status: "complete",
-    description: "30-day protection period ended. Funds available.",
+    description: "30-day horizon ended. Capital returning to available balance.",
     txHash: "0xabcd...ef05",
   },
   {
@@ -125,7 +127,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-31T06:00:00Z",
     status: "complete",
-    description: "Withdrawn to connected wallet.",
+    description: "Capital returned to connected wallet.",
     txHash: "0xabcd...ef06",
   },
   {
@@ -135,7 +137,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-31T12:00:00Z",
     status: "complete",
-    description: "Deposit from connected wallet.",
+    description: "Bankroll allocation deposited.",
     txHash: "0xabcd...ef07",
   },
   {
@@ -145,7 +147,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-31T12:05:00Z",
     status: "pending",
-    description: "Protecting capital for 90 days.",
+    description: "Capital preserved — 90-day horizon requested.",
   },
   {
     id: "evt-09",
@@ -154,7 +156,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-31T12:10:00Z",
     status: "pending",
-    description: "Lock transaction submitted. Confirming...",
+    description: "Onchain transaction submitted. Confirming...",
   },
   {
     id: "evt-10",
@@ -163,7 +165,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
     asset: "USDC",
     occurredAt: "2026-05-31T10:30:00Z",
     status: "failed",
-    description: "Lock creation failed. Insufficient balance.",
+    description: "Protection failed. Insufficient balance.",
   },
 ];
 
@@ -172,7 +174,7 @@ const MOCK_EVENTS: ActivityEvent[] = [
 const FILTERS: { key: FilterType; label: string }[] = [
   { key: "all", label: "All" },
   { key: "deposit", label: "Deposits" },
-  { key: "lock", label: "Locks" },
+  { key: "lock", label: "Protections" },
   { key: "release", label: "Releases" },
   { key: "withdrawal", label: "Withdrawals" },
 ];
@@ -218,7 +220,7 @@ interface SummaryCardProps {
 
 function SummaryCard({ label, value, subtext, iconType }: SummaryCardProps) {
   const Icon = SUMMARY_ICONS[iconType] || History;
-  const colorClass = SUMMARY_COLORS[iconType] || SUMMARY_COLORS.movement;
+  const colorClass = SUMMARY_COLORS[iconType] || SUMMARY_COLORS.activity;
   return (
     <div className="rounded-xl border border-border bg-surface shadow-sm p-4 md:p-5 transition-all duration-200 hover:shadow-md">
       <div className="flex items-center justify-between mb-3">
@@ -295,7 +297,9 @@ function TimelineItem({ event, isLast }: TimelineItemProps) {
                     ? "Withdrawal"
                     : event.type === "deposit"
                       ? "Deposit"
-                      : event.type}
+                      : event.type === "lock"
+                        ? "Protected"
+                        : event.type}
               </span>
               {statusLabel && (
                 <span
@@ -368,7 +372,7 @@ function EmptyState() {
           No movement yet.
         </p>
         <p className="text-small text-text-tertiary mt-2 max-w-xs">
-          Your activity will appear here once funds are deposited, protected,
+          Your activity will appear here once capital is deposited, protected,
           released, or withdrawn.
         </p>
       </div>
@@ -379,6 +383,7 @@ function EmptyState() {
 /* ── Page ──────────────────────────────────── */
 
 export default function ActivityPage() {
+  const capital = useCapitalState();
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [now, setNow] = useState(() => Date.now());
 
@@ -391,14 +396,12 @@ export default function ActivityPage() {
     return MOCK_EVENTS.filter((e) => e.type === activeFilter);
   }, [activeFilter]);
 
+  // ── Summary derived from SHARED capital state + mock history ──
   const summary = useMemo(() => {
     const completed = MOCK_EVENTS.filter((e) => e.status === "complete");
     const totalProtected = completed
       .filter((e) => e.type === "lock")
       .reduce((sum, e) => sum + parseFloat(e.amount), 0);
-    const activeLocks = MOCK_EVENTS.filter(
-      (e) => e.type === "lock" && e.status !== "complete",
-    ).length;
     const releasedFunds = completed
       .filter((e) => e.type === "release")
       .reduce((sum, e) => sum + parseFloat(e.amount), 0);
@@ -412,14 +415,14 @@ export default function ActivityPage() {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }),
-      activeLocks,
+      activeLocks: capital.activeHorizonCount,
       releasedFunds: releasedFunds.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }),
       recentMovement,
     };
-  }, [now]);
+  }, [now, capital.activeHorizonCount]);
 
   return (
     <PageShell>
@@ -428,35 +431,35 @@ export default function ActivityPage() {
         <div className="mb-8">
           <h1 className="text-display text-text-primary">Activity</h1>
           <p className="text-body text-text-secondary mt-1">
-            A quiet record of how your capital moves, locks, and returns.
+            A quiet record of how your capital moves, protects, and returns.
           </p>
         </div>
 
         {/* ── Summary Cards ── */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <SummaryCard
-            label="Total Protected"
-            value={`$${summary.totalProtected}`}
-            subtext="Lifetime capital protected"
+            label="Protected"
+            value={`$${capital.formatted.protected}`}
+            subtext="Currently in protection"
             iconType="protected"
           />
           <SummaryCard
-            label="Active Locks"
-            value={String(summary.activeLocks)}
-            subtext="Currently in protection"
+            label={`Active Horizon${capital.activeHorizonCount === 1 ? '' : 's'}`}
+            value={String(capital.activeHorizonCount)}
+            subtext="Protection periods active"
             iconType="locks"
           />
           <SummaryCard
-            label="Released Funds"
+            label="Released"
             value={`$${summary.releasedFunds}`}
-            subtext="Protection periods ended"
+            subtext="Horizons completed"
             iconType="released"
           />
           <SummaryCard
-            label="Recent Movement"
+            label="Activity"
             value={String(summary.recentMovement)}
             subtext="Events this week"
-            iconType="movement"
+            iconType="activity"
           />
         </div>
 

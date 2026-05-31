@@ -26,7 +26,7 @@ export function VaultSkeleton() {
         <div className="h-4 w-28 bg-green-100 rounded mt-4" />
       </div>
 
-      {/* In Motion skeleton */}
+      {/* Releasing skeleton */}
       <div className="rounded-xl border border-border bg-surface p-6 md:p-8">
         <div className="h-4 w-20 bg-surface-hover rounded-full mb-4" />
         <div className="h-10 w-36 bg-surface-hover rounded-lg" />
