@@ -3,14 +3,18 @@
 import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { useWalletStore } from "@/store/useWalletStore";
-import { useVaultSummary, useVaultLocks } from "@/lib/web3/hooks";
+import {
+  useVaultSummary,
+  useVaultLocks,
+} from "@/lib/web3/hooks";
+import {
+  useUSDCBalance,
+} from "@/lib/web3/tx-hooks";
 
 /* ── Types ────────────────────────────────────────────── */
 
-/** Canonical capital states — these are the ONLY terms used everywhere. */
 export type CapitalState = "available" | "protected" | "releasing" | "activity" | "intent" | "horizon";
 
-/** A protection period boundary for capital. */
 export interface HorizonInfo {
   id: string;
   amount: number;
@@ -18,13 +22,13 @@ export interface HorizonInfo {
   createdAt: number;
   unlockAt: number;
   durationDays: number;
-  progress: number;           // 0-100
+  progress: number;
   withdrawn: boolean;
   released: boolean;
+  canRelease: boolean;
   releaseDate: string;
 }
 
-/** The mathematical breakdown of a user's capital. */
 export interface CapitalBalances {
   available: number;
   protected: number;
@@ -32,7 +36,6 @@ export interface CapitalBalances {
   total: number;
 }
 
-/** Formatted string versions (for display). */
 export interface CapitalBalancesFormatted {
   available: string;
   protected: string;
@@ -40,7 +43,6 @@ export interface CapitalBalancesFormatted {
   total: string;
 }
 
-/** High-level summary derived from capital state. */
 export interface CapitalSummary {
   balances: CapitalBalances;
   formatted: CapitalBalancesFormatted;
@@ -82,6 +84,11 @@ function formatReleaseDate(unlockAt: number): string {
  *
  * THE canonical hook for ALL capital state across the application.
  *
+ * Derives balances from:
+ *   1. Connected wallet USDC balance (available)
+ *   2. ProtectedVault contract reads (protected, releasing)
+ *   3. Wallet store fallback (when contract data unavailable)
+ *
  * Every page reads from this single source of truth.
  * Balances are mathematically coherent: total = available + protected + releasing.
  */
@@ -90,22 +97,34 @@ export function useCapitalState(): CapitalSummary {
   const walletStore = useWalletStore();
   const vaultSummary = useVaultSummary(address);
   const vaultLocks = useVaultLocks(address);
+  const usdcBalance = useUSDCBalance();
 
   const isLoading = walletStore.isLoading || (isConnected && vaultSummary.isLoading);
 
-  // Capture a reference timestamp once (lazy initializer — not called on re-render)
-  const [now] = useState(() => Date.now());
-
   // ── Derive the three canonical balances ──
   const balances: CapitalBalances = useMemo(() => {
-    const available = walletStore.user_balance ?? 0;
+    // Available: USDC in wallet (from token contract) | fallback: backend user_balance
+    const available = isConnected ? usdcBalance.balance : (walletStore.user_balance ?? 0);
+
+    // Protected: onchain locked vault balance | fallback: backend locked_vault_balance
     const protected_ =
-      walletStore.locked_vault_balance > 0
-        ? walletStore.locked_vault_balance
-        : vaultSummary.totalLocked > 0
-          ? vaultSummary.totalLocked
+      vaultSummary.totalLocked > 0
+        ? vaultSummary.totalLocked
+        : walletStore.locked_vault_balance > 0
+          ? walletStore.locked_vault_balance
           : 0;
-    const releasing = walletStore.savings_vault ?? 0;
+
+    // Releasing: released vault balance (totalDeposited - totalLocked - totalWithdrawn)
+    // represents unlocked capital sitting in the vault ready to be withdrawn.
+    const releasedVault =
+      vaultSummary.totalDeposited > 0
+        ? Math.max(0, vaultSummary.totalDeposited - vaultSummary.totalLocked - vaultSummary.totalWithdrawn)
+        : 0;
+
+    // Also include expired-but-unwithdrawn locks
+    const releasing = releasedVault > 0
+      ? releasedVault
+      : (walletStore.savings_vault ?? 0);
 
     return {
       available,
@@ -114,10 +133,14 @@ export function useCapitalState(): CapitalSummary {
       total: available + protected_ + releasing,
     };
   }, [
+    isConnected,
+    usdcBalance.balance,
     walletStore.user_balance,
     walletStore.locked_vault_balance,
     walletStore.savings_vault,
     vaultSummary.totalLocked,
+    vaultSummary.totalDeposited,
+    vaultSummary.totalWithdrawn,
   ]);
 
   const formatted: CapitalBalancesFormatted = useMemo(
@@ -131,6 +154,7 @@ export function useCapitalState(): CapitalSummary {
   );
 
   // ── Active horizon info ──
+  const [now] = useState(() => Date.now());
 
   const activeHorizons: HorizonInfo[] = useMemo(() => {
     if (!vaultLocks.locks || vaultLocks.locks.length === 0) return [];
@@ -141,6 +165,8 @@ export function useCapitalState(): CapitalSummary {
         const durationMs = lock.unlockAt - lock.createdAt;
         const durationDays = Math.round(durationMs / 86400000);
         const progress = computeHorizonProgress(lock.createdAt, lock.unlockAt, now);
+        const isReleased = lock.unlockAt <= now;
+
         return {
           id: String(lock.id),
           amount: lock.amount,
@@ -150,7 +176,8 @@ export function useCapitalState(): CapitalSummary {
           durationDays,
           progress,
           withdrawn: lock.withdrawn,
-          released: progress >= 100,
+          released: isReleased,
+          canRelease: isReleased,
           releaseDate: formatReleaseDate(lock.unlockAt),
         };
       });
@@ -163,7 +190,7 @@ export function useCapitalState(): CapitalSummary {
   );
 
   const pendingReleaseCount = useMemo(
-    () => activeHorizons.filter((h) => h.released && !h.withdrawn).length,
+    () => activeHorizons.filter((h) => h.canRelease).length,
     [activeHorizons],
   );
 
