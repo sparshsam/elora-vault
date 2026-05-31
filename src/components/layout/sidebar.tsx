@@ -37,61 +37,76 @@ export function Sidebar() {
     router.refresh();
   };
 
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + "/");
+
   return (
     <aside className="hidden md:flex flex-col w-56 border-r border-border bg-surface min-h-screen">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-6 py-6 border-b border-border">
-        <div className="h-8 w-8 rounded-xl bg-green-500 flex items-center justify-center">
-          <Shield className="h-4 w-4 text-white" />
+      {/* Logo — quieter, more architectural */}
+      <div className="flex items-center gap-2.5 px-6 pt-8 pb-6">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-200 bg-green-50">
+          <Shield className="h-4 w-4 text-green-700" />
         </div>
-        <span className="text-lg font-semibold text-text-primary">Elora</span>
+        <span className="text-base font-semibold tracking-tight text-text-primary">
+          Elora
+        </span>
       </div>
 
-      {/* Primary Nav */}
-      <nav className="flex-1 px-3 py-6 space-y-1">
+      {/* Primary Nav — more breathing between items */}
+      <nav className="flex-1 px-4 py-2 space-y-1.5">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const active = isActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                isActive
+                active
                   ? "bg-green-50 text-green-700 border border-green-200"
                   : "text-text-secondary hover:text-text-primary hover:bg-surface-hover",
               )}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon
+                className={cn(
+                  "h-4 w-4",
+                  active ? "text-green-600" : "text-text-tertiary",
+                )}
+              />
               {item.label}
             </Link>
           );
         })}
       </nav>
 
-      {/* Settings */}
-      <div className="px-3 pb-3">
+      {/* Bottom utility zone */}
+      <div className="px-4 pb-3 space-y-1">
         <Link
           href="/settings"
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-            pathname === "/settings"
+            isActive("/settings")
               ? "bg-green-50 text-green-700 border border-green-200"
               : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover",
           )}
         >
-          <Settings className="h-4 w-4" />
+          <Settings
+            className={cn(
+              "h-4 w-4",
+              isActive("/settings") ? "text-green-600" : "text-text-tertiary",
+            )}
+          />
           Settings
         </Link>
       </div>
 
-      {/* Wallet Pill */}
-      <div className="px-3 py-3 border-t border-border">
+      {/* Wallet area */}
+      <div className="px-4 py-4 border-t border-border">
         <WalletPill />
       </div>
 
       {/* Sign out */}
-      <div className="px-3 py-3 border-t border-border">
+      <div className="px-4 pb-6">
         <button
           onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-tertiary hover:text-danger hover:bg-danger/10 transition-all duration-200"
