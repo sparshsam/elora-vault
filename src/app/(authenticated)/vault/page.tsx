@@ -57,7 +57,7 @@ export default function VaultPage() {
 
   const hasHorizons = capital.activeHorizonCount > 0;
   const hasReleasing = capital.balances.releasing > 0;
-  const hasCommitted = capital.balances.atRisk > 0;
+  const hasCommitted = capital.balances.committed > 0;
 
   return (
     <PageShell>
@@ -244,9 +244,9 @@ export default function VaultPage() {
             {/* ── ④ COMMITTED ── */}
             {hasCommitted && (
               <VaultStateCard
-                state="at-risk"
+                state="committed"
                 label="Committed"
-                amount={capital.formatted.atRisk}
+                amount={capital.formatted.committed}
                 description="Capital allocated to open bets."
               >
                 <Link

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAccount } from "wagmi";
 import { cn } from "@/lib/utils";
+import { useWalletStore } from "@/store/useWalletStore";
 import { CapitalModal } from "./capital-modal";
 import {
   useUSDCAllowance,
@@ -184,12 +185,14 @@ export function DepositModal({ open, onClose }: DepositModalProps) {
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<"input" | "approve" | "pending" | "success" | "error">("input");
   const [errorMsg, setErrorMsg] = useState("");
+  const loggedDepositHash = useRef<`0x${string}` | undefined>(undefined);
 
   // Real hooks
   const { allowance, refetch: refetchAllowance } = useUSDCAllowance();
   const approve = useUSDCApprove();
   const deposit = useVaultDeposit();
   const { balance } = useUSDCBalance();
+  const { syncFromServer } = useWalletStore();
 
   const numericAmount = parseFloat(amount || "0");
   const needsApproval = numericAmount > allowance && allowance >= 0;
@@ -214,6 +217,26 @@ export function DepositModal({ open, onClose }: DepositModalProps) {
       setStep("error");
     }
   }, [deposit.isConfirmed, deposit.error, step, refetchAllowance]);
+
+  useEffect(() => {
+    if (!deposit.isConfirmed || !deposit.hash || loggedDepositHash.current === deposit.hash) return;
+    loggedDepositHash.current = deposit.hash;
+
+    (async () => {
+      await fetch("/api/onchain/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "ONCHAIN_DEPOSIT",
+          amount: numericAmount,
+          txHash: deposit.hash,
+        }),
+      });
+      await syncFromServer();
+    })().catch(() => {
+      loggedDepositHash.current = undefined;
+    });
+  }, [deposit.hash, deposit.isConfirmed, numericAmount, syncFromServer]);
 
   // Track approval tx state
   useEffect(() => {
@@ -511,8 +534,10 @@ export function ProtectCapitalModal({
   const [step, setStep] = useState<"input" | "pending" | "success" | "error">("input");
   const [errorMsg, setErrorMsg] = useState("");
   const [now] = useState(() => Date.now());
+  const loggedLockHash = useRef<`0x${string}` | undefined>(undefined);
 
   const createLock = useCreateLock();
+  const { syncFromServer } = useWalletStore();
 
   const numericAmount = parseFloat(amount || "0");
   const isValid = numericAmount > 0 && numericAmount <= maxAmount && horizon !== null;
@@ -536,6 +561,27 @@ export function ProtectCapitalModal({
       setStep("error");
     }
   }, [createLock.isConfirmed, createLock.error, step]);
+
+  useEffect(() => {
+    if (!createLock.isConfirmed || !createLock.hash || loggedLockHash.current === createLock.hash || horizon === null) return;
+    loggedLockHash.current = createLock.hash;
+
+    (async () => {
+      await fetch("/api/onchain/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "ONCHAIN_LOCK_CREATED",
+          amount: numericAmount,
+          txHash: createLock.hash,
+          unlockAt: new Date(now + horizon * 86400000).toISOString(),
+        }),
+      });
+      await syncFromServer();
+    })().catch(() => {
+      loggedLockHash.current = undefined;
+    });
+  }, [createLock.hash, createLock.isConfirmed, horizon, now, numericAmount, syncFromServer]);
 
   const handleConfirm = useCallback(() => {
     if (!isValid || horizon === null) return;

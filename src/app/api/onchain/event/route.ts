@@ -79,17 +79,45 @@ export async function POST(request: Request) {
         break;
     }
 
-    // If it's a lock creation, also create the vault lock record
-    if (type === "ONCHAIN_LOCK_CREATED" && lockId !== undefined && unlockAt) {
+    if (type === "ONCHAIN_DEPOSIT") {
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        // Create the transaction
+        const updatedWallet = await tx.wallet.update({
+          where: { userId: user.id },
+          data: {
+            available_vault_balance: { increment: amount },
+            total_deposited: { increment: amount },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            userId: user.id,
+            type: "ONCHAIN_DEPOSIT",
+            amount,
+            balanceBefore: wallet.available_vault_balance,
+            balanceAfter: updatedWallet.available_vault_balance,
+            description,
+            tx_hash: txHash,
+          },
+        });
+      });
+    } else if (type === "ONCHAIN_LOCK_CREATED" && unlockAt) {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const updatedWallet = await tx.wallet.update({
+          where: { userId: user.id },
+          data: {
+            available_vault_balance: { decrement: amount },
+            locked_vault_balance: { increment: amount },
+          },
+        });
+
         await tx.transaction.create({
           data: {
             userId: user.id,
             type: "ONCHAIN_LOCK_CREATED",
             amount,
-            balanceBefore: wallet.user_balance,
-            balanceAfter: wallet.user_balance,
+            balanceBefore: wallet.available_vault_balance,
+            balanceAfter: updatedWallet.available_vault_balance,
             description,
             tx_hash: txHash,
           },
@@ -111,13 +139,21 @@ export async function POST(request: Request) {
     } else if (type === "ONCHAIN_LOCK_RELEASED" && lockId !== undefined) {
       // Find the vault lock by onchain_lock_id and mark as unlocked
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const updatedWallet = await tx.wallet.update({
+          where: { userId: user.id },
+          data: {
+            locked_vault_balance: { decrement: amount },
+            available_vault_balance: { increment: amount },
+          },
+        });
+
         await tx.transaction.create({
           data: {
             userId: user.id,
             type: "ONCHAIN_LOCK_RELEASED",
             amount,
-            balanceBefore: wallet.user_balance,
-            balanceAfter: wallet.user_balance,
+            balanceBefore: wallet.available_vault_balance,
+            balanceAfter: updatedWallet.available_vault_balance,
             description,
             tx_hash: txHash,
           },
@@ -140,21 +176,25 @@ export async function POST(request: Request) {
         }
       });
     } else {
-      // Simple transaction log
-      await prisma.transaction.create({
-        data: {
-          userId: user.id,
-          type: type as
-            | "ONCHAIN_DEPOSIT"
-            | "ONCHAIN_LOCK_CREATED"
-            | "ONCHAIN_LOCK_RELEASED"
-            | "ONCHAIN_WITHDRAWAL",
-          amount,
-          balanceBefore: wallet.user_balance,
-          balanceAfter: wallet.user_balance,
-          description,
-          tx_hash: txHash,
-        },
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const updatedWallet = await tx.wallet.update({
+          where: { userId: user.id },
+          data: {
+            available_vault_balance: { decrement: amount },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            userId: user.id,
+            type: "ONCHAIN_WITHDRAWAL",
+            amount,
+            balanceBefore: wallet.available_vault_balance,
+            balanceAfter: updatedWallet.available_vault_balance,
+            description,
+            tx_hash: txHash,
+          },
+        });
       });
     }
 

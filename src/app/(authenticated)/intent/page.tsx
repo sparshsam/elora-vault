@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useCapitalState } from "@/lib/capital-state";
 import { useReleaseLock } from "@/lib/web3/tx-hooks";
+import { useWalletStore } from "@/store/useWalletStore";
 import { PageShell } from "@/components/layout/page-shell";
 import {
   Lock,
@@ -237,6 +238,8 @@ function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, on
 export default function IntentPage() {
   const capital = useCapitalState();
   const releaseLock = useReleaseLock();
+  const { syncFromServer } = useWalletStore();
+  const loggedReleaseHash = useRef<`0x${string}` | undefined>(undefined);
 
   // ── Release confirmation state ──
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -264,6 +267,30 @@ export default function IntentPage() {
     if (isReleasing && releaseLock.isConfirmed) { setIsReleasing(null); setConfirmOpen(false); }
     if (isReleasing && releaseLock.error) { setIsReleasing(null); }
   }, [isReleasing, releaseLock.isConfirmed, releaseLock.error]);
+
+  useEffect(() => {
+    if (!isReleasing || !releaseLock.isConfirmed || !releaseLock.hash || loggedReleaseHash.current === releaseLock.hash) return;
+
+    const horizon = capital.activeHorizons.find((h) => h.id === isReleasing);
+    if (!horizon) return;
+
+    loggedReleaseHash.current = releaseLock.hash;
+    (async () => {
+      await fetch("/api/onchain/event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "ONCHAIN_LOCK_RELEASED",
+          amount: horizon.amount,
+          txHash: releaseLock.hash,
+          lockId: parseInt(isReleasing, 10),
+        }),
+      });
+      await syncFromServer();
+    })().catch(() => {
+      loggedReleaseHash.current = undefined;
+    });
+  }, [capital.activeHorizons, isReleasing, releaseLock.hash, releaseLock.isConfirmed, syncFromServer]);
 
   // Load recent won bets
   useEffect(() => {
