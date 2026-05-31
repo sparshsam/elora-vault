@@ -146,13 +146,13 @@ function TimelineItem({ event, isLast }: TimelineItemProps) {
             <div className="flex items-center gap-2">
               <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-tiny font-medium capitalize", colorClass)}>
                 {event.type === "bet-placed"
-                  ? "Bet logged"
+                  ? "Prediction logged"
                   : event.type === "bet-won"
-                    ? "Bet won"
+                    ? "Prediction won"
                     : event.type === "bet-lost"
-                      ? "Bet lost"
+                      ? "Prediction lost"
                       : event.type === "bet-pushed"
-                        ? "Bet pushed"
+                        ? "Prediction pushed"
                         : event.type === "release"
                           ? "Released"
                           : event.type === "withdrawal"
@@ -227,10 +227,16 @@ function txToEvent(tx: Record<string, unknown>): ActivityEvent | null {
 
   // Fallback descriptions for bet-related events
   if (!description) {
+
     if (txType === "BET_PLACED") description = "Bet logged. Stake moved to Committed.";
     else if (txType === "WIN_PROFIT") description = "Bet won. Return added to Available.";
     else if (txType === "LOSS_TO_SAVINGS") description = "Bet lost. Stake removed from active capital.";
     else if (txType === "PUSH_RETURN") description = "Bet pushed. Stake returned to Available.";
+
+    if (txType === "BET_PLACED") description = "Prediction logged. Capital moved into Committed.";
+    else if (txType === "WIN_PROFIT") description = "Prediction settled. Return added to Available.";
+    else if (txType === "LOSS_TO_SAVINGS") description = "Prediction lost. Capital released from prediction.";
+    else if (txType === "PUSH_RETURN") description = "Prediction pushed. Capital returned to Available.";
   }
 
   return {

@@ -68,7 +68,7 @@ export default function VaultPage() {
             Vault
           </h1>
           <p className="text-body text-text-secondary mt-1.5 leading-relaxed">
-            A single view of your capital across all layers.
+            A clear view of your capital.
           </p>
         </div>
 
@@ -85,7 +85,7 @@ export default function VaultPage() {
                 ${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
               </p>
               <p className="text-small text-text-tertiary mt-1">
-                Available in your connected wallet.
+                Outside Elora.
               </p>
             </div>
             <button
@@ -107,7 +107,7 @@ export default function VaultPage() {
               Elora Capital
             </h2>
             <p className="text-small text-text-tertiary mt-0.5">
-              Capital deposited, protected, committed, or returning inside Elora.
+              Capital currently inside Elora.
             </p>
           </div>
 
@@ -117,7 +117,7 @@ export default function VaultPage() {
               state="available"
               label="Available"
               amount={capital.formatted.available}
-              description="Deposited capital available inside Elora."
+              description="Ready to use."
             >
               <div className="flex flex-wrap items-center gap-3">
                 <button
@@ -158,7 +158,7 @@ export default function VaultPage() {
               state="protected"
               label="Protected"
               amount={capital.formatted.protected}
-              description="Capital currently inside active horizons."
+              description="Protected in active horizons."
               info={
                 hasHorizons
                   ? `${capital.activeHorizonCount} active ${capital.activeHorizonCount === 1 ? "horizon" : "horizons"}`
@@ -220,7 +220,7 @@ export default function VaultPage() {
               description={
                 hasReleasing
                   ? "Protected capital returning to availability."
-                  : "No capital currently in transition."
+                  : "No active releases."
               }
             >
               <div className="flex flex-wrap items-center gap-3">
@@ -247,13 +247,13 @@ export default function VaultPage() {
                 state="committed"
                 label="Committed"
                 amount={capital.formatted.committed}
-                description="Capital allocated to open bets."
+                description="Capital allocated to active predictions."
               >
                 <Link
                   href="/sessions"
                   className="inline-flex items-center gap-1.5 text-small font-medium text-text-tertiary hover:text-text-primary transition-colors"
                 >
-                  View open bets
+                  View active predictions
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </VaultStateCard>

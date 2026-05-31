@@ -156,7 +156,7 @@ function BetCard({ bet, onSettle, onProtect, protectingId }: BetCardProps) {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-medium text-text-primary">
-                  {bet.description || "Bet"}
+                  {bet.description || "Prediction"}
                 </h3>
                 <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", statusBadge)}>
                   {statusLabel}
@@ -211,7 +211,7 @@ function BetCard({ bet, onSettle, onProtect, protectingId }: BetCardProps) {
           {bet.horizonProtected && (
             <p className="flex items-center gap-1.5 text-tiny text-green-600 mt-2">
               <CheckCircle className="h-3 w-3" />
-              Profit protected after bet.
+              Profit protected after prediction.
             </p>
           )}
 
@@ -451,7 +451,7 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
         onBetLogged();
       } else {
         const err = await res.json();
-        setErrorMsg(err.error || "Failed to log bet");
+        setErrorMsg(err.error || "Failed to log prediction");
         setStep("error");
       }
     } catch {
@@ -466,14 +466,14 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
   }, [onClose]);
 
   return (
-    <CapitalModal open={open} onClose={handleClose} title="Log Bet">
+    <CapitalModal open={open} onClose={handleClose} title="Log Prediction">
       {step === "success" ? (
         <div className="flex flex-col items-center py-6 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
             <TrendingUp className="h-6 w-6 text-green-600" />
           </div>
-          <p className="text-sm font-medium text-text-primary">Bet logged successfully.</p>
-          <p className="text-small text-text-tertiary mt-2">${formatUSD(numericStake)} committed. Good luck.</p>
+          <p className="text-sm font-medium text-text-primary">Prediction logged.</p>
+          <p className="text-small text-text-tertiary mt-2">${formatUSD(numericStake)} committed.</p>
           <button type="button" onClick={handleClose}
             className="mt-6 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors">
             Done
@@ -495,7 +495,7 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle mb-4">
             <span className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
           </div>
-          <p className="text-sm font-medium text-text-primary">Submitting bet...</p>
+          <p className="text-sm font-medium text-text-primary">Submitting...</p>
         </div>
       ) : (
         <div className="space-y-5">
@@ -602,8 +602,8 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
               )}
             >
               {numericStake > 0 && numericOdds !== 0
-                ? `Log Bet · $${formatUSD(numericStake)} at ${numericOdds > 0 ? "+" : ""}${numericOdds}`
-                : "Log Bet"}
+                ? `Log Prediction · $${formatUSD(numericStake)} at ${numericOdds > 0 ? "+" : ""}${numericOdds}`
+                : "Log Prediction"}
             </button>
             <button type="button" onClick={handleClose}
               className="w-full rounded-lg py-2 text-small font-medium text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-surface-hover transition-colors">
@@ -625,9 +625,9 @@ function EmptyState({ onLogBet }: { onLogBet: () => void }) {
         <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-subtle">
           <HelpCircle className="h-5 w-5 text-text-tertiary" />
         </div>
-        <p className="text-sm font-medium text-text-primary">No bets logged yet.</p>
+        <p className="text-sm font-medium text-text-primary">No predictions yet.</p>
         <p className="text-small text-text-tertiary mt-2 max-w-xs">
-          Log your first bet to track stake, potential return, and settled results.
+          Log your first prediction to track stake, potential return, and results.
         </p>
         <button
           type="button"
@@ -635,7 +635,7 @@ function EmptyState({ onLogBet }: { onLogBet: () => void }) {
           className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Log your first bet
+          Log your first prediction
         </button>
       </div>
     </div>
@@ -752,7 +752,7 @@ export default function SessionsPage() {
             <div>
               <h1 className="text-display text-text-primary">Sessions</h1>
               <p className="text-body text-text-secondary mt-1">
-                Track bets, manage committed capital, and settle results.
+                Log and manage predictions. Settle results and protect returns.
               </p>
             </div>
             <button
@@ -761,20 +761,20 @@ export default function SessionsPage() {
               className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors shrink-0"
             >
               <Plus className="h-4 w-4" />
-              Log Bet
+              Log Prediction
             </button>
           </div>
         </div>
 
         {/* ── Summary Cards ── */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-          <SummaryCard label="Committed" value={`$${formatUSD(summary.atRisk)}`} subtext="Capital in open bets" iconKey="atRisk" />
-          <SummaryCard label="Open Bets" value={String(summary.openCount)} subtext="Awaiting settlement" iconKey="open" />
-          <SummaryCard label="Potential Return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If all open bets win" iconKey="potential" />
+          <SummaryCard label="Committed" value={`$${formatUSD(summary.atRisk)}`} subtext="Capital in active predictions" iconKey="atRisk" />
+          <SummaryCard label="Active" value={String(summary.openCount)} subtext="Awaiting settlement" iconKey="open" />
+          <SummaryCard label="Potential Return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If all predictions win" iconKey="potential" />
           <SummaryCard
             label="Settled P/L"
             value={`${summary.settledPnl >= 0 ? "+" : ""}$${formatUSD(summary.settledPnl)}`}
-            subtext="Net from settled bets"
+            subtext="Net from settled predictions"
             iconKey="settled"
           />
         </div>
