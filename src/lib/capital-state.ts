@@ -105,8 +105,12 @@ export function useCapitalState(): CapitalSummary {
 
   // ── Derive the four canonical balances ──
   const balances: CapitalBalances = useMemo(() => {
-    // Available: USDC in wallet (from token contract) | fallback: backend user_balance
-    const available = isConnected ? usdcBalance.balance : (walletStore.user_balance ?? 0);
+    // At Risk first so available can subtract it
+    const atRisk = walletStore.at_risk_balance ?? 0;
+
+    // Available: USDC in wallet minus at-risk (betting is virtual — no onchain deduction)
+    const rawAvailable = isConnected ? usdcBalance.balance : (walletStore.user_balance ?? 0);
+    const available = Math.max(0, rawAvailable - atRisk);
 
     // Protected: onchain locked vault balance | fallback: backend locked_vault_balance
     const protected_ =
@@ -125,9 +129,6 @@ export function useCapitalState(): CapitalSummary {
     const releasing = releasedVault > 0
       ? releasedVault
       : (walletStore.savings_vault ?? 0);
-
-    // At Risk: capital committed to open bets
-    const atRisk = walletStore.at_risk_balance ?? 0;
 
     return {
       available,
