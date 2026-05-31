@@ -11,7 +11,7 @@ import { VaultStateCard } from "@/components/vault/vault-state-card";
 import { ProtectedCapitalPanel } from "@/components/vault/protected-capital-panel";
 import { DepositModal, WithdrawModal, ProtectCapitalModal } from "@/components/capital/capital-operations";
 import { EndSessionModal } from "@/components/capital/session-modal";
-import { ArrowRight, Shield, History, Target, BookOpen } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -63,15 +63,18 @@ export default function VaultPage() {
       <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
         {/* ── Page Heading ── */}
         <div className="mb-2">
-          <h1 className="text-display text-text-primary">Vault</h1>
-          <p className="text-body text-text-secondary mt-1">
+          <h1 className="text-[28px] font-light tracking-tight text-text-primary">
+            Vault
+          </h1>
+          <p className="text-body text-text-secondary mt-1.5 leading-relaxed">
             A single view of your protected financial state.
           </p>
         </div>
 
-        {/* ── ① AVAILABLE — Operational home ── */}
+        {/* ── ① AVAILABLE ── */}
         <VaultStateCard
           state="available"
+          label="Available"
           amount={capital.formatted.available}
           description={
             capital.balances.available > 0
@@ -98,7 +101,6 @@ export default function VaultPage() {
                   : "bg-surface-subtle text-text-muted cursor-not-allowed border border-border",
               )}
             >
-              <Shield className="h-3.5 w-3.5" />
               Protect Capital
             </button>
             {capital.balances.available > 0 && (
@@ -115,32 +117,19 @@ export default function VaultPage() {
         </VaultStateCard>
 
         {/* ── ② PROTECTED ── */}
-        <div className="rounded-xl border border-green-200 bg-green-50/30 shadow-sm p-6 md:p-8 transition-all duration-300">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="rounded-lg bg-green-100 p-1.5">
-                  <Shield className="h-4 w-4 text-green-600" />
-                </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-tiny font-medium bg-green-100 text-green-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                  Protected
-                </span>
-              </div>
-              <p className="text-number text-green-700">
-                ${capital.formatted.protected}
-              </p>
-              {capital.balances.protected > 0 && (
-                <p className="text-tiny text-green-600/80 mt-1">
-                  {capital.activeHorizonCount} active{" "}
-                  {capital.activeHorizonCount === 1 ? "horizon" : "horizons"}
-                </p>
-              )}
-            </div>
-          </div>
-
+        <VaultStateCard
+          state="protected"
+          label="Protected"
+          amount={capital.formatted.protected}
+          description="Capital currently locked inside active horizons."
+          info={
+            hasHorizons
+              ? `${capital.activeHorizonCount} active ${capital.activeHorizonCount === 1 ? "horizon" : "horizons"}`
+              : undefined
+          }
+        >
           {/* Actions */}
-          <div className="flex flex-wrap items-center gap-3 mt-4">
+          <div className="flex flex-wrap items-center gap-3">
             {hasHorizons && (
               <button
                 type="button"
@@ -183,40 +172,28 @@ export default function VaultPage() {
 
           {/* Empty state */}
           {!hasHorizons && (
-            <p className="text-sm text-green-600/70 mt-3">
-              No protected capital yet. Set your first horizon when
-              you&apos;re ready.
+            <p className="text-tiny text-green-600/60 mt-2">
+              No protected capital yet. Set your first horizon when you&apos;re ready.
             </p>
           )}
-        </div>
+        </VaultStateCard>
 
         {/* ── ③ RELEASING ── */}
-        <div className="rounded-xl border border-amber-200/30 bg-amber-50/30 shadow-sm p-6 md:p-8">
-          <div className="flex items-center gap-2 mb-2">
-            <History className="h-4 w-4 text-amber-600" />
-            <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-tiny font-medium bg-amber-50 text-amber-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-              Releasing
-            </span>
-          </div>
-          <p className="text-number text-text-primary">
-            ${capital.formatted.releasing}
-          </p>
-          {hasReleasing ? (
-            <p className="text-tiny text-text-muted mt-1">
-              Capital transitioning back into availability.
-            </p>
-          ) : (
-            <p className="text-tiny text-text-muted mt-1">
-              No capital currently in transition.
-            </p>
-          )}
-          <div className="flex flex-wrap items-center gap-3 mt-4">
+        <VaultStateCard
+          state="releasing"
+          label="Releasing"
+          amount={capital.formatted.releasing}
+          description={
+            hasReleasing
+              ? "Capital transitioning back into availability."
+              : "No capital currently in transition."
+          }
+        >
+          <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/intent"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 text-amber-700 px-4 py-2 text-small font-medium hover:bg-amber-200 transition-colors border border-amber-200"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 px-4 py-2 text-small font-medium hover:bg-amber-100 transition-colors"
             >
-              <Target className="h-3.5 w-3.5" />
               Review intent
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -228,33 +205,24 @@ export default function VaultPage() {
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
-        </div>
+        </VaultStateCard>
 
         {/* ── ④ AT RISK ── */}
         {capital.balances.atRisk > 0 && (
-          <div className="rounded-xl border border-border bg-surface shadow-sm p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-2">
-              <div className={cn("flex h-4 w-4 items-center justify-center")}>
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
-              </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-tiny font-medium bg-amber-50 text-amber-700">
-                At Risk
-              </span>
-            </div>
-            <p className="text-number text-text-primary">
-              ${capital.formatted.atRisk}
-            </p>
-            <p className="text-tiny text-text-muted mt-1">
-              Capital committed to open bets.
-            </p>
+          <VaultStateCard
+            state="at-risk"
+            label="At Risk"
+            amount={capital.formatted.atRisk}
+            description="Capital committed to open bets."
+          >
             <Link
               href="/sessions"
-              className="inline-flex items-center gap-1.5 text-small font-medium text-text-tertiary hover:text-text-primary transition-colors mt-4"
+              className="inline-flex items-center gap-1.5 text-small font-medium text-text-tertiary hover:text-text-primary transition-colors"
             >
               View open bets
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-          </div>
+          </VaultStateCard>
         )}
 
         {/* ── Session Logging ── */}
@@ -264,14 +232,13 @@ export default function VaultPage() {
             onClick={() => setSessionOpen(true)}
             className="inline-flex items-center gap-1.5 text-tiny font-medium text-text-tertiary hover:text-text-secondary transition-colors"
           >
-            <BookOpen className="h-3 w-3" />
             Log a session
           </button>
         </div>
 
         {/* ── Calm footer note ── */}
         <p className="text-tiny text-text-muted text-center pt-4 pb-8">
-          Three states of capital. One coherent system.
+          Four states of capital. One coherent system.
         </p>
       </div>
 
