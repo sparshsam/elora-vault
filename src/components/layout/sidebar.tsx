@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Shield, History, Target, Settings, LogOut } from "lucide-react";
+import { Shield, History, Target, BookOpen, Settings, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { WalletControl } from "@/components/wallet/wallet-control";
@@ -23,6 +23,11 @@ const navItems = [
     href: "/intent",
     label: "Intent",
     icon: Target,
+  },
+  {
+    href: "/sessions",
+    label: "Sessions",
+    icon: BookOpen,
   },
 ];
 

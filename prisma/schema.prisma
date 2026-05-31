@@ -51,6 +51,7 @@ model User {
   bets      Bet[]
   transactions Transaction[]
   vaultLocks VaultLock[]
+  sessions  Session[]
 }
 
 model Wallet {
@@ -136,4 +137,31 @@ model VaultLock {
   tx_hash          String?
 
   transaction Transaction?
+  sessions    Session[]
+}
+
+model Session {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+
+  /// Wallet address at time of session
+  wallet_address String?
+
+  /// Session metadata
+  title         String?
+  category      String?
+  outcome       String         @default("break-even") // won | lost | break-even
+  pnl           Float          @default(0)
+  bankrollBefore Float         @default(0)
+  bankrollAfter  Float         @default(0)
+  actionTaken   String         @default("kept-available") // kept-available | protected-gains | moved-to-horizon
+  notes         String?
+
+  /// Linked horizon if gains were protected
+  horizonId     String?
+  horizon       VaultLock?     @relation(fields: [horizonId], references: [id])
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
