@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type StatusType = "available" | "in-motion" | "protected";
+type StatusType = "available" | "protected" | "releasing";
 
 interface StatusPillProps {
   status: StatusType;
@@ -13,13 +13,13 @@ const statusConfig: Record<StatusType, { color: string; defaultLabel: string }> 
     color: "bg-surface-subtle text-text-secondary",
     defaultLabel: "Available",
   },
-  "in-motion": {
-    color: "bg-warning/10 text-warning",
-    defaultLabel: "In Motion",
-  },
   protected: {
     color: "bg-green-100 text-green-700",
     defaultLabel: "Protected",
+  },
+  releasing: {
+    color: "bg-amber-50 text-amber-700",
+    defaultLabel: "Releasing",
   },
 };
 
@@ -33,7 +33,12 @@ export function StatusPill({ status, label, className }: StatusPillProps) {
         className,
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+      <span
+        className={cn(
+          "h-1.5 w-1.5 rounded-full",
+          status === "releasing" ? "bg-amber-400" : "bg-current opacity-60",
+        )}
+      />
       {label || config.defaultLabel}
     </span>
   );

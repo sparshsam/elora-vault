@@ -18,8 +18,8 @@ const states = [
   },
   {
     icon: Activity,
-    title: "In Motion",
-    description: "Funds actively moving toward something that matters.",
+    title: "Releasing",
+    description: "Capital transitioning back into availability.",
   },
 ];
 
@@ -78,7 +78,7 @@ export default function LandingPage() {
             <br />
             protected,
             <br />
-            or in motion.
+            or releasing.
             <br />
             <br />
             Elora makes those states visible.
@@ -149,7 +149,7 @@ export default function LandingPage() {
             <p>
               Separating what you can spend from what you have committed
               is not about restriction. It is about making three states
-              visible: available, protected, and in motion.
+              visible: available, protected, and releasing.
             </p>
             <p>
               Your capital remains yours. The infrastructure is quiet.

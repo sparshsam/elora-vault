@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, createElement } from "react";
 import type { ComponentType } from "react";
+import { useCapitalState } from "@/lib/capital-state";
 import { PageShell } from "@/components/layout/page-shell";
 import {
   Lock,
@@ -73,20 +74,21 @@ const DECISION_COLORS: Record<DecisionType, string> = {
 };
 
 const SUMMARY_ICONS: Record<string, ComponentType<{ className?: string }>> = {
-  protected: Lock,
-  "becoming-available": Timer,
-  pending: Clock,
-  extended: RefreshCw,
+  available: Lock,
+  releasing: Timer,
+  intent: Clock,
+  activity: ArrowRight,
 };
 
 const SUMMARY_COLORS: Record<string, string> = {
-  protected: "text-green-700 bg-green-100 border-green-200",
-  "becoming-available": "text-amber-700 bg-amber-50 border-amber-200",
-  pending: "text-green-600 bg-green-50 border-green-200",
-  extended: "text-text-secondary bg-surface-subtle border-border",
+  available: "text-green-700 bg-green-100 border-green-200",
+  releasing: "text-amber-700 bg-amber-50 border-amber-200",
+  intent: "text-green-600 bg-green-50 border-green-200",
+  activity: "text-text-secondary bg-surface-subtle border-border",
 };
 
 /* ── Mock Data ─────────────────────────────── */
+/* Updated microcopy: betting-origin references as subtle infrastructure. */
 
 const MOCK_DECISIONS: IntentDecision[] = [
   {
@@ -107,7 +109,7 @@ const MOCK_DECISIONS: IntentDecision[] = [
     type: "lock-ending",
     title: "Protection period ending",
     description:
-      "$1,000 protected 28 days ago will become available in 2 days.",
+      "$1,000 of session gains protected 28 days ago will become available in 2 days.",
     amount: "1000.00",
     asset: "USDC",
     status: "pending",
@@ -120,7 +122,7 @@ const MOCK_DECISIONS: IntentDecision[] = [
     type: "extend-option",
     title: "Extension available",
     description:
-      "$2,000 currently locked for 90 days can be extended for additional protection.",
+      "$2,000 currently in a 90-day horizon can be extended for additional protection.",
     amount: "2000.00",
     asset: "USDC",
     status: "actionable",
@@ -146,7 +148,7 @@ const MOCK_DECISIONS: IntentDecision[] = [
     type: "pending-unlock",
     title: "Unlock in progress",
     description:
-      "Your unlock request for $300 has been submitted and is being processed onchain.",
+      "Your release request for $300 has been submitted and is being processed onchain.",
     amount: "300.00",
     asset: "USDC",
     status: "pending",
@@ -159,7 +161,7 @@ const MOCK_DECISIONS: IntentDecision[] = [
     type: "release-ready",
     title: "Capital released",
     description:
-      "$750 was released to your available balance after its 30-day protection period ended.",
+      "$750 was released to your available balance after its 30-day horizon ended.",
     amount: "750.00",
     asset: "USDC",
     status: "completed",
@@ -187,7 +189,7 @@ const MOCK_DECISIONS: IntentDecision[] = [
 const REFLECTION_PROMPTS: ReflectionPrompt[] = [
   {
     id: "ref-01",
-    text: "Why are you withdrawing this capital?",
+    text: "Why are you releasing this capital?",
   },
   {
     id: "ref-02",
@@ -224,7 +226,7 @@ interface SummaryCardProps {
 
 function SummaryCard({ label, value, subtext, iconType }: SummaryCardProps) {
   const Icon = SUMMARY_ICONS[iconType] || RefreshCw;
-  const colorClass = SUMMARY_COLORS[iconType] || SUMMARY_COLORS.extended;
+  const colorClass = SUMMARY_COLORS[iconType] || SUMMARY_COLORS.activity;
   return (
     <div className="rounded-xl border border-border bg-surface shadow-sm p-4 md:p-5 transition-all duration-200 hover:shadow-md">
       <div className="flex items-center justify-between mb-3">
@@ -595,6 +597,7 @@ function EmptyState() {
 type TabType = "active" | "history";
 
 export default function IntentPage() {
+  const capital = useCapitalState();
   const [activeTab, setActiveTab] = useState<TabType>("active");
   const [showReflectionFor, setShowReflectionFor] = useState<string | null>(
     null,
@@ -641,12 +644,10 @@ export default function IntentPage() {
     [activeTab, activeDecisions, completedDecisions],
   );
 
+  // ── Summary derived from shared capital state + mock decisions ──
   const summary = useMemo(() => {
     const active = MOCK_DECISIONS.filter((d) => d.status !== "completed");
-    const totalProtected = active
-      .filter((d) => d.type === "extend-option")
-      .reduce((sum, d) => sum + parseFloat(d.amount), 0);
-    const becomingAvailable = active
+    const releasing = active
       .filter((d) => d.type === "lock-ending" || d.type === "release-ready")
       .reduce((sum, d) => sum + parseFloat(d.amount), 0);
     const pendingCount = active.filter((d) => d.status === "pending").length;
@@ -655,18 +656,15 @@ export default function IntentPage() {
     ).length;
 
     return {
-      totalProtected: totalProtected.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }),
-      becomingAvailable: becomingAvailable.toLocaleString("en-US", {
+      protected: capital.formatted.protected,
+      releasing: releasing.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }),
       pendingCount,
       extendedCount,
     };
-  }, []);
+  }, [capital.formatted.protected]);
 
   const handlePrimaryAction = useCallback((id: string) => {
     const decision = MOCK_DECISIONS.find((d) => d.id === id);
@@ -714,31 +712,31 @@ export default function IntentPage() {
           </p>
         </div>
 
-        {/* ── Overview Summary Cards ── */}
+        {/* ── Overview Summary Cards — unified terminology ── */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <SummaryCard
-            label="Protected Capital"
-            value={`$${summary.totalProtected}`}
-            subtext="Currently locked"
-            iconType="protected"
+            label="Protected"
+            value={`$${summary.protected}`}
+            subtext="Currently in protection"
+            iconType="available"
           />
           <SummaryCard
-            label="Becoming Available"
-            value={`$${summary.becomingAvailable}`}
+            label="Releasing"
+            value={`$${summary.releasing}`}
             subtext="Protection ending soon"
-            iconType="becoming-available"
+            iconType="releasing"
           />
           <SummaryCard
-            label="Pending Decisions"
+            label="Intent"
             value={String(summary.pendingCount)}
-            subtext="Awaiting confirmation"
-            iconType="pending"
+            subtext="Decisions awaiting attention"
+            iconType="intent"
           />
           <SummaryCard
-            label="Extended Locks"
+            label="Extensions"
             value={String(summary.extendedCount)}
             subtext="Protection periods extended"
-            iconType="extended"
+            iconType="activity"
           />
         </div>
 

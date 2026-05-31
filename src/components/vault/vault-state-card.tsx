@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils";
 import { StatusPill } from "@/components/ui/status-pill";
 
-type StateType = "available" | "in-motion" | "protected";
+type StateType = "available" | "protected" | "releasing";
 
 interface VaultStateCardProps {
   state: StateType;
   amount: string;
   label?: string;
+  description?: string;
   onClick?: () => void;
   className?: string;
   children?: React.ReactNode;
@@ -17,13 +18,13 @@ const stateStyles: Record<StateType, { bg: string; border: string }> = {
     bg: "bg-surface",
     border: "border-border",
   },
-  "in-motion": {
-    bg: "bg-warning/5",
-    border: "border-warning/20",
-  },
   protected: {
     bg: "bg-green-50/50",
     border: "border-green-200/50",
+  },
+  releasing: {
+    bg: "bg-amber-50/30",
+    border: "border-amber-200/30",
   },
 };
 
@@ -31,6 +32,7 @@ export function VaultStateCard({
   state,
   amount,
   label,
+  description,
   onClick,
   className,
   children,
@@ -43,7 +45,13 @@ export function VaultStateCard({
       onClick={onClick}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
-      onKeyDown={isClickable ? (e) => { if (e.key === "Enter" || e.key === " ") onClick?.(); } : undefined}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") onClick?.();
+            }
+          : undefined
+      }
       className={cn(
         "rounded-xl border p-6 md:p-8 transition-all duration-300",
         style.bg,
@@ -56,7 +64,10 @@ export function VaultStateCard({
         <StatusPill status={state} label={label} />
       </div>
       <p className="text-number text-text-primary">${amount}</p>
-      {children}
+      {description && (
+        <p className="text-small text-text-tertiary mt-1">{description}</p>
+      )}
+      {children && <div className="mt-4 space-y-3">{children}</div>}
     </div>
   );
 }
