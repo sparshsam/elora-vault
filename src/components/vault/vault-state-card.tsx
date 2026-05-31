@@ -18,8 +18,8 @@ const stateStyles: Record<StateType, { bg: string; border: string }> = {
     border: "border-border",
   },
   "in-motion": {
-    bg: "bg-amber-50/50",
-    border: "border-amber-200/50",
+    bg: "bg-warning/5",
+    border: "border-warning/20",
   },
   protected: {
     bg: "bg-green-50/50",
