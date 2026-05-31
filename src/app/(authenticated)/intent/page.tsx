@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, createElement } from "react";
+import type { ComponentType } from "react";
 import { PageShell } from "@/components/layout/page-shell";
 import {
   Lock,
   CheckCircle,
   Clock,
-  AlertCircle,
   Target,
   ArrowRight,
   ArrowUpFromLine,
@@ -53,6 +53,38 @@ interface ConfirmationState {
   countdown: number;
   confirmed: boolean;
 }
+
+/* ── Icon Maps — module scope, no render-time creation ── */
+
+const DECISION_ICONS: Record<DecisionType, ComponentType<{ className?: string }>> = {
+  "release-ready": CheckCircle,
+  "lock-ending": Timer,
+  "extend-option": RefreshCw,
+  "withdrawal-review": ArrowUpFromLine,
+  "pending-unlock": Clock,
+};
+
+const DECISION_COLORS: Record<DecisionType, string> = {
+  "release-ready": "text-green-600 bg-green-100 border-green-200",
+  "lock-ending": "text-amber-700 bg-amber-50 border-amber-200",
+  "extend-option": "text-green-600 bg-green-50 border-green-200",
+  "withdrawal-review": "text-text-secondary bg-surface-subtle border-border",
+  "pending-unlock": "text-amber-700 bg-amber-50 border-amber-200",
+};
+
+const SUMMARY_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  protected: Lock,
+  "becoming-available": Timer,
+  pending: Clock,
+  extended: RefreshCw,
+};
+
+const SUMMARY_COLORS: Record<string, string> = {
+  protected: "text-green-700 bg-green-100 border-green-200",
+  "becoming-available": "text-amber-700 bg-amber-50 border-amber-200",
+  pending: "text-green-600 bg-green-50 border-green-200",
+  extended: "text-text-secondary bg-surface-subtle border-border",
+};
 
 /* ── Mock Data ─────────────────────────────── */
 
@@ -181,64 +213,6 @@ function formatAmount(amount: string): string {
   });
 }
 
-function getDecisionIcon(type: DecisionType) {
-  switch (type) {
-    case "release-ready":
-      return CheckCircle;
-    case "lock-ending":
-      return Timer;
-    case "extend-option":
-      return RefreshCw;
-    case "withdrawal-review":
-      return ArrowUpFromLine;
-    case "pending-unlock":
-      return Clock;
-  }
-}
-
-function getDecisionColor(type: DecisionType): string {
-  switch (type) {
-    case "release-ready":
-      return "text-green-600 bg-green-100 border-green-200";
-    case "lock-ending":
-      return "text-amber-700 bg-amber-50 border-amber-200";
-    case "extend-option":
-      return "text-green-600 bg-green-50 border-green-200";
-    case "withdrawal-review":
-      return "text-text-secondary bg-surface-subtle border-border";
-    case "pending-unlock":
-      return "text-amber-700 bg-amber-50 border-amber-200";
-  }
-}
-
-function getSummaryIcon(type: string) {
-  switch (type) {
-    case "protected":
-      return Lock;
-    case "becoming-available":
-      return Timer;
-    case "pending":
-      return Clock;
-    case "extended":
-    default:
-      return RefreshCw;
-  }
-}
-
-function getSummaryColor(type: string): string {
-  switch (type) {
-    case "protected":
-      return "text-green-700 bg-green-100 border-green-200";
-    case "becoming-available":
-      return "text-amber-700 bg-amber-50 border-amber-200";
-    case "pending":
-      return "text-green-600 bg-green-50 border-green-200";
-    case "extended":
-    default:
-      return "text-text-secondary bg-surface-subtle border-border";
-  }
-}
-
 /* ── Summary Card ──────────────────────────── */
 
 interface SummaryCardProps {
@@ -249,8 +223,8 @@ interface SummaryCardProps {
 }
 
 function SummaryCard({ label, value, subtext, iconType }: SummaryCardProps) {
-  const Icon = getSummaryIcon(iconType);
-  const colorClass = getSummaryColor(iconType);
+  const Icon = SUMMARY_ICONS[iconType] || RefreshCw;
+  const colorClass = SUMMARY_COLORS[iconType] || SUMMARY_COLORS.extended;
   return (
     <div className="rounded-xl border border-border bg-surface shadow-sm p-4 md:p-5 transition-all duration-200 hover:shadow-md">
       <div className="flex items-center justify-between mb-3">
@@ -263,7 +237,7 @@ function SummaryCard({ label, value, subtext, iconType }: SummaryCardProps) {
             colorClass,
           )}
         >
-          <Icon className="h-3.5 w-3.5" />
+          {createElement(Icon, { className: "h-3.5 w-3.5" })}
         </div>
       </div>
       <p className="text-heading font-medium text-text-primary">{value}</p>
@@ -289,8 +263,8 @@ function DecisionCard({
   showReflection,
   onToggleReflection,
 }: DecisionCardProps) {
-  const Icon = getDecisionIcon(decision.type);
-  const colorClass = getDecisionColor(decision.type);
+  const Icon = DECISION_ICONS[decision.type];
+  const colorClass = DECISION_COLORS[decision.type];
 
   const isCompleted = decision.status === "completed";
 
@@ -313,7 +287,7 @@ function DecisionCard({
               : colorClass,
           )}
         >
-          <Icon className="h-5 w-5" />
+          {createElement(Icon, { className: "h-5 w-5" })}
         </div>
 
         {/* Content */}
@@ -706,15 +680,13 @@ export default function IntentPage() {
         confirmed: false,
       });
     }
-    // Other action types would be handled here
   }, []);
 
-  const handleSecondaryAction = useCallback((_id: string) => {
+  const handleSecondaryAction = useCallback(() => {
     // Handle secondary actions (extend, keep, etc.)
   }, []);
 
   const handleConfirm = useCallback(() => {
-    // Handle confirmed release
     setConfirmation((prev) => ({ ...prev, visible: false }));
   }, []);
 
