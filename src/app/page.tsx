@@ -1,27 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, CheckCircle, Lock, Activity } from "lucide-react";
+import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/page-shell";
-
-const states = [
-  {
-    icon: CheckCircle,
-    title: "Available",
-    description: "Money you can use freely.",
-  },
-  {
-    icon: Lock,
-    title: "Protected",
-    description: "Capital intentionally set aside for a future date.",
-  },
-  {
-    icon: Activity,
-    title: "Releasing",
-    description: "Capital transitioning back into availability.",
-  },
-];
 
 export default function LandingPage() {
   return (
@@ -63,7 +45,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Section 1 — Recognition Hero */}
+      {/* ── Section 1 — Hero ────────────────── */}
       <section className="elora-fade-1 pt-32 md:pt-40">
         <div className="mx-auto max-w-4xl px-6 pb-24 text-center md:pb-32">
           <h1 className="text-4xl font-light leading-[1.1] tracking-tight text-text-primary sm:text-5xl md:text-hero">
@@ -72,16 +54,11 @@ export default function LandingPage() {
             <span className="text-green-600">from yourself.</span>
           </h1>
           <p className="elora-fade-2 mx-auto mt-6 max-w-xl text-body leading-relaxed text-text-secondary">
-            Every dollar you own exists in one of three states:
+            Not every dollar should feel equally available.
             <br />
-            available,
+            Elora creates separation between capital you can
             <br />
-            protected,
-            <br />
-            or releasing.
-            <br />
-            <br />
-            Elora makes those states visible.
+            access immediately and capital you want protected.
           </p>
           <div className="elora-fade-3 mt-10 flex items-center justify-center gap-4">
             <Link href="/auth/signup">
@@ -99,90 +76,95 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Section 2 — The Three States */}
+      {/* ── Section 2 — Three States ────────── */}
       <section className="bg-surface-subtle py-24 md:py-32">
         <div className="mx-auto max-w-5xl px-6">
           <h2 className="text-center text-display font-light text-text-primary">
-            Three states of capital
+            Separate availability from protection
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-body text-text-secondary">
-            Every dollar you have is in one of three places. Elora makes
-            each one distinct.
+            Three clear categories. No ambiguity about what your capital is doing.
           </p>
           <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-            {states.map((state) => (
-              <div
-                key={state.title}
-                className="rounded-xl border border-border bg-surface shadow-sm p-8 transition-all duration-300 hover:border-border-hover hover:shadow-md"
-              >
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-green-200 bg-green-50">
-                  <state.icon className="h-6 w-6 text-green-700" />
-                </div>
-                <h3 className="text-heading mb-2 text-text-primary">
-                  {state.title}
-                </h3>
-                <p className="text-body leading-relaxed text-text-secondary">
-                  {state.description}
-                </p>
-              </div>
-            ))}
+            {/* Available */}
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-8 transition-all duration-300 hover:border-border-hover hover:shadow-md">
+              <h3 className="text-heading mb-2 text-text-primary">Available</h3>
+              <p className="text-body leading-relaxed text-text-secondary">
+                Capital ready to use now.
+              </p>
+            </div>
+            {/* Protected */}
+            <div className="rounded-xl border border-green-200/50 bg-green-50/30 shadow-sm p-8 transition-all duration-300 hover:shadow-md">
+              <h3 className="text-heading mb-2 text-green-700">Protected</h3>
+              <p className="text-body leading-relaxed text-text-secondary">
+                Capital intentionally separated from impulse.
+              </p>
+            </div>
+            {/* Releasing */}
+            <div className="rounded-xl border border-amber-200/20 bg-amber-50/20 shadow-sm p-8 transition-all duration-300 hover:shadow-md">
+              <h3 className="text-heading mb-2 text-text-primary">Releasing</h3>
+              <p className="text-body leading-relaxed text-text-secondary">
+                Protected capital becoming available again.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Section 3 — Why Elora Exists */}
+      {/* ── Section 3 — Why Separation ──────── */}
       <section className="py-24 md:py-32">
         <div className="mx-auto max-w-2xl px-6 text-center">
           <h2 className="mb-10 text-display font-light text-text-primary">
-            Most financial tools help you move money.
+            Most financial products optimize movement.
             <br />
             <span className="text-green-600">
-              Very few help you pause.
+              Elora introduces separation.
             </span>
           </h2>
           <div className="space-y-5 text-left text-body leading-relaxed text-text-secondary">
             <p>
-              There is a gap between wanting something and acting on it.
-              Most financial tools live in the first. Elora lives in the
-              gap.
+              It creates distance between capital you can access
+              immediately and capital you want protected from
+              impulsive decisions.
             </p>
             <p>
-              Separating what you can spend from what you have committed
-              is not about restriction. It is about making three states
-              visible: available, protected, and releasing.
+              That distance is the difference between wanting
+              something and acting on it. Most financial tools
+              collapse it. Elora preserves it.
             </p>
             <p>
-              Your capital remains yours. The infrastructure is quiet.
-              It works regardless of whether you are paying attention.
+              Your capital remains yours. Always.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Section 4 — Quiet Infrastructure */}
+      {/* ── Section 4 — Infrastructure ──────── */}
       <section className="bg-surface-subtle py-16 md:py-20">
         <PageShell className="!py-0 text-center">
           <div className="mx-auto max-w-lg rounded-xl border border-border bg-surface shadow-sm p-8">
             <p className="text-small leading-relaxed text-text-secondary">
-              Built on{" "}
-              <span className="font-medium text-text-primary">Base</span>.
-              Self-custodied by default.
+              Quiet by default.
+              <br />
+              Present when needed.
+              <br />
+              Invisible when not.
             </p>
-            <p className="mt-2 text-tiny text-text-tertiary">
-              Your capital remains yours. Always.
+            <p className="mt-3 text-tiny text-text-tertiary">
+              Built on Base. Self-custodied by design.
             </p>
           </div>
         </PageShell>
       </section>
 
-      {/* Section 5 — Gentle Entry */}
+      {/* ── Section 5 — Final CTA ───────────── */}
       <section className="py-24 md:py-32">
         <div className="mx-auto max-w-2xl px-6 text-center">
           <h2 className="mb-4 text-display font-light text-text-primary">
-            Ready when you are.
+            Clearer capital separation.
           </h2>
           <p className="mx-auto mb-10 max-w-sm text-body text-text-secondary">
-            No rush. The infrastructure is here when you need it.
+            No urgency. No noise.
           </p>
           <Link href="/auth/signup">
             <Button className="bg-green-500 text-white hover:bg-green-600 rounded-xl px-10 py-3 text-base font-medium transition-all shadow-sm">
@@ -192,11 +174,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* ── Footer ──────────────────────────── */}
       <footer className="border-t border-border py-8">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <p className="text-tiny text-text-muted">
-            Elora Vault &mdash; Behavioral capital infrastructure
+            Elora — Behavioral capital infrastructure
           </p>
         </div>
       </footer>
