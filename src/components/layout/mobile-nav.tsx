@@ -6,31 +6,10 @@ import { cn } from "@/lib/utils";
 import { Shield, History, Target, BookOpen, Settings } from "lucide-react";
 
 const primaryItems = [
-  {
-    href: "/vault",
-    label: "Vault",
-    icon: Shield,
-  },
-  {
-    href: "/activity",
-    label: "Activity",
-    icon: History,
-  },
-  {
-    href: "/intent",
-    label: "Intent",
-    icon: Target,
-  },
-  {
-    href: "/sessions",
-    label: "Sessions",
-    icon: BookOpen,
-  },
-  {
-    href: "/settings",
-    label: "Settings",
-    icon: Settings,
-  },
+  { href: "/vault", label: "Vault", icon: Shield },
+  { href: "/sessions", label: "Sessions", icon: BookOpen },
+  { href: "/activity", label: "Activity", icon: History },
+  { href: "/intent", label: "Intent", icon: Target },
 ];
 
 export function MobileNav() {
@@ -49,7 +28,7 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-2 min-w-[64px] rounded-lg transition-colors",
+                "flex flex-col items-center gap-0.5 px-3 py-2 min-w-[56px] rounded-lg transition-colors",
                 active
                   ? "text-green-600"
                   : "text-text-tertiary hover:text-text-secondary",
@@ -72,6 +51,32 @@ export function MobileNav() {
             </Link>
           );
         })}
+
+        {/* Settings — quiet, separate */}
+        <Link
+          href="/settings"
+          className={cn(
+            "flex flex-col items-center gap-0.5 px-3 py-2 min-w-[48px] rounded-lg transition-colors",
+            isActive("/settings")
+              ? "text-green-600"
+              : "text-text-subtle hover:text-text-tertiary",
+          )}
+        >
+          <Settings
+            className={cn(
+              "h-4 w-4 transition-colors",
+              isActive("/settings") ? "text-green-600" : "",
+            )}
+          />
+          <span
+            className={cn(
+              "text-[9px] font-medium",
+              isActive("/settings") ? "text-green-600" : "text-text-subtle",
+            )}
+          >
+            Settings
+          </span>
+        </Link>
       </div>
     </nav>
   );
