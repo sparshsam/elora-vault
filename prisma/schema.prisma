@@ -73,6 +73,9 @@ model Wallet {
   total_saved_from_losses Float @default(0)
   total_profit_won      Float   @default(0)
 
+  /// Capital currently committed to open bets
+  at_risk_balance       Float   @default(0)
+
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
@@ -81,23 +84,28 @@ model Bet {
   id            String      @id @default(cuid())
   userId        String
   user          User        @relation(fields: [userId], references: [id])
-  sport         String
+
+  /// Human-readable description (e.g. "Leafs moneyline vs Boston")
+  description   String      @default("")
+  /// Sport context (optional, for categorization)
+  sport         String      @default("Other")
   league        String?
   event_name    String?
-  marketType    MarketType
-  selection     String
-  odds          Int
-  stake         Float
-  potentialProfit Float
-  potential_return Float
+  marketType    MarketType  @default(MONEYLINE)
+  selection     String      @default("")
+  odds          Int         @default(0)
+  stake         Float       @default(0)
+  potentialProfit Float     @default(0)
+  potential_return Float    @default(0)
   status        BetStatus   @default(OPEN)
   settledAt     DateTime?
-  house_balance_before  Float?
-  house_balance_after   Float?
+
+  /// Capital state tracking at settlement
+  at_risk_before  Float?
+  at_risk_after   Float?
   user_balance_before   Float?
   user_balance_after    Float?
-  savings_vault_before  Float?
-  savings_vault_after   Float?
+
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }

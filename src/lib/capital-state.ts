@@ -13,7 +13,7 @@ import {
 
 /* ── Types ────────────────────────────────────────────── */
 
-export type CapitalState = "available" | "protected" | "releasing" | "activity" | "intent" | "horizon";
+export type CapitalState = "available" | "protected" | "releasing" | "at-risk" | "activity" | "intent" | "horizon";
 
 export interface HorizonInfo {
   id: string;
@@ -33,6 +33,7 @@ export interface CapitalBalances {
   available: number;
   protected: number;
   releasing: number;
+  atRisk: number;
   total: number;
 }
 
@@ -40,6 +41,7 @@ export interface CapitalBalancesFormatted {
   available: string;
   protected: string;
   releasing: string;
+  atRisk: string;
   total: string;
 }
 
@@ -101,7 +103,7 @@ export function useCapitalState(): CapitalSummary {
 
   const isLoading = walletStore.isLoading || (isConnected && vaultSummary.isLoading);
 
-  // ── Derive the three canonical balances ──
+  // ── Derive the four canonical balances ──
   const balances: CapitalBalances = useMemo(() => {
     // Available: USDC in wallet (from token contract) | fallback: backend user_balance
     const available = isConnected ? usdcBalance.balance : (walletStore.user_balance ?? 0);
@@ -114,23 +116,25 @@ export function useCapitalState(): CapitalSummary {
           ? walletStore.locked_vault_balance
           : 0;
 
-    // Releasing: released vault balance (totalDeposited - totalLocked - totalWithdrawn)
-    // represents unlocked capital sitting in the vault ready to be withdrawn.
+    // Releasing: vault unlocked balance (totalDeposited - totalLocked - totalWithdrawn)
     const releasedVault =
       vaultSummary.totalDeposited > 0
         ? Math.max(0, vaultSummary.totalDeposited - vaultSummary.totalLocked - vaultSummary.totalWithdrawn)
         : 0;
 
-    // Also include expired-but-unwithdrawn locks
     const releasing = releasedVault > 0
       ? releasedVault
       : (walletStore.savings_vault ?? 0);
+
+    // At Risk: capital committed to open bets
+    const atRisk = walletStore.at_risk_balance ?? 0;
 
     return {
       available,
       protected: protected_,
       releasing,
-      total: available + protected_ + releasing,
+      atRisk,
+      total: available + protected_ + releasing + atRisk,
     };
   }, [
     isConnected,
@@ -138,6 +142,7 @@ export function useCapitalState(): CapitalSummary {
     walletStore.user_balance,
     walletStore.locked_vault_balance,
     walletStore.savings_vault,
+    walletStore.at_risk_balance,
     vaultSummary.totalLocked,
     vaultSummary.totalDeposited,
     vaultSummary.totalWithdrawn,
@@ -148,6 +153,7 @@ export function useCapitalState(): CapitalSummary {
       available: formatUSD(balances.available),
       protected: formatUSD(balances.protected),
       releasing: formatUSD(balances.releasing),
+      atRisk: formatUSD(balances.atRisk),
       total: formatUSD(balances.total),
     }),
     [balances],

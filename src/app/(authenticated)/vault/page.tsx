@@ -230,6 +230,33 @@ export default function VaultPage() {
           </div>
         </div>
 
+        {/* ── ④ AT RISK ── */}
+        {capital.balances.atRisk > 0 && (
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-6 md:p-8">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={cn("flex h-4 w-4 items-center justify-center")}>
+                <span className="h-2 w-2 rounded-full bg-amber-500" />
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-tiny font-medium bg-amber-50 text-amber-700">
+                At Risk
+              </span>
+            </div>
+            <p className="text-number text-text-primary">
+              ${capital.formatted.atRisk}
+            </p>
+            <p className="text-tiny text-text-muted mt-1">
+              Capital committed to open bets.
+            </p>
+            <Link
+              href="/sessions"
+              className="inline-flex items-center gap-1.5 text-small font-medium text-text-tertiary hover:text-text-primary transition-colors mt-4"
+            >
+              View open bets
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        )}
+
         {/* ── Session Logging ── */}
         <div className="text-center pt-4">
           <button
