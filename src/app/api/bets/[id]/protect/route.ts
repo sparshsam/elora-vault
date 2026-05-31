@@ -25,39 +25,53 @@ export async function PATCH(
     const wallet = await prisma.wallet.findUnique({ where: { userId: user.id } });
     if (!wallet) return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
 
-    // Create a vault lock record in the database (tracks offchain)
+    if (amount > wallet.available_vault_balance) {
+      return NextResponse.json({ error: "Amount exceeds available capital" }, { status: 400 });
+    }
+
     const unlockAt = new Date(Date.now() + durationDays * 86400000);
-    const vaultLock = await prisma.vaultLock.create({
-      data: {
-        userId: user.id,
-        amount,
-        unlockAt,
-        status: "ACTIVE",
-        notes: `Protected after bet: ${bet.description || "Bet"}`,
-      },
-    });
 
-    // Update the bet with horizon link
-    await prisma.bet.update({
-      where: { id },
-      data: {
-        description: `${bet.description || "Bet"} — protected ${amount > bet.potentialProfit ? "full return" : "profit"} for ${durationDays}d`,
-        potential_return: amount, // update to amount protected
-      },
-    });
+    const vaultLock = await prisma.$transaction(async (tx) => {
+      const lock = await tx.vaultLock.create({
+        data: {
+          userId: user.id,
+          amount,
+          unlockAt,
+          status: "ACTIVE",
+          notes: `Protected after bet: ${bet.description || "Bet"}`,
+        },
+      });
 
-    // Create activity transaction
-    await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "LOCK_CREATED",
-        amount,
-        balanceBefore: wallet.user_balance,
-        balanceAfter: wallet.user_balance,
-        betId: bet.id,
-        vaultLockId: vaultLock.id,
-        description: `Profit protected after bet${bet.description ? ": " + bet.description : "."}`,
-      },
+      await tx.wallet.update({
+        where: { userId: user.id },
+        data: {
+          available_vault_balance: { decrement: amount },
+          locked_vault_balance: { increment: amount },
+        },
+      });
+
+      await tx.bet.update({
+        where: { id },
+        data: {
+          description: `${bet.description || "Bet"} - protected ${amount > bet.potentialProfit ? "full return" : "profit"} for ${durationDays}d`,
+          potential_return: amount,
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          userId: user.id,
+          type: "LOCK_CREATED",
+          amount,
+          balanceBefore: wallet.available_vault_balance,
+          balanceAfter: wallet.available_vault_balance - amount,
+          betId: bet.id,
+          vaultLockId: lock.id,
+          description: `Profit protected after bet${bet.description ? ": " + bet.description : "."}`,
+        },
+      });
+
+      return lock;
     });
 
     return NextResponse.json({

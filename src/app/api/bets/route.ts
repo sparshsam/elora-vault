@@ -68,18 +68,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Wallet not found. Deposit funds first." }, { status: 404 });
     }
 
-    if (stake > wallet.user_balance) {
+    if (stake > wallet.available_vault_balance) {
       return NextResponse.json({ error: "Stake exceeds available balance" }, { status: 400 });
     }
 
     const profit = calculateProfit(odds, stake);
     const totalReturn = calculateTotalReturn(odds, stake);
 
-    // Deduct from user_balance, add to at_risk_balance
+    // Move deposited Elora capital from available to committed (legacy DB: at_risk_balance).
     await prisma.wallet.update({
       where: { id: wallet.id },
       data: {
-        user_balance: { decrement: stake },
+        available_vault_balance: { decrement: stake },
         at_risk_balance: { increment: stake },
         total_wagered: { increment: stake },
       },
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
         potentialProfit: profit,
         potential_return: totalReturn,
         user_balance_before: wallet.user_balance,
-        user_balance_after: updatedWallet?.user_balance ?? wallet.user_balance - stake,
+        user_balance_after: wallet.user_balance,
         at_risk_before: wallet.at_risk_balance,
         at_risk_after: (updatedWallet?.at_risk_balance ?? wallet.at_risk_balance + stake),
       },
@@ -110,8 +110,8 @@ export async function POST(request: Request) {
         userId: user.id,
         type: "BET_PLACED",
         amount: stake,
-        balanceBefore: wallet.user_balance,
-        balanceAfter: updatedWallet?.user_balance ?? wallet.user_balance - stake,
+        balanceBefore: wallet.available_vault_balance,
+        balanceAfter: updatedWallet?.available_vault_balance ?? wallet.available_vault_balance - stake,
         betId: bet.id,
         description: description
           ? `Bet logged: ${description} ($${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds})`

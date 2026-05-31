@@ -26,15 +26,16 @@ export async function PATCH(
     const wallet = await prisma.wallet.findUnique({ where: { userId: user.id } });
     if (!wallet) return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
 
-    let newUserBalance = wallet.user_balance;
+    let newAvailableBalance = wallet.available_vault_balance;
     const newAtRisk = wallet.at_risk_balance - bet.stake;
     let transactionAmount = 0;
     let transactionType: string;
     let description: string;
+    const status = result === "WIN" ? "WON" : result === "LOSS" ? "LOST" : "PUSH";
 
     if (result === "WIN") {
       const totalReturn = bet.stake + bet.potentialProfit;
-      newUserBalance += totalReturn;
+      newAvailableBalance += totalReturn;
       transactionAmount = totalReturn;
       transactionType = "WIN_PROFIT";
       description = bet.description
@@ -48,7 +49,7 @@ export async function PATCH(
         : "Bet lost";
     } else {
       // PUSH — return stake
-      newUserBalance += bet.stake;
+      newAvailableBalance += bet.stake;
       transactionAmount = bet.stake;
       transactionType = "PUSH_RETURN";
       description = bet.description
@@ -59,7 +60,7 @@ export async function PATCH(
     await prisma.wallet.update({
       where: { id: wallet.id },
       data: {
-        user_balance: newUserBalance,
+        available_vault_balance: newAvailableBalance,
         at_risk_balance: Math.max(0, newAtRisk),
         ...(result === "LOSS" ? { total_saved_from_losses: { increment: bet.stake } } : {}),
         ...(result === "WIN" ? { total_profit_won: { increment: bet.potentialProfit } } : {}),
@@ -69,9 +70,9 @@ export async function PATCH(
     const updatedBet = await prisma.bet.update({
       where: { id },
       data: {
-        status: result as "WON" | "LOST" | "PUSH",
+        status,
         settledAt: new Date(),
-        user_balance_after: newUserBalance,
+        user_balance_after: wallet.user_balance,
         at_risk_before: wallet.at_risk_balance,
         at_risk_after: Math.max(0, newAtRisk),
       },
@@ -82,8 +83,8 @@ export async function PATCH(
         userId: user.id,
         type: transactionType as "WIN_PROFIT" | "LOSS_TO_SAVINGS" | "PUSH_RETURN",
         amount: transactionAmount,
-        balanceBefore: wallet.user_balance,
-        balanceAfter: newUserBalance,
+        balanceBefore: wallet.available_vault_balance,
+        balanceAfter: newAvailableBalance,
         betId: bet.id,
         description,
       },

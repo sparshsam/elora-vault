@@ -94,11 +94,11 @@ export async function POST(request: Request) {
       });
     }
 
-    // Deposit: user_balance += amount, total_deposited += amount
+    // Deposit moves external wallet funds into Elora available capital.
     const updatedWallet = await prisma.wallet.update({
       where: { id: wallet.id },
       data: {
-        user_balance: { increment: amount },
+        available_vault_balance: { increment: amount },
         total_deposited: { increment: amount },
       },
     });
@@ -108,8 +108,8 @@ export async function POST(request: Request) {
         userId: user.id,
         type: "DEPOSIT",
         amount,
-        balanceBefore: wallet.user_balance,
-        balanceAfter: updatedWallet.user_balance,
+        balanceBefore: wallet.available_vault_balance,
+        balanceAfter: updatedWallet.available_vault_balance,
         description: `Deposit of $${amount.toFixed(2)}`,
       },
     });

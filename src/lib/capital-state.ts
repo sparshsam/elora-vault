@@ -3,17 +3,18 @@
 import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { useWalletStore } from "@/store/useWalletStore";
-import {
-  useVaultSummary,
-  useVaultLocks,
-} from "@/lib/web3/hooks";
-import {
-  useUSDCBalance,
-} from "@/lib/web3/tx-hooks";
+import { useVaultSummary, useVaultLocks } from "@/lib/web3/hooks";
+import { useUSDCBalance } from "@/lib/web3/tx-hooks";
 
-/* ── Types ────────────────────────────────────────────── */
-
-export type CapitalState = "available" | "protected" | "releasing" | "at-risk" | "activity" | "intent" | "horizon";
+export type CapitalState =
+  | "available"
+  | "protected"
+  | "releasing"
+  | "committed"
+  | "at-risk"
+  | "activity"
+  | "intent"
+  | "horizon";
 
 export interface HorizonInfo {
   id: string;
@@ -30,18 +31,24 @@ export interface HorizonInfo {
 }
 
 export interface CapitalBalances {
+  walletBalance: number;
   available: number;
   protected: number;
   releasing: number;
+  committed: number;
   atRisk: number;
+  totalEloraCapital: number;
   total: number;
 }
 
 export interface CapitalBalancesFormatted {
+  walletBalance: string;
   available: string;
   protected: string;
   releasing: string;
+  committed: string;
   atRisk: string;
+  totalEloraCapital: string;
   total: string;
 }
 
@@ -54,8 +61,6 @@ export interface CapitalSummary {
   isLoading: boolean;
   isConnected: boolean;
 }
-
-/* ── Helpers ──────────────────────────────────────────── */
 
 function formatUSD(n: number): string {
   return n.toLocaleString("en-US", {
@@ -79,20 +84,13 @@ function formatReleaseDate(unlockAt: number): string {
   });
 }
 
-/* ── Hook ─────────────────────────────────────────────── */
-
 /**
- * useCapitalState
+ * Canonical capital state for the app.
  *
- * THE canonical hook for ALL capital state across the application.
- *
- * Derives balances from:
- *   1. Connected wallet USDC balance (available)
- *   2. ProtectedVault contract reads (protected, releasing)
- *   3. Wallet store fallback (when contract data unavailable)
- *
- * Every page reads from this single source of truth.
- * Balances are mathematically coherent: total = available + protected + releasing.
+ * walletBalance is external connected-wallet USDC and is outside Elora.
+ * available is deposited capital inside Elora that can be used now.
+ * releasing is only capital transitioning from a horizon release; it is not
+ * deposited idle capital.
  */
 export function useCapitalState(): CapitalSummary {
   const { address, isConnected } = useAccount();
@@ -100,68 +98,75 @@ export function useCapitalState(): CapitalSummary {
   const vaultSummary = useVaultSummary(address);
   const vaultLocks = useVaultLocks(address);
   const usdcBalance = useUSDCBalance();
+  const [now] = useState(() => Date.now());
 
   const isLoading = walletStore.isLoading || (isConnected && vaultSummary.isLoading);
 
-  // ── Derive the four canonical balances ──
   const balances: CapitalBalances = useMemo(() => {
-    // At Risk first so available can subtract it
-    const atRisk = walletStore.at_risk_balance ?? 0;
+    const walletBalance = isConnected ? usdcBalance.balance : (walletStore.user_balance ?? 0);
+    const available = Math.max(0, walletStore.available_vault_balance ?? 0);
+    const committed = Math.max(0, walletStore.at_risk_balance ?? 0);
+    const lockBalances = (vaultLocks.locks ?? []).reduce(
+      (sum, lock) => {
+        if (lock.withdrawn) return sum;
+        if (lock.unlockAt <= now) {
+          return { ...sum, releasing: sum.releasing + lock.amount };
+        }
+        return { ...sum, protected: sum.protected + lock.amount };
+      },
+      { protected: 0, releasing: 0 },
+    );
 
-    // Available: USDC in wallet minus at-risk (betting is virtual — no onchain deduction)
-    const rawAvailable = isConnected ? usdcBalance.balance : (walletStore.user_balance ?? 0);
-    const available = Math.max(0, rawAvailable - atRisk);
-
-    // Protected: onchain locked vault balance | fallback: backend locked_vault_balance
     const protected_ =
-      vaultSummary.totalLocked > 0
+      lockBalances.protected > 0
+        ? lockBalances.protected
+        : vaultSummary.totalLocked > 0
         ? vaultSummary.totalLocked
         : walletStore.locked_vault_balance > 0
           ? walletStore.locked_vault_balance
           : 0;
 
-    // Releasing: vault unlocked balance (totalDeposited - totalLocked - totalWithdrawn)
-    const releasedVault =
-      vaultSummary.totalDeposited > 0
-        ? Math.max(0, vaultSummary.totalDeposited - vaultSummary.totalLocked - vaultSummary.totalWithdrawn)
-        : 0;
-
-    const releasing = releasedVault > 0
-      ? releasedVault
-      : (walletStore.savings_vault ?? 0);
+    const releasing = lockBalances.releasing > 0
+      ? lockBalances.releasing
+      : Math.max(0, walletStore.savings_vault ?? 0);
+    const totalEloraCapital = available + protected_ + releasing + committed;
 
     return {
+      walletBalance,
       available,
       protected: protected_,
       releasing,
-      atRisk,
-      total: available + protected_ + releasing + atRisk,
+      committed,
+      atRisk: committed,
+      totalEloraCapital,
+      total: totalEloraCapital,
     };
   }, [
     isConnected,
     usdcBalance.balance,
     walletStore.user_balance,
+    walletStore.available_vault_balance,
     walletStore.locked_vault_balance,
     walletStore.savings_vault,
     walletStore.at_risk_balance,
+    vaultLocks.locks,
     vaultSummary.totalLocked,
-    vaultSummary.totalDeposited,
-    vaultSummary.totalWithdrawn,
+    now,
   ]);
 
   const formatted: CapitalBalancesFormatted = useMemo(
     () => ({
+      walletBalance: formatUSD(balances.walletBalance),
       available: formatUSD(balances.available),
       protected: formatUSD(balances.protected),
       releasing: formatUSD(balances.releasing),
+      committed: formatUSD(balances.committed),
       atRisk: formatUSD(balances.atRisk),
+      totalEloraCapital: formatUSD(balances.totalEloraCapital),
       total: formatUSD(balances.total),
     }),
     [balances],
   );
-
-  // ── Active horizon info ──
-  const [now] = useState(() => Date.now());
 
   const activeHorizons: HorizonInfo[] = useMemo(() => {
     if (!vaultLocks.locks || vaultLocks.locks.length === 0) return [];
@@ -190,7 +195,6 @@ export function useCapitalState(): CapitalSummary {
       });
   }, [vaultLocks.locks, now]);
 
-  // ── Derived counts ──
   const activeHorizonCount = useMemo(
     () => vaultSummary.activeLockCount || activeHorizons.length,
     [vaultSummary.activeLockCount, activeHorizons.length],

@@ -1,7 +1,10 @@
 import { create } from "zustand";
 
 interface WalletData {
+  // Legacy field: fallback external wallet balance only. Deposited Elora capital
+  // lives in available_vault_balance, not user_balance.
   user_balance: number;
+  // Releasing capital only; deposited idle capital must not be stored here.
   savings_vault: number;
   locked_vault_balance: number;
   available_vault_balance: number;
@@ -11,6 +14,7 @@ interface WalletData {
   total_wagered: number;
   total_saved_from_losses: number;
   total_profit_won: number;
+  // Legacy DB name for committed capital allocated to open bets.
   at_risk_balance: number;
 }
 
