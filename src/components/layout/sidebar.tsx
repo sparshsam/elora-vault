@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Shield, History, Target, Settings, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { WalletPill } from "./wallet-pill";
+import { WalletControl } from "@/components/wallet/wallet-control";
 
 const navItems = [
   {
@@ -55,7 +55,7 @@ export function Sidebar() {
         </span>
       </Link>
 
-      {/* Primary Nav — more breathing between items */}
+      {/* Primary Nav */}
       <nav className="flex-1 px-4 py-2 space-y-1.5">
         {navItems.map((item) => {
           const active = isActive(item.href);
@@ -81,7 +81,7 @@ export function Sidebar() {
           );
         })}
 
-        {/* Public site link — editorial, quiet */}
+        {/* Public site link */}
         <Link
           href="/"
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-normal text-text-subtle hover:text-text-tertiary transition-colors"
@@ -111,9 +111,9 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* Wallet area */}
+      {/* Wallet control — actionable, replaces passive WalletPill */}
       <div className="px-4 py-4 border-t border-border">
-        <WalletPill />
+        <WalletControl variant="full" />
       </div>
 
       {/* Sign out */}

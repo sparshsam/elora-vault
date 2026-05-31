@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { WalletPill } from "./wallet-pill";
+import { WalletControl } from "@/components/wallet/wallet-control";
 
 const routeContext: Record<
   string,
@@ -53,9 +53,9 @@ export function EnvironmentalHeader() {
           </div>
         </div>
 
-        {/* Wallet indicator — shown on desktop for environmental continuity */}
+        {/* Wallet control — shown on desktop, action-oriented */}
         <div className="hidden md:flex items-center">
-          <WalletPill variant="minimal" />
+          <WalletControl variant="compact" />
         </div>
 
         {/* Mobile spacer */}
