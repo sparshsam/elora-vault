@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, createElement } from "react";
+import type { ComponentType } from "react";
 import { PageShell } from "@/components/layout/page-shell";
 import {
   ArrowDownToLine,
@@ -11,7 +12,6 @@ import {
   AlertCircle,
   ExternalLink,
   History,
-  DollarSign,
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,40 @@ type ActivityEvent = {
 };
 
 type FilterType = "all" | "deposit" | "lock" | "release" | "withdrawal";
+
+/* ── Icon Maps — module scope, no render-time creation ── */
+
+const EVENT_ICONS: Record<ActivityEvent["type"], ComponentType<{ className?: string }>> = {
+  deposit: ArrowDownToLine,
+  lock: Lock,
+  release: CheckCircle,
+  withdrawal: ArrowUpFromLine,
+  pending: Clock,
+  failed: AlertCircle,
+};
+
+const EVENT_COLORS: Record<ActivityEvent["type"], string> = {
+  deposit: "text-green-600 bg-green-100 border-green-200",
+  lock: "text-green-700 bg-green-50 border-green-200",
+  release: "text-green-600 bg-green-100 border-green-200",
+  withdrawal: "text-text-secondary bg-surface-subtle border-border",
+  pending: "text-amber-700 bg-amber-50 border-amber-200",
+  failed: "text-danger bg-danger/8 border-danger/20",
+};
+
+const SUMMARY_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  protected: Lock,
+  locks: RefreshCw,
+  released: CheckCircle,
+  movement: History,
+};
+
+const SUMMARY_COLORS: Record<string, string> = {
+  protected: "text-green-700 bg-green-100 border-green-200",
+  locks: "text-green-600 bg-green-50 border-green-200",
+  released: "text-green-600 bg-green-100 border-green-200",
+  movement: "text-text-secondary bg-surface-subtle border-border",
+};
 
 /* ── Mock Data ─────────────────────────────── */
 
@@ -173,69 +207,7 @@ function formatAmount(amount: string): string {
   });
 }
 
-function getEventIcon(type: ActivityEvent["type"]) {
-  switch (type) {
-    case "deposit":
-      return ArrowDownToLine;
-    case "lock":
-      return Lock;
-    case "release":
-      return CheckCircle;
-    case "withdrawal":
-      return ArrowUpFromLine;
-    case "pending":
-      return Clock;
-    case "failed":
-      return AlertCircle;
-  }
-}
-
-function getEventColor(type: ActivityEvent["type"]): string {
-  switch (type) {
-    case "deposit":
-      return "text-green-600 bg-green-100 border-green-200";
-    case "lock":
-      return "text-green-700 bg-green-50 border-green-200";
-    case "release":
-      return "text-green-600 bg-green-100 border-green-200";
-    case "withdrawal":
-      return "text-text-secondary bg-surface-subtle border-border";
-    case "pending":
-      return "text-amber-700 bg-amber-50 border-amber-200";
-    case "failed":
-      return "text-danger bg-danger/8 border-danger/20";
-  }
-}
-
-function getSummaryIcon(type: string) {
-  switch (type) {
-    case "protected":
-      return Lock;
-    case "locks":
-      return RefreshCw;
-    case "released":
-      return CheckCircle;
-    case "movement":
-    default:
-      return History;
-  }
-}
-
-function getSummaryColor(type: string): string {
-  switch (type) {
-    case "protected":
-      return "text-green-700 bg-green-100 border-green-200";
-    case "locks":
-      return "text-green-600 bg-green-50 border-green-200";
-    case "released":
-      return "text-green-600 bg-green-100 border-green-200";
-    case "movement":
-    default:
-      return "text-text-secondary bg-surface-subtle border-border";
-  }
-}
-
-/* ── Summary Cards ─────────────────────────── */
+/* ── Summary Card ──────────────────────────── */
 
 interface SummaryCardProps {
   label: string;
@@ -245,8 +217,8 @@ interface SummaryCardProps {
 }
 
 function SummaryCard({ label, value, subtext, iconType }: SummaryCardProps) {
-  const Icon = getSummaryIcon(iconType);
-  const colorClass = getSummaryColor(iconType);
+  const Icon = SUMMARY_ICONS[iconType] || History;
+  const colorClass = SUMMARY_COLORS[iconType] || SUMMARY_COLORS.movement;
   return (
     <div className="rounded-xl border border-border bg-surface shadow-sm p-4 md:p-5 transition-all duration-200 hover:shadow-md">
       <div className="flex items-center justify-between mb-3">
@@ -259,7 +231,7 @@ function SummaryCard({ label, value, subtext, iconType }: SummaryCardProps) {
             colorClass,
           )}
         >
-          <Icon className="h-3.5 w-3.5" />
+          {createElement(Icon, { className: "h-3.5 w-3.5" })}
         </div>
       </div>
       <p className="text-heading font-medium text-text-primary">{value}</p>
@@ -276,8 +248,8 @@ interface TimelineItemProps {
 }
 
 function TimelineItem({ event, isLast }: TimelineItemProps) {
-  const Icon = getEventIcon(event.type);
-  const colorClass = getEventColor(event.type);
+  const Icon = EVENT_ICONS[event.type];
+  const colorClass = EVENT_COLORS[event.type];
 
   const statusLabel =
     event.status === "pending"
@@ -297,7 +269,7 @@ function TimelineItem({ event, isLast }: TimelineItemProps) {
             colorClass,
           )}
         >
-          <Icon className="h-4 w-4" />
+          {createElement(Icon, { className: "h-4 w-4" })}
         </div>
         {/* Line */}
         {!isLast && (
@@ -408,6 +380,11 @@ function EmptyState() {
 
 export default function ActivityPage() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
 
   const filteredEvents = useMemo(() => {
     if (activeFilter === "all") return MOCK_EVENTS;
@@ -426,7 +403,7 @@ export default function ActivityPage() {
       .filter((e) => e.type === "release")
       .reduce((sum, e) => sum + parseFloat(e.amount), 0);
     const recentMovement = MOCK_EVENTS.filter((e) => {
-      const diff = Date.now() - new Date(e.occurredAt).getTime();
+      const diff = now - new Date(e.occurredAt).getTime();
       return diff < 7 * 86400000;
     }).length;
 
@@ -442,7 +419,7 @@ export default function ActivityPage() {
       }),
       recentMovement,
     };
-  }, []);
+  }, [now]);
 
   return (
     <PageShell>
@@ -485,22 +462,22 @@ export default function ActivityPage() {
 
         {/* ── Filter Chips ── */}
         <div className="mb-6 flex flex-wrap gap-2">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setActiveFilter(f.key)}
-                className={cn(
-                  "rounded-full px-4 py-1.5 text-small font-medium transition-all duration-200",
-                  activeFilter === f.key
-                    ? "bg-green-100 text-green-700 border border-green-200"
-                    : "bg-surface text-text-tertiary border border-border hover:border-border-hover hover:text-text-secondary",
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setActiveFilter(f.key)}
+              className={cn(
+                "rounded-full px-4 py-1.5 text-small font-medium transition-all duration-200",
+                activeFilter === f.key
+                  ? "bg-green-100 text-green-700 border border-green-200"
+                  : "bg-surface text-text-tertiary border border-border hover:border-border-hover hover:text-text-secondary",
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
 
         {/* ── Timeline ── */}
         {filteredEvents.length > 0 ? (
