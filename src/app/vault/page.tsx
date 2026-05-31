@@ -1,115 +1,218 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import { WalletInfoCard } from "@/components/web3/wallet-card";
-import { VaultSummaryCard } from "@/components/web3/vault-summary";
-import { VaultDepositForm } from "@/components/web3/vault-deposit";
-import { VaultLockForm } from "@/components/web3/vault-lock-form";
-import { VaultLocksCard } from "@/components/web3/vault-locks";
 import { useWalletStore } from "@/store/useWalletStore";
-import { Shield, ExternalLink, Wallet, PiggyBank } from "lucide-react";
-import { CURRENT_CHAIN } from "@/lib/contracts/contracts";
+import { useVaultSummary, useVaultLocks } from "@/lib/web3/hooks";
+import { PageShell } from "@/components/layout/page-shell";
+import { VaultSkeleton } from "@/components/vault/vault-skeleton";
+import { VaultEmptyState } from "@/components/vault/vault-empty-state";
+import { WalletConnectPrompt } from "@/components/vault/wallet-connect-prompt";
+import { VaultStateCard } from "@/components/vault/vault-state-card";
+import { ProtectedCapitalPanel } from "@/components/vault/protected-capital-panel";
+import { ArrowRight, Lock, Activity } from "lucide-react";
+import Link from "next/link";
 
 export default function VaultPage() {
-  const { isConnected } = useAccount();
-  const { user_balance, savings_vault, syncFromServer } = useWalletStore();
+  const { address, isConnected } = useAccount();
+  const {
+    user_balance,
+    locked_vault_balance,
+    savings_vault,
+    isLoading: walletLoading,
+    syncFromServer,
+  } = useWalletStore();
+
+  const {
+    totalDeposited,
+    totalLocked,
+    activeLockCount,
+    isLoading: vaultLoading,
+  } = useVaultSummary(address);
+
+  const { locks, isLoading: locksLoading } = useVaultLocks(address);
+
+  const [protectedExpanded, setProtectedExpanded] = useState(false);
 
   useEffect(() => {
     syncFromServer();
   }, [syncFromServer]);
 
+  const isLoading = walletLoading || (isConnected && vaultLoading);
+
+  // Format helpers
+  const formatBalance = (n: number) =>
+    n.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  // ── Not connected ──
+  if (!isConnected) {
+    return (
+      <PageShell>
+        <div className="max-w-3xl mx-auto">
+          <WalletConnectPrompt />
+        </div>
+      </PageShell>
+    );
+  }
+
+  // ── Loading ──
+  if (isLoading) {
+    return (
+      <PageShell>
+        <div className="max-w-3xl mx-auto">
+          <VaultSkeleton />
+        </div>
+      </PageShell>
+    );
+  }
+
+  // ── Connected + Loaded ──
+  const availableAmount = user_balance;
+  const protectedAmount =
+    locked_vault_balance > 0 ? locked_vault_balance : totalLocked;
+  const inMotionAmount = savings_vault;
+
+  // Convert onchain locks to ProtectedCapitalPanel format
+  const lockItems = (locks || [])
+    .filter((l) => !l.withdrawn)
+    .map((lock) => {
+      const now = Date.now();
+      const duration = lock.unlockAt - lock.createdAt;
+      const elapsed = now - lock.createdAt;
+      const progress =
+        duration > 0
+          ? Math.min(100, Math.max(0, (elapsed / duration) * 100))
+          : 0;
+
+      return {
+        id: String(lock.id),
+        amount: formatBalance(lock.amount),
+        releaseDate: new Date(lock.unlockAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        progress,
+        txHash: undefined,
+        baseScanUrl: "https://sepolia.basescan.org",
+      };
+    });
+
+  const hasLocks = lockItems.length > 0;
+  const hasOnchainLock = locked_vault_balance > 0 || totalLocked > 0;
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Vault</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Self-custodied protected capital on {CURRENT_CHAIN.name}
-        </p>
-      </div>
-
-      {/* Unified flow explanation */}
-      <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/5 px-4 py-3">
-        <p className="text-xs text-emerald-300/80">
-          Deposited USDC goes onchain and is automatically available for wagering.
-          Wins are withdrawable, and losses become protected vault locks.
-        </p>
-      </div>
-
-      {/* Connected state — show both wagering balance and vault */}
-      {isConnected && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Wallet className="h-3.5 w-3.5 text-emerald-400" />
-              <p className="text-xs text-gray-500">Wagering Balance</p>
-            </div>
-            <p className="text-xl font-bold text-white tabular-nums">
-              ${user_balance.toFixed(2)}
-            </p>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <PiggyBank className="h-3.5 w-3.5 text-amber-400" />
-              <p className="text-xs text-gray-500">Savings from Losses</p>
-            </div>
-            <p className="text-xl font-bold text-amber-400 tabular-nums">
-              ${savings_vault.toFixed(2)}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Wallet Connection Card (top-level) */}
-      {isConnected && <WalletInfoCard />}
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column — Deposit + Lock Form */}
-        <div className="space-y-6 lg:col-span-1">
-          <VaultDepositForm />
-          <VaultLockForm />
-        </div>
-
-        {/* Right Column — Vault Summary + Locks */}
-        <div className="space-y-6 lg:col-span-2">
-          <VaultSummaryCard />
-          <VaultLocksCard />
-        </div>
-      </div>
-
-      {/* Not connected state */}
-      {!isConnected && (
-        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-          <Shield className="h-12 w-12 mb-3 opacity-20" />
-          <p className="text-base font-medium">Connect your wallet</p>
-          <p className="text-sm mt-1 text-center max-w-md text-gray-600">
-            Connect your wallet to {CURRENT_CHAIN.name} to deposit USDC,
-            create vault locks, and protect your future capital onchain.
+    <PageShell>
+      <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
+        {/* ── Page Heading ── */}
+        <div className="mb-2">
+          <h1 className="text-display text-text-primary">Vault</h1>
+          <p className="text-body text-text-secondary mt-1">
+            Your protected financial state
           </p>
-          <a
-            href={`${CURRENT_CHAIN.explorerUrl}/address/${CURRENT_CHAIN.usdcAddress}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[10px] text-gray-600 hover:text-gray-500 mt-3"
-          >
-            USDC on {CURRENT_CHAIN.name}{" "}
-            <ExternalLink className="h-2.5 w-2.5" />
-          </a>
         </div>
-      )}
 
-      {/* Disclaimer */}
-      <div className="rounded-lg border border-white/5 bg-black/20 px-4 py-3">
-        <p className="text-[10px] text-gray-600 leading-relaxed">
-          Elora Vault is a self-custodied behavioral savings vault on Base.
-          You remain in full control of your funds at all times.
-          The ProtectedVault contract enforces lock durations;
-          no early unlocks are possible. The virtual house balance
-          ($1B starting) is psychological only and not tokenized.
-        </p>
+        {/* ── ① AVAILABLE ── */}
+        <VaultStateCard
+          state="available"
+          amount={formatBalance(availableAmount)}
+        >
+          <div className="mt-4">
+            <Link
+              href="/intent"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
+            >
+              Move funds into a horizon
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </VaultStateCard>
+
+        {/* ── ② PROTECTED ── */}
+        <div className="rounded-xl border-2 border-green-200 bg-green-50/50 p-6 md:p-8 transition-all duration-300">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="rounded-lg bg-green-100 p-1.5">
+                  <Lock className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-tiny font-medium bg-green-100 text-green-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                  Protected
+                </span>
+              </div>
+              <p className="text-number text-green-700">
+                ${formatBalance(protectedAmount)}
+              </p>
+              {hasLocks && (
+                <p className="text-tiny text-green-600 mt-1">
+                  {activeLockCount} active{" "}
+                  {activeLockCount === 1 ? "horizon" : "horizons"}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Expand/collapse toggle */}
+          {hasLocks && (
+            <>
+              <button
+                type="button"
+                onClick={() => setProtectedExpanded(!protectedExpanded)}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600 hover:text-green-700 transition-colors mt-3"
+              >
+                {protectedExpanded ? "Hide horizons" : "View active horizons"}
+                <ArrowRight
+                  className={`h-4 w-4 transition-transform duration-300 ${
+                    protectedExpanded ? "rotate-90" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Expanded content — inline on desktop, sheet on mobile */}
+              {protectedExpanded && (
+                <div className="mt-6 pt-6 border-t border-green-200 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <ProtectedCapitalPanel locks={lockItems} />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Empty state */}
+          {!hasLocks && (
+            <p className="text-sm text-green-600/70 mt-3">
+              No protected capital yet. Set your first horizon when
+              you&apos;re ready.
+            </p>
+          )}
+        </div>
+
+        {/* ── ③ IN MOTION ── */}
+        <div className="rounded-xl border border-border bg-surface p-6 md:p-8">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="h-4 w-4 text-text-tertiary" />
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-tiny font-medium bg-surface-subtle text-text-secondary">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 opacity-60" />
+              In Motion
+            </span>
+          </div>
+          <p className="text-number text-text-primary">
+            ${formatBalance(inMotionAmount)}
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/activity"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
+            >
+              View activity
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
       </div>
-    </div>
+    </PageShell>
   );
 }
