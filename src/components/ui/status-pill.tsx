@@ -10,11 +10,11 @@ interface StatusPillProps {
 
 const statusConfig: Record<StatusType, { color: string; defaultLabel: string }> = {
   available: {
-    color: "bg-gray-200 text-gray-700",
+    color: "bg-surface-subtle text-text-secondary",
     defaultLabel: "Available",
   },
   "in-motion": {
-    color: "bg-amber-100 text-amber-700",
+    color: "bg-warning/10 text-warning",
     defaultLabel: "In Motion",
   },
   protected: {
