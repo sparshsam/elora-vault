@@ -227,7 +227,7 @@ function txToEvent(tx: Record<string, unknown>): ActivityEvent | null {
 
   // Fallback descriptions for bet-related events
   if (!description) {
-    if (txType === "BET_PLACED") description = "Bet logged. Stake moved to At Risk.";
+    if (txType === "BET_PLACED") description = "Bet logged. Stake moved to committed.";
     else if (txType === "WIN_PROFIT") description = "Bet won. Return added to Available.";
     else if (txType === "LOSS_TO_SAVINGS") description = "Bet lost. Stake removed from active capital.";
     else if (txType === "PUSH_RETURN") description = "Bet pushed. Stake returned to Available.";
@@ -299,7 +299,7 @@ export default function ActivityPage() {
             subtext="Protection periods active"
             iconType="locks"
           />
-          <SummaryCard label="At Risk" value={`$${capital.formatted.atRisk}`} subtext="Capital in open bets" iconType="released" />
+          <SummaryCard label="Committed" value={`$${capital.formatted.atRisk}`} subtext="Capital in open bets" iconType="released" />
           <SummaryCard label="Activity" value={String(recentCount)} subtext="Events this week" iconType="activity" />
         </div>
 
