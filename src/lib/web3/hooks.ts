@@ -1,14 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
-import {
-  useAccount,
-  useWriteContract,
-  useReadContract,
-  useWaitForTransactionReceipt,
-} from "wagmi";
-import { useQueryClient } from "@tanstack/react-query";
-import { parseUnits, formatUnits } from "viem";
+import { useAccount, useReadContract } from "wagmi";
+import { formatUnits } from "viem";
 import { VAULT_ABI, CURRENT_CHAIN } from "@/lib/contracts/contracts";
 
 /**
@@ -20,170 +13,6 @@ const VAULT_ADDRESS = CURRENT_CHAIN.vaultAddress;
 function safeFormat(value: bigint | undefined, decimals: number): number {
   if (value == null) return 0;
   return Number(formatUnits(value, decimals));
-}
-
-/**
- * Hook: Check if the vault contract is deployed and usable.
- */
-export function useVaultStatus() {
-  const { isLoading } = useReadContract({
-    address: VAULT_ADDRESS,
-    abi: VAULT_ABI,
-    functionName: "getVaultSummary",
-    args: [VAULT_ADDRESS], // placeholder — will be user's address
-    chainId: CURRENT_CHAIN.chainId,
-    query: {
-      enabled: VAULT_ADDRESS !== "0x0000000000000000000000000000000000000000",
-    },
-  });
-
-  const isDeployed = VAULT_ADDRESS !== "0x0000000000000000000000000000000000000000";
-  return { isDeployed, isLoading };
-}
-
-/**
- * Base hook for contract writes — provides consistent write UX + query invalidation.
- */
-function useVaultWrite<TArgs extends unknown[]>(
-  functionName: string,
-) {
-  const queryClient = useQueryClient();
-  const {
-    writeContract,
-    data: hash,
-    isPending,
-    error,
-  } = useWriteContract();
-
-  const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    data: receiptData,
-  } = useWaitForTransactionReceipt({ hash, chainId: CURRENT_CHAIN.chainId });
-
-  const execute = useCallback(
-    async (args: TArgs) => {
-      if (VAULT_ADDRESS === "0x0000000000000000000000000000000000000000") return;
-      writeContract({
-        address: VAULT_ADDRESS,
-        abi: VAULT_ABI,
-        functionName,
-        args: args as unknown[],
-        chainId: CURRENT_CHAIN.chainId,
-      });
-    },
-    [writeContract, functionName],
-  );
-
-  // Refresh ALL contract reads after a successful write
-  // (wagmi uses query keys like ['readContract', {...}] not ['vault', ...])
-  if (isConfirmed) {
-    queryClient.invalidateQueries({ queryKey: ["readContract"] });
-  }
-
-  return { execute, hash, isPending, isConfirming, isConfirmed, error, receiptData };
-}
-
-/**
- * Hook: Deposit USDC into the ProtectedVault contract.
- * User must have approved the vault contract to spend their USDC.
- */
-export function useVaultDeposit() {
-  const { address } = useAccount();
-  const { execute, hash, isPending, isConfirming, isConfirmed, error, receiptData } =
-    useVaultWrite<[bigint]>("deposit");
-
-  const deposit = useCallback(
-    async (amount: number) => {
-      if (!address) return;
-      const parsed = parseUnits(amount.toString(), 6); // USDC has 6 decimals
-      await execute([parsed]);
-    },
-    [address, execute],
-  );
-
-  return { deposit, hash, isPending, isConfirming, isConfirmed, error, receiptData };
-}
-
-/**
- * Hook: Create a new vault lock.
- */
-export function useCreateLock() {
-  const { address } = useAccount();
-  const { execute, hash, isPending, isConfirming, isConfirmed, error } =
-    useVaultWrite<[bigint, bigint]>("createLock");
-
-  const createLock = useCallback(
-    async (amount: number, durationSeconds: number) => {
-      if (!address) return;
-      const parsed = parseUnits(amount.toString(), 6);
-      await execute([parsed, BigInt(durationSeconds)]);
-    },
-    [address, execute],
-  );
-
-  return { createLock, hash, isPending, isConfirming, isConfirmed, error };
-}
-
-/**
- * Hook: Release a lock after its unlock time has passed.
- */
-export function useReleaseLock() {
-  const { address } = useAccount();
-  const { execute, hash, isPending, isConfirming, isConfirmed, error } =
-    useVaultWrite<[bigint]>("releaseLock");
-
-  const releaseLock = useCallback(
-    async (lockId: number) => {
-      if (!address) return;
-      await execute([BigInt(lockId)]);
-    },
-    [address, execute],
-  );
-
-  return { releaseLock, hash, isPending, isConfirming, isConfirmed, error };
-}
-
-/**
- * Hook: Withdraw from a specific released lock.
- */
-export function useWithdrawLock() {
-  const { address } = useAccount();
-  const { execute, hash, isPending, isConfirming, isConfirmed, error } =
-    useVaultWrite<[bigint]>("withdrawLock");
-
-  const withdrawLock = useCallback(
-    async (lockId: number) => {
-      if (!address) return;
-      await execute([BigInt(lockId)]);
-    },
-    [address, execute],
-  );
-
-  return { withdrawLock, hash, isPending, isConfirming, isConfirmed, error };
-}
-
-/**
- * Hook: Withdraw all unlocked balance from the vault.
- */
-export function useWithdrawUnlocked() {
-  const { address } = useAccount();
-  const { execute, hash, isPending, isConfirming, isConfirmed, error } =
-    useVaultWrite<[]>("withdrawUnlocked");
-
-  const withdrawUnlocked = useCallback(async () => {
-    if (!address) return;
-    await execute([]);
-  }, [address, execute]);
-
-  return {
-    withdrawUnlocked,
-    hash,
-    isPending,
-    isConfirming,
-    isConfirmed,
-    error,
-  };
 }
 
 /**
@@ -202,15 +31,12 @@ export function useVaultSummary(userAddress?: `0x${string}`) {
     chainId: CURRENT_CHAIN.chainId,
     query: {
       enabled: !!addr && VAULT_ADDRESS !== "0x0000000000000000000000000000000000000000",
-      // Return stale cached data while refetching in background
-      staleTime: 30_000,        // 30s — data considered fresh
-      gcTime: 5 * 60 * 1000,    // 5min — keep in cache when unused
-      refetchInterval: 60_000,  // auto-refresh every 60s for lock countdowns
+      staleTime: 30_000,
+      gcTime: 5 * 60 * 1000,
+      refetchInterval: 60_000,
     },
   });
 
-  // viem v2.x decodes named structs as objects (not arrays).
-  // VaultSummary = { totalDeposited, totalLocked, totalWithdrawn, activeLockCount }
   const raw = data as
     | { totalDeposited: bigint; totalLocked: bigint; totalWithdrawn: bigint; activeLockCount: bigint }
     | undefined;
@@ -227,8 +53,6 @@ export function useVaultSummary(userAddress?: `0x${string}`) {
       readError: error,
     };
   }
-
-  console.debug("[DEBUG-ELORA] vault summary raw:", raw);
 
   return {
     totalDeposited: safeFormat(raw.totalDeposited, 6),
@@ -267,8 +91,6 @@ export function useVaultLocks(userAddress?: `0x${string}`) {
   if (!data) {
     return { locks: [], isLoading, refetch, isStale, readError: error };
   }
-
-  console.debug("[DEBUG-ELORA] vault locks raw:", data);
 
   const locks = (data as { amount: bigint; createdAt: bigint; unlockAt: bigint; withdrawn: boolean }[]).map(
     (lock, index) => ({

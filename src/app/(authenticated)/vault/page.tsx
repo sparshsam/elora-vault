@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { useCapitalState } from "@/lib/capital-state";
 import { useWalletStore } from "@/store/useWalletStore";
@@ -9,10 +9,9 @@ import { VaultSkeleton } from "@/components/vault/vault-skeleton";
 import { WalletConnectPrompt } from "@/components/vault/wallet-connect-prompt";
 import { VaultStateCard } from "@/components/vault/vault-state-card";
 import { ProtectedCapitalPanel } from "@/components/vault/protected-capital-panel";
-import { DepositModal } from "@/components/capital/capital-operations";
-import { WithdrawModal } from "@/components/capital/capital-operations";
-import { ProtectCapitalModal } from "@/components/capital/capital-operations";
-import { ArrowRight, Shield, History, Target } from "lucide-react";
+import { DepositModal, WithdrawModal, ProtectCapitalModal } from "@/components/capital/capital-operations";
+import { EndSessionModal } from "@/components/capital/session-modal";
+import { ArrowRight, Shield, History, Target, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +24,7 @@ export default function VaultPage() {
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [protectOpen, setProtectOpen] = useState(false);
+  const [sessionOpen, setSessionOpen] = useState(false);
 
   // ── Protected panel expand ──
   const [protectedExpanded, setProtectedExpanded] = useState(false);
@@ -32,26 +32,6 @@ export default function VaultPage() {
   useEffect(() => {
     syncFromServer();
   }, [syncFromServer]);
-
-  // ── Operation handlers ──
-  const handleDeposit = useCallback((amount: number) => {
-    useWalletStore.setState((s) => ({
-      user_balance: s.user_balance + amount,
-    }));
-  }, []);
-
-  const handleWithdraw = useCallback((amount: number) => {
-    useWalletStore.setState((s) => ({
-      user_balance: Math.max(0, s.user_balance - amount),
-    }));
-  }, []);
-
-  const handleProtect = useCallback((amount: number) => {
-    useWalletStore.setState((s) => ({
-      user_balance: Math.max(0, s.user_balance - amount),
-      locked_vault_balance: s.locked_vault_balance + amount,
-    }));
-  }, []);
 
   // ── Not connected ──
   if (!isConnected) {
@@ -250,6 +230,18 @@ export default function VaultPage() {
           </div>
         </div>
 
+        {/* ── Session Logging ── */}
+        <div className="text-center pt-4">
+          <button
+            type="button"
+            onClick={() => setSessionOpen(true)}
+            className="inline-flex items-center gap-1.5 text-tiny font-medium text-text-tertiary hover:text-text-secondary transition-colors"
+          >
+            <BookOpen className="h-3 w-3" />
+            Log a session
+          </button>
+        </div>
+
         {/* ── Calm footer note ── */}
         <p className="text-tiny text-text-muted text-center pt-4 pb-8">
           Three states of capital. One coherent system.
@@ -257,21 +249,23 @@ export default function VaultPage() {
       </div>
 
       {/* ── Operation Modals ── */}
+      <EndSessionModal
+        open={sessionOpen}
+        onClose={() => setSessionOpen(false)}
+        availableBalance={capital.balances.available}
+      />
       <DepositModal
         open={depositOpen}
         onClose={() => setDepositOpen(false)}
-        onDeposit={handleDeposit}
       />
       <WithdrawModal
         open={withdrawOpen}
         onClose={() => setWithdrawOpen(false)}
-        onWithdraw={handleWithdraw}
         maxAmount={capital.balances.available}
       />
       <ProtectCapitalModal
         open={protectOpen}
         onClose={() => setProtectOpen(false)}
-        onProtect={handleProtect}
         maxAmount={capital.balances.available}
       />
     </PageShell>
