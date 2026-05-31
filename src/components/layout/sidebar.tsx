@@ -42,15 +42,18 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex flex-col w-56 border-r border-border bg-surface-subtle min-h-screen">
-      {/* Logo — quieter, more architectural */}
-      <div className="flex items-center gap-2.5 px-6 pt-8 pb-6">
+      {/* Logo — globally clickable, returns to homepage */}
+      <Link
+        href="/"
+        className="flex items-center gap-2.5 px-6 pt-8 pb-6 transition-all duration-200 hover:opacity-70"
+      >
         <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-200 bg-green-50">
           <Shield className="h-4 w-4 text-green-700" />
         </div>
         <span className="text-base font-semibold tracking-tight text-text-primary">
           Elora
         </span>
-      </div>
+      </Link>
 
       {/* Primary Nav — more breathing between items */}
       <nav className="flex-1 px-4 py-2 space-y-1.5">
@@ -77,6 +80,14 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Public site link — editorial, quiet */}
+        <Link
+          href="/"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-normal text-text-subtle hover:text-text-tertiary transition-colors"
+        >
+          Public site ↗
+        </Link>
       </nav>
 
       {/* Bottom utility zone */}

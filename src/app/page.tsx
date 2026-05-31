@@ -9,20 +9,17 @@ const states = [
   {
     icon: CheckCircle,
     title: "Available",
-    description:
-      "Money you can use freely. No strings, no waiting.",
+    description: "Money you can use freely.",
   },
   {
     icon: Lock,
     title: "Protected",
-    description:
-      "Capital you have committed to keep aside until a future date.",
+    description: "Capital intentionally set aside for a future date.",
   },
   {
     icon: Activity,
     title: "In Motion",
-    description:
-      "Funds actively working toward the goals that matter to you.",
+    description: "Funds actively moving toward something that matters.",
   },
 ];
 
@@ -74,9 +71,17 @@ export default function LandingPage() {
             <br />
             <span className="text-green-600">from yourself.</span>
           </h1>
-          <p className="elora-fade-2 mx-auto mt-6 max-w-2xl text-body leading-relaxed text-text-secondary">
-            Elora helps you separate available money from protected money
-            using intentional financial horizons.
+          <p className="elora-fade-2 mx-auto mt-6 max-w-xl text-body leading-relaxed text-text-secondary">
+            Every dollar you own exists in one of three states:
+            <br />
+            available,
+            <br />
+            protected,
+            <br />
+            or in motion.
+            <br />
+            <br />
+            Elora makes those states visible.
           </p>
           <div className="elora-fade-3 mt-10 flex items-center justify-center gap-4">
             <Link href="/auth/signup">
@@ -137,20 +142,18 @@ export default function LandingPage() {
           </h2>
           <div className="space-y-5 text-left text-body leading-relaxed text-text-secondary">
             <p>
-              We build tools for the gap between impulse and action. That
-              gap is where good financial decisions live — and where most
-              tools are silent.
-            </p>
-            <p>
-              Elora is designed for the version of you that knows what
-              matters, even when the present version wants something else.
-              Not by restricting you, but by giving your future self a
-              voice in today&apos;s choices.
+              There is a gap between wanting something and acting on it.
+              Most financial tools live in the first. Elora lives in the
+              gap.
             </p>
             <p>
               Separating what you can spend from what you have committed
-              is an act of infrastructure. Elora is that infrastructure —
-              quiet, structural, and completely yours.
+              is not about restriction. It is about making three states
+              visible: available, protected, and in motion.
+            </p>
+            <p>
+              Your capital remains yours. The infrastructure is quiet.
+              It works regardless of whether you are paying attention.
             </p>
           </div>
         </div>
@@ -179,8 +182,7 @@ export default function LandingPage() {
             Ready when you are.
           </h2>
           <p className="mx-auto mb-10 max-w-sm text-body text-text-secondary">
-            No rush. No pressure. The infrastructure is here when you need
-            it.
+            No rush. The infrastructure is here when you need it.
           </p>
           <Link href="/auth/signup">
             <Button className="bg-green-500 text-white hover:bg-green-600 rounded-xl px-10 py-3 text-base font-medium transition-all shadow-sm">
@@ -193,7 +195,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border py-8">
         <div className="mx-auto max-w-5xl px-6 text-center">
-          <p className="text-tiny text-text-tertiary/70">
+          <p className="text-tiny text-text-muted">
             Elora Vault &mdash; Behavioral capital infrastructure
           </p>
         </div>

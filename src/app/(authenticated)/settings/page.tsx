@@ -149,7 +149,7 @@ export default function SettingsPage() {
               />
             </button>
           </div>
-          <p className="text-tiny text-text-tertiary/50 mt-2 italic">
+          <p className="text-tiny text-text-subtle mt-2 italic">
             Future-ready — available when notifications are supported.
           </p>
         </div>
