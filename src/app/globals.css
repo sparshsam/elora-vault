@@ -65,29 +65,29 @@
   --duration-slow: 400ms;
 
   /* ── Color Tokens ──────────────────── */
-  /* Surfaces */
-  --color-surface: #ffffff;
-  --color-surface-subtle: #f8faf8;
-  --color-surface-hover: #f3f5f3;
+  /* Surfaces — warm stone, never pure white */
+  --color-surface: #fafaf8;
+  --color-surface-subtle: #f4f4ef;
+  --color-surface-hover: #eeece7;
 
-  /* Borders */
-  --color-border: #e8ebe8;
-  --color-border-hover: #d0d5d0;
+  /* Borders — warm, soft */
+  --color-border: #e1e0d7;
+  --color-border-hover: #c8c6bb;
 
-  /* Text */
-  --color-text-primary: #1a1d1a;
-  --color-text-secondary: #5a5e5a;
-  --color-text-tertiary: #a0a5a0;
+  /* Text — darker for readability, still calm */
+  --color-text-primary: #1c1d1a;
+  --color-text-secondary: #4b4e48;
+  --color-text-tertiary: #828580;
   --color-text-inverse: #ffffff;
 
-  /* Green — Protection, Growth, Calm Discipline */
-  --color-green-50: #f0fdf4;
-  --color-green-100: #dcfce7;
-  --color-green-200: #bbf7d0;
-  --color-green-400: #4ade80;
-  --color-green-500: #22c55e;
-  --color-green-600: #16a34a;
-  --color-green-700: #15803d;
+  /* Green — Botanical, restrained, infrastructural */
+  --color-green-50: #f3f7ef;
+  --color-green-100: #e4ece0;
+  --color-green-200: #c6d6b7;
+  --color-green-400: #6b9d53;
+  --color-green-500: #4d8537;
+  --color-green-600: #3b6a29;
+  --color-green-700: #2c5220;
 
   /* Semantic (rarely used) */
   --color-success: var(--color-green-500);

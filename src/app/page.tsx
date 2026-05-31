@@ -108,7 +108,7 @@ export default function LandingPage() {
             {states.map((state) => (
               <div
                 key={state.title}
-                className="rounded-xl border border-border bg-surface p-8 transition-all duration-300 hover:border-border-hover"
+                className="rounded-xl border border-border bg-surface shadow-sm p-8 transition-all duration-300 hover:border-border-hover hover:shadow-md"
               >
                 <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-green-200 bg-green-50">
                   <state.icon className="h-6 w-6 text-green-700" />
@@ -159,7 +159,7 @@ export default function LandingPage() {
       {/* Section 4 — Quiet Infrastructure */}
       <section className="bg-surface-subtle py-16 md:py-20">
         <PageShell className="!py-0 text-center">
-          <div className="mx-auto max-w-lg rounded-xl border border-border bg-surface p-8">
+          <div className="mx-auto max-w-lg rounded-xl border border-border bg-surface shadow-sm p-8">
             <p className="text-small leading-relaxed text-text-secondary">
               Built on{" "}
               <span className="font-medium text-text-primary">Base</span>.
@@ -193,7 +193,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border py-8">
         <div className="mx-auto max-w-5xl px-6 text-center">
-          <p className="text-tiny text-text-tertiary">
+          <p className="text-tiny text-text-tertiary/70">
             Elora Vault &mdash; Behavioral capital infrastructure
           </p>
         </div>

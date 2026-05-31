@@ -20,7 +20,7 @@ export function VaultSkeleton() {
       </div>
 
       {/* Protected skeleton (larger, green-tinted) */}
-      <div className="rounded-xl border-2 border-green-100 bg-green-50/30 p-6 md:p-8">
+      <div className="rounded-xl border border-green-200 bg-green-50/30 shadow-sm p-6 md:p-8">
         <div className="h-4 w-24 bg-green-200 rounded-full mb-4" />
         <div className="h-10 w-40 bg-green-200 rounded-lg" />
         <div className="h-4 w-28 bg-green-100 rounded mt-4" />
