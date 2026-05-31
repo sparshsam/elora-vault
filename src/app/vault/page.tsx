@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { useWalletStore } from "@/store/useWalletStore";
 import { useVaultSummary, useVaultLocks } from "@/lib/web3/hooks";
 import { PageShell } from "@/components/layout/page-shell";
 import { VaultSkeleton } from "@/components/vault/vault-skeleton";
-import { VaultEmptyState } from "@/components/vault/vault-empty-state";
 import { WalletConnectPrompt } from "@/components/vault/wallet-connect-prompt";
 import { VaultStateCard } from "@/components/vault/vault-state-card";
 import { ProtectedCapitalPanel } from "@/components/vault/protected-capital-panel";
@@ -24,15 +23,22 @@ export default function VaultPage() {
   } = useWalletStore();
 
   const {
-    totalDeposited,
     totalLocked,
     activeLockCount,
     isLoading: vaultLoading,
   } = useVaultSummary(address);
 
-  const { locks, isLoading: locksLoading } = useVaultLocks(address);
+  const { locks } = useVaultLocks(address);
 
   const [protectedExpanded, setProtectedExpanded] = useState(false);
+  const [now, setNow] = useState(0);
+
+  // Update timestamp once per minute for lock progress calculations
+  useEffect(() => {
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     syncFromServer();
@@ -40,12 +46,44 @@ export default function VaultPage() {
 
   const isLoading = walletLoading || (isConnected && vaultLoading);
 
-  // Format helpers
-  const formatBalance = (n: number) =>
-    n.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+  const formatBalance = useCallback(
+    (n: number) =>
+      n.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    [],
+  );
+
+  const lockItems = useMemo(
+    () =>
+      (locks || [])
+        .filter((l) => !l.withdrawn)
+        .map((lock) => {
+          const duration = lock.unlockAt - lock.createdAt;
+          const elapsed = now - lock.createdAt;
+          const progress =
+            duration > 0
+              ? Math.min(100, Math.max(0, (elapsed / duration) * 100))
+              : 0;
+
+          return {
+            id: String(lock.id),
+            amount: formatBalance(lock.amount),
+            releaseDate: new Date(lock.unlockAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+            progress,
+            txHash: undefined,
+            baseScanUrl: "https://sepolia.basescan.org",
+          };
+        }),
+    [locks, now, formatBalance],
+  );
+
+  const hasLocks = lockItems.length > 0;
 
   // ── Not connected ──
   if (!isConnected) {
@@ -74,35 +112,6 @@ export default function VaultPage() {
   const protectedAmount =
     locked_vault_balance > 0 ? locked_vault_balance : totalLocked;
   const inMotionAmount = savings_vault;
-
-  // Convert onchain locks to ProtectedCapitalPanel format
-  const lockItems = (locks || [])
-    .filter((l) => !l.withdrawn)
-    .map((lock) => {
-      const now = Date.now();
-      const duration = lock.unlockAt - lock.createdAt;
-      const elapsed = now - lock.createdAt;
-      const progress =
-        duration > 0
-          ? Math.min(100, Math.max(0, (elapsed / duration) * 100))
-          : 0;
-
-      return {
-        id: String(lock.id),
-        amount: formatBalance(lock.amount),
-        releaseDate: new Date(lock.unlockAt).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        progress,
-        txHash: undefined,
-        baseScanUrl: "https://sepolia.basescan.org",
-      };
-    });
-
-  const hasLocks = lockItems.length > 0;
-  const hasOnchainLock = locked_vault_balance > 0 || totalLocked > 0;
 
   return (
     <PageShell>
