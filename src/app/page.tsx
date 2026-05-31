@@ -1,128 +1,123 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, PiggyBank, Target, Wallet } from "lucide-react";
+import { Shield, CheckCircle, Lock, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageShell } from "@/components/layout/page-shell";
 
-const features = [
+const states = [
   {
-    icon: Shield,
-    title: "Personal Savings Vault",
+    icon: CheckCircle,
+    title: "Available",
     description:
-      "Your losing bets do not disappear — they move into your vault. Every loss becomes saved capital.",
+      "Money you can use freely. No strings, no waiting.",
   },
   {
-    icon: Target,
-    title: "Virtual House Opponent",
+    icon: Lock,
+    title: "Protected",
     description:
-      "The 'house' is a virtual opponent with a $1B starting balance. You're betting against discipline, not a real sportsbook.",
+      "Capital you have committed to keep aside until a future date.",
   },
   {
-    icon: PiggyBank,
-    title: "Loss → Savings Mechanism",
+    icon: Activity,
+    title: "In Motion",
     description:
-      "Every losing bet transfers your stake into a locked savings vault. Discipline isn't punished — it's stored.",
-  },
-  {
-    icon: Wallet,
-    title: "Win Profits, Save Losses",
-    description:
-      "Win and you earn real profits. Lose and your stake becomes savings. Either way, your money works for you.",
+      "Funds actively working toward the goals that matter to you.",
   },
 ];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <span className="text-xs font-bold text-white">EV</span>
+    <div className="min-h-screen bg-surface">
+      <style>{`
+        @keyframes elora-fade-up {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .elora-fade-1 { animation: elora-fade-up 0.7s ease-out forwards; }
+        .elora-fade-2 { animation: elora-fade-up 0.7s ease-out 0.15s forwards; opacity: 0; }
+        .elora-fade-3 { animation: elora-fade-up 0.7s ease-out 0.3s forwards; opacity: 0; }
+      `}</style>
+
+      {/* ── Navigation ──────────────────────── */}
+      <nav className="fixed inset-x-0 top-0 z-50 border-b border-border bg-surface/95 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-200 bg-green-50">
+              <Shield className="h-4 w-4 text-green-700" />
             </div>
-            <span className="text-lg font-semibold text-white">Elora Vault</span>
-          </div>
+            <span className="text-base font-semibold tracking-tight text-text-primary">
+              Elora
+            </span>
+          </Link>
           <div className="flex items-center gap-4">
             <Link
               href="/auth/login"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
+              className="text-small text-text-secondary transition-colors hover:text-text-primary"
             >
               Sign in
             </Link>
             <Link href="/auth/signup">
-              <Button className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
-                Get started
+              <Button className="bg-green-500 text-white hover:bg-green-600 rounded-lg px-5 py-2 text-small font-medium transition-all shadow-sm">
+                Create your vault
               </Button>
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-radial from-indigo-600/10 via-transparent to-transparent pointer-events-none" />
-        <div className="mx-auto max-w-4xl text-center relative">
-          <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-4 py-1.5 mb-8">
-            <span className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
-            <span className="text-xs font-medium text-indigo-300">
-              v0.3 — Elora Vault — Personal Savings Vault
-            </span>
-          </div>
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.1]">
-            Every loss becomes{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-emerald-400">
-              saved capital.
-            </span>
+      {/* Section 1 — Recognition Hero */}
+      <section className="elora-fade-1 pt-32 md:pt-40">
+        <div className="mx-auto max-w-4xl px-6 pb-24 text-center md:pb-32">
+          <h1 className="text-4xl font-light leading-[1.1] tracking-tight text-text-primary sm:text-5xl md:text-hero">
+            Protect your capital
+            <br />
+            <span className="text-green-600">from yourself.</span>
           </h1>
-          <p className="mt-6 text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Elora Vault is a personal savings vault inspired by betting mechanics. The house is virtual.
-            Your discipline is real. Every bet you make either grows your winnings
-            or builds your savings.
+          <p className="elora-fade-2 mx-auto mt-6 max-w-2xl text-body leading-relaxed text-text-secondary">
+            Elora helps you separate available money from protected money
+            using intentional financial horizons.
           </p>
-          <div className="mt-10 flex items-center justify-center gap-4">
+          <div className="elora-fade-3 mt-10 flex items-center justify-center gap-4">
             <Link href="/auth/signup">
-              <Button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl text-base font-medium transition-all shadow-lg shadow-indigo-600/20">
-                Start your vault
+              <Button className="bg-green-500 text-white hover:bg-green-600 rounded-xl px-8 py-3 text-base font-medium transition-all shadow-sm">
+                Create your vault
               </Button>
             </Link>
-            <Link href="/auth/login">
-              <Button
-                variant="outline"
-                className="border-white/10 text-gray-300 hover:text-white hover:bg-white/5 px-8 py-3 rounded-xl text-base font-medium transition-all"
-              >
-                Sign in
-              </Button>
+            <Link
+              href="/auth/login"
+              className="text-small text-text-secondary transition-colors hover:text-text-primary"
+            >
+              Sign in
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-20 px-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white">
-              Built for discipline
-            </h2>
-            <p className="mt-3 text-gray-400 max-w-xl mx-auto">
-              Every feature is designed to turn betting discipline into lasting savings.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature) => (
+      {/* Section 2 — The Three States */}
+      <section className="bg-surface-subtle py-24 md:py-32">
+        <div className="mx-auto max-w-5xl px-6">
+          <h2 className="text-center text-display font-light text-text-primary">
+            Three states of capital
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-center text-body text-text-secondary">
+            Every dollar you have is in one of three places. Elora makes
+            each one distinct.
+          </p>
+          <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+            {states.map((state) => (
               <div
-                key={feature.title}
-                className="glass rounded-2xl p-6 hover:border-indigo-500/30 transition-all duration-300 group"
+                key={state.title}
+                className="rounded-xl border border-border bg-surface p-8 transition-all duration-300 hover:border-border-hover"
               >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600/10 border border-indigo-500/20 group-hover:bg-indigo-600/20 transition-colors">
-                  <feature.icon className="h-5 w-5 text-indigo-400" />
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-green-200 bg-green-50">
+                  <state.icon className="h-6 w-6 text-green-700" />
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  {feature.title}
+                <h3 className="text-heading mb-2 text-text-primary">
+                  {state.title}
                 </h3>
-                <p className="text-sm text-gray-400 leading-relaxed">
-                  {feature.description}
+                <p className="text-body leading-relaxed text-text-secondary">
+                  {state.description}
                 </p>
               </div>
             ))}
@@ -130,90 +125,76 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-20 px-6 border-t border-white/5">
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white">
-              How the vault works
-            </h2>
-            <p className="mt-3 text-gray-400 max-w-xl mx-auto">
-              Simple mechanics. Powerful results.
+      {/* Section 3 — Why Elora Exists */}
+      <section className="py-24 md:py-32">
+        <div className="mx-auto max-w-2xl px-6 text-center">
+          <h2 className="mb-10 text-display font-light text-text-primary">
+            Most financial tools help you move money.
+            <br />
+            <span className="text-green-600">
+              Very few help you pause.
+            </span>
+          </h2>
+          <div className="space-y-5 text-left text-body leading-relaxed text-text-secondary">
+            <p>
+              We build tools for the gap between impulse and action. That
+              gap is where good financial decisions live — and where most
+              tools are silent.
             </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/10 border border-indigo-500/20">
-                <span className="text-2xl font-bold text-indigo-400">1</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Deposit
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Add simulated funds to your playable balance and start with a bankroll.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/10 border border-indigo-500/20">
-                <span className="text-2xl font-bold text-indigo-400">2</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Place a Bet
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Stake against the virtual house ($1B starting balance). Only your user balance limits you.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/10 border border-indigo-500/20">
-                <span className="text-2xl font-bold text-indigo-400">3</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Save or Earn
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Win → profit goes to withdrawable winnings. Lose → stake moves to your savings vault.
-              </p>
-            </div>
+            <p>
+              Elora is designed for the version of you that knows what
+              matters, even when the present version wants something else.
+              Not by restricting you, but by giving your future self a
+              voice in today&apos;s choices.
+            </p>
+            <p>
+              Separating what you can spend from what you have committed
+              is an act of infrastructure. Elora is that infrastructure —
+              quiet, structural, and completely yours.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 px-6">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="glass rounded-3xl p-12">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Ready to build discipline?
-            </h2>
-            <p className="text-gray-400 mb-8 max-w-lg mx-auto">
-              Start your vault today. Free. No sportsbook. Just discipline, stored.
+      {/* Section 4 — Quiet Infrastructure */}
+      <section className="bg-surface-subtle py-16 md:py-20">
+        <PageShell className="!py-0 text-center">
+          <div className="mx-auto max-w-lg rounded-xl border border-border bg-surface p-8">
+            <p className="text-small leading-relaxed text-text-secondary">
+              Built on{" "}
+              <span className="font-medium text-text-primary">Base</span>.
+              Self-custodied by default.
             </p>
-            <Link href="/auth/signup">
-              <Button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl text-base font-medium transition-all shadow-lg shadow-indigo-600/20">
-                Create your vault
-              </Button>
-            </Link>
+            <p className="mt-2 text-tiny text-text-tertiary">
+              Your capital remains yours. Always.
+            </p>
           </div>
-        </div>
+        </PageShell>
       </section>
 
-      {/* Disclaimer */}
-      <section className="py-10 px-6 border-t border-white/5">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-[10px] text-gray-600 leading-relaxed">
-            Elora Vault is not a sportsbook. The house balance is virtual ($1B starting) and has no real-world value.
-            This is a personal savings tool designed to gamify financial discipline.
-            No real-money gambling occurs on this platform. All deposits, bets, and balances are simulated.
+      {/* Section 5 — Gentle Entry */}
+      <section className="py-24 md:py-32">
+        <div className="mx-auto max-w-2xl px-6 text-center">
+          <h2 className="mb-4 text-display font-light text-text-primary">
+            Ready when you are.
+          </h2>
+          <p className="mx-auto mb-10 max-w-sm text-body text-text-secondary">
+            No rush. No pressure. The infrastructure is here when you need
+            it.
           </p>
+          <Link href="/auth/signup">
+            <Button className="bg-green-500 text-white hover:bg-green-600 rounded-xl px-10 py-3 text-base font-medium transition-all shadow-sm">
+              Create your vault
+            </Button>
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-8 px-6">
-        <div className="mx-auto max-w-6xl text-center">
-          <p className="text-sm text-gray-500">
-            Elora Vault v0.3 — Every loss becomes saved capital.
+      <footer className="border-t border-border py-8">
+        <div className="mx-auto max-w-5xl px-6 text-center">
+          <p className="text-tiny text-text-tertiary">
+            Elora Vault &mdash; Behavioral capital infrastructure
           </p>
         </div>
       </footer>
