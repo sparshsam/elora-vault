@@ -33,30 +33,25 @@ export default function VaultPage() {
     syncFromServer();
   }, [syncFromServer]);
 
-  // ── Mock operation handlers ──
-  const handleDeposit = useCallback(
-    (amount: number) => {
-      console.log(`[Elora] Deposit: $${amount}`);
-      // Future: wire to contract
-    },
-    [],
-  );
+  // ── Operation handlers ──
+  const handleDeposit = useCallback((amount: number) => {
+    useWalletStore.setState((s) => ({
+      user_balance: s.user_balance + amount,
+    }));
+  }, []);
 
-  const handleWithdraw = useCallback(
-    (amount: number) => {
-      console.log(`[Elora] Withdraw: $${amount}`);
-      // Future: wire to contract
-    },
-    [],
-  );
+  const handleWithdraw = useCallback((amount: number) => {
+    useWalletStore.setState((s) => ({
+      user_balance: Math.max(0, s.user_balance - amount),
+    }));
+  }, []);
 
-  const handleProtect = useCallback(
-    (amount: number, durationDays: number) => {
-      console.log(`[Elora] Protect: $${amount} for ${durationDays} days`);
-      // Future: wire to contract
-    },
-    [],
-  );
+  const handleProtect = useCallback((amount: number) => {
+    useWalletStore.setState((s) => ({
+      user_balance: Math.max(0, s.user_balance - amount),
+      locked_vault_balance: s.locked_vault_balance + amount,
+    }));
+  }, []);
 
   // ── Not connected ──
   if (!isConnected) {

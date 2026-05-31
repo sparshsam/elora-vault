@@ -5,22 +5,6 @@ import { useAccount } from "wagmi";
 import { cn } from "@/lib/utils";
 import { CapitalModal } from "./capital-modal";
 
-/* ── Types ───────────────────────────────────────────── */
-
-interface OperationResult {
-  success: boolean;
-  message: string;
-}
-
-/* ── Shared helpers ──────────────────────────────────── */
-
-// Mock: Simulates an onchain operation with delay
-function simulateOperation(delayMs = 1500): Promise<OperationResult> {
-  return new Promise((resolve) =>
-    setTimeout(() => resolve({ success: true, message: "" }), delayMs),
-  );
-}
-
 /* ── Amount Input ────────────────────────────────────── */
 
 interface AmountInputProps {
@@ -161,12 +145,10 @@ export function DepositModal({ open, onClose, onDeposit }: DepositModalProps) {
 
   const numericAmount = parseFloat(amount || "0");
 
-  const handleConfirm = useCallback(async () => {
+  const handleConfirm = useCallback(() => {
     if (numericAmount <= 0) return;
-    setStep("confirming");
-    await simulateOperation();
-    setStep("success");
     onDeposit(numericAmount);
+    setStep("success");
   }, [numericAmount, onDeposit]);
 
   const handleClose = useCallback(() => {
@@ -272,11 +254,9 @@ export function WithdrawModal({ open, onClose, onWithdraw, maxAmount }: Withdraw
     setStep("confirm");
   }, [isValid]);
 
-  const handleConfirm = useCallback(async () => {
-    setStep("confirming");
-    await simulateOperation();
-    setStep("success");
+  const handleConfirm = useCallback(() => {
     onWithdraw(numericAmount);
+    setStep("success");
   }, [numericAmount, onWithdraw]);
 
   const handleClose = useCallback(() => {
@@ -404,12 +384,10 @@ export function ProtectCapitalModal({
   const numericAmount = parseFloat(amount || "0");
   const isValid = numericAmount > 0 && numericAmount <= maxAmount && horizon !== null;
 
-  const handleConfirm = useCallback(async () => {
+  const handleConfirm = useCallback(() => {
     if (!isValid || horizon === null) return;
-    setStep("confirming");
-    await simulateOperation();
-    setStep("success");
     onProtect(numericAmount, horizon);
+    setStep("success");
   }, [isValid, numericAmount, horizon, onProtect]);
 
   const handleClose = useCallback(() => {
