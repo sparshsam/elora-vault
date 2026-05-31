@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
 
   // Protected routes
   const protectedPaths = [
-    "/dashboard", "/bets", "/history", "/settings", "/deposit", "/transactions",
+    "/dashboard", "/settings",
     "/vault", "/activity", "/intent",
   ];
   const isProtected = protectedPaths.some((path) =>
