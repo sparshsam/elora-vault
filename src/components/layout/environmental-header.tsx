@@ -23,30 +23,6 @@ const routeContext: Record<
     title: "Settings",
     description: "Configure your environment",
   },
-  "/deposit": {
-    title: "Deposit",
-    description: "Add capital to your vault",
-  },
-  "/dashboard": {
-    title: "Dashboard",
-    description: "Overview",
-  },
-  "/bets/new": {
-    title: "New Bet",
-    description: "Place a wager",
-  },
-  "/bets/open": {
-    title: "Open Bets",
-    description: "Active wagers",
-  },
-  "/history": {
-    title: "History",
-    description: "Past activity",
-  },
-  "/transactions": {
-    title: "Transactions",
-    description: "All transactions",
-  },
 };
 
 export function EnvironmentalHeader() {
