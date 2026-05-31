@@ -19,6 +19,10 @@ const routeContext: Record<
     title: "Intent",
     description: "Set your financial horizons",
   },
+  "/sessions": {
+    title: "Sessions",
+    description: "Review and reflect",
+  },
   "/settings": {
     title: "Settings",
     description: "Configure your environment",

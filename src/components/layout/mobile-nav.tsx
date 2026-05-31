@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Shield, History, Target, Settings } from "lucide-react";
+import { Shield, History, Target, BookOpen, Settings } from "lucide-react";
 
 const primaryItems = [
   {
@@ -20,6 +20,11 @@ const primaryItems = [
     href: "/intent",
     label: "Intent",
     icon: Target,
+  },
+  {
+    href: "/sessions",
+    label: "Sessions",
+    icon: BookOpen,
   },
   {
     href: "/settings",
