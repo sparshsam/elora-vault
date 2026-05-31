@@ -14,6 +14,7 @@ import {
   Plus,
   DollarSign,
   HelpCircle,
+  CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BetRecord, BetType, BetStatus, SettleResult } from "@/types/bet";
@@ -94,15 +95,17 @@ function SummaryCard({ label, value, subtext, iconKey }: SummaryCardProps) {
 interface BetCardProps {
   bet: BetRecord;
   onSettle: (id: string, result: SettleResult) => void;
-  onProtect: (amount: number) => void;
+  onProtect: (betId: string, amount: number, horizon: number) => void;
+  protectingId: string | null;
 }
 
-function BetCard({ bet, onSettle, onProtect }: BetCardProps) {
+function BetCard({ bet, onSettle, onProtect, protectingId }: BetCardProps) {
   const isOpen = bet.status === "open";
   const isWin = bet.status === "won";
   const isLoss = bet.status === "lost";
   const isPush = bet.status === "push";
   const [showProtect, setShowProtect] = useState(false);
+  const isProtecting = protectingId === bet.id;
 
   const statusBadge = isOpen
     ? "bg-amber-50 text-amber-700 border-amber-200"
@@ -158,6 +161,12 @@ function BetCard({ bet, onSettle, onProtect }: BetCardProps) {
                 <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", statusBadge)}>
                   {statusLabel}
                 </span>
+                {bet.horizonProtected && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700">
+                    <Shield className="h-3 w-3" />
+                    Protected
+                  </span>
+                )}
               </div>
               <p className="text-small text-text-secondary mt-1 leading-relaxed">
                 {bet.betType.charAt(0).toUpperCase() + bet.betType.slice(1)} · {oddsDisplay} · ${formatUSD(bet.stake)} stake
@@ -198,6 +207,14 @@ function BetCard({ bet, onSettle, onProtect }: BetCardProps) {
             </p>
           )}
 
+          {/* Linked horizon indicator */}
+          {bet.horizonProtected && (
+            <p className="flex items-center gap-1.5 text-tiny text-green-600 mt-2">
+              <CheckCircle className="h-3 w-3" />
+              Profit protected after bet.
+            </p>
+          )}
+
           {/* Timestamp */}
           <p className="text-tiny text-text-muted mt-2">{formatDate(bet.createdAt)}</p>
 
@@ -228,13 +245,14 @@ function BetCard({ bet, onSettle, onProtect }: BetCardProps) {
             </div>
           )}
 
-          {/* Post-win protection prompt */}
-          {isWin && !showProtect && (
+          {/* Post-win protection prompt (only if not already protected) */}
+          {isWin && !bet.horizonProtected && !showProtect && (
             <div className="mt-4">
               <button
                 type="button"
                 onClick={() => setShowProtect(true)}
-                className="inline-flex items-center gap-1.5 text-tiny font-medium text-green-600 hover:text-green-700 transition-colors"
+                disabled={isProtecting}
+                className="inline-flex items-center gap-1.5 text-tiny font-medium text-green-600 hover:text-green-700 transition-colors disabled:opacity-50"
               >
                 <Shield className="h-3 w-3" />
                 Protect part of this return
@@ -243,7 +261,14 @@ function BetCard({ bet, onSettle, onProtect }: BetCardProps) {
           )}
 
           {isWin && showProtect && (
-            <ProtectPrompt amount={bet.potentialReturn} onProtect={onProtect} onDismiss={() => setShowProtect(false)} />
+            <ProtectPrompt
+              betId={bet.id}
+              profit={bet.potentialProfit}
+              totalReturn={bet.potentialReturn}
+              onProtect={onProtect}
+              onDismiss={() => setShowProtect(false)}
+              protecting={isProtecting}
+            />
           )}
         </div>
       </div>
@@ -253,54 +278,118 @@ function BetCard({ bet, onSettle, onProtect }: BetCardProps) {
 
 /* ── Protection Prompt (inline) ────────────── */
 
-function ProtectPrompt({ amount, onProtect, onDismiss }: { amount: number; onProtect: (a: number) => void; onDismiss: () => void }) {
-  const [horizon, setHorizon] = useState<number | null>(null);
-  const createLock = useCreateLock();
+interface ProtectPromptProps {
+  betId: string;
+  profit: number;
+  totalReturn: number;
+  onProtect: (betId: string, amount: number, horizon: number) => void;
+  onDismiss: () => void;
+  protecting: boolean;
+}
 
-  const handleProtectProfit = useCallback(() => {
-    if (!horizon) return;
-    const profit = amount; // For a won bet, the return is the profit amount to protect
-    onProtect(profit);
-    createLock.createLock(profit, horizon * 86400);
-    onDismiss();
-  }, [amount, horizon, createLock, onProtect, onDismiss]);
+const HORIZONS = [7, 30, 90, 180];
+
+function ProtectPrompt({ betId, profit, totalReturn, onProtect, onDismiss, protecting }: ProtectPromptProps) {
+  const [horizon, setHorizon] = useState<number | null>(null);
+  const [mode, setMode] = useState<"profit" | "full" | null>(null);
+
+  const amount = mode === "full" ? totalReturn : mode === "profit" ? profit : 0;
+  const canConfirm = mode !== null && horizon !== null;
+
+  const handleConfirm = useCallback(() => {
+    if (!canConfirm) return;
+    onProtect(betId, amount, horizon);
+  }, [betId, amount, horizon, canConfirm, onProtect]);
 
   return (
     <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4 space-y-3">
       <p className="text-tiny font-medium text-green-700">Protect part of this return?</p>
-      <div className="flex gap-2">
-        {[7, 30, 90].map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => setHorizon(d)}
-            className={cn(
-              "rounded-lg border px-3 py-1.5 text-tiny font-medium transition-all",
-              horizon === d
-                ? "border-green-200 bg-surface text-green-700"
-                : "border-green-200/50 bg-surface text-text-secondary",
-            )}
-          >
-            {d}d
-          </button>
-        ))}
-      </div>
+
+      {/* Mode: Profit or Full Return */}
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={handleProtectProfit}
-          disabled={!horizon}
+          onClick={() => setMode("profit")}
           className={cn(
-            "rounded-lg px-3 py-1.5 text-tiny font-medium transition-all",
-            horizon ? "bg-green-500 text-white hover:bg-green-600" : "bg-surface-hover text-text-muted cursor-not-allowed",
+            "flex-1 rounded-lg border px-3 py-2 text-center transition-all",
+            mode === "profit"
+              ? "border-green-200 bg-surface text-green-700"
+              : "border-green-200/50 bg-surface/50 text-text-secondary hover:bg-surface",
           )}
         >
-          Protect
+          <span className="text-tiny font-medium block">Protect Profit</span>
+          <span className="text-[10px] text-text-muted block mt-0.5">${formatUSD(profit)}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("full")}
+          className={cn(
+            "flex-1 rounded-lg border px-3 py-2 text-center transition-all",
+            mode === "full"
+              ? "border-green-200 bg-surface text-green-700"
+              : "border-green-200/50 bg-surface/50 text-text-secondary hover:bg-surface",
+          )}
+        >
+          <span className="text-tiny font-medium block">Full Return</span>
+          <span className="text-[10px] text-text-muted block mt-0.5">${formatUSD(totalReturn)}</span>
+        </button>
+      </div>
+
+      {/* Horizon selector */}
+      {mode && (
+        <div>
+          <label className="text-[10px] font-medium uppercase tracking-wider text-green-700/80 mb-1.5 block">
+            Horizon
+          </label>
+          <div className="grid grid-cols-4 gap-2">
+            {HORIZONS.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setHorizon(d)}
+                className={cn(
+                  "rounded-lg border px-2 py-1.5 text-center transition-all",
+                  horizon === d
+                    ? "border-green-200 bg-surface text-green-700"
+                    : "border-green-200/50 bg-surface/50 text-text-secondary hover:bg-surface",
+                )}
+              >
+                <span className="text-tiny font-medium block">{d}</span>
+                <span className="text-[10px] text-text-muted block">days</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Summary + actions */}
+      {canConfirm && (
+        <p className="text-tiny text-green-700">
+          ${formatUSD(amount)} protected for {horizon} days.
+        </p>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={!canConfirm || protecting}
+          className={cn(
+            "flex-1 rounded-lg px-3 py-1.5 text-tiny font-medium transition-all",
+            canConfirm && !protecting
+              ? "bg-green-500 text-white hover:bg-green-600"
+              : protecting
+                ? "bg-surface-hover text-text-muted cursor-not-allowed animate-pulse"
+                : "bg-surface-hover text-text-muted cursor-not-allowed",
+          )}
+        >
+          {protecting ? "Protecting..." : "Protect"}
         </button>
         <button
           type="button"
           onClick={onDismiss}
-          className="rounded-lg px-3 py-1.5 text-tiny font-medium text-text-tertiary hover:text-text-secondary transition-colors"
+          disabled={protecting}
+          className="rounded-lg px-3 py-1.5 text-tiny font-medium text-text-tertiary hover:text-text-secondary transition-colors disabled:opacity-50"
         >
           Keep available
         </button>
@@ -560,6 +649,7 @@ export default function SessionsPage() {
   const [bets, setBets] = useState<BetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [protectingId, setProtectingId] = useState<string | null>(null);
 
   const loadBets = useCallback(async () => {
     try {
@@ -568,18 +658,22 @@ export default function SessionsPage() {
       if (res.ok) {
         const data = await res.json();
         setBets(
-          (data.bets || []).map((b: Record<string, unknown>) => ({
-            id: b.id as string,
-            description: (b.description as string) || "",
-            betType: ((b.marketType as string)?.toLowerCase?.() || "moneyline") as BetType,
-            odds: (b.odds as number) || 0,
-            stake: (b.stake as number) || 0,
-            potentialProfit: (b.potentialProfit as number) || 0,
-            potentialReturn: (b.potential_return as number) || 0,
-            status: ((b.status as string)?.toLowerCase?.() || "open") as BetStatus,
-            createdAt: (b.createdAt as string) || new Date().toISOString(),
-            settledAt: (b.settledAt as string) || undefined,
-          })),
+          (data.bets || []).map((b: Record<string, unknown>) => {
+            const desc = (b.description as string) || "";
+            return {
+              id: b.id as string,
+              description: desc.replace(/ — protected .*$/, ""), // strip protection suffix
+              betType: ((b.marketType as string)?.toLowerCase?.() || "moneyline") as BetType,
+              odds: (b.odds as number) || 0,
+              stake: (b.stake as number) || 0,
+              potentialProfit: (b.potentialProfit as number) || 0,
+              potentialReturn: (b.potential_return as number) || 0,
+              status: ((b.status as string)?.toLowerCase?.() || "open") as BetStatus,
+              createdAt: (b.createdAt as string) || new Date().toISOString(),
+              settledAt: (b.settledAt as string) || undefined,
+              horizonProtected: desc.includes("protected"),
+            };
+          }),
         );
       }
     } catch {
@@ -620,9 +714,27 @@ export default function SessionsPage() {
     }
   }, [loadBets]);
 
-  const handleProtect = useCallback(() => {
-    // Future: create lock integration
-  }, []);
+  const createLock = useCreateLock();
+
+  const handleProtect = useCallback(async (betId: string, amount: number, durationDays: number) => {
+    setProtectingId(betId);
+    try {
+      // 1. Create onchain horizon
+      createLock.createLock(amount, durationDays * 86400);
+      // 2. Record in backend
+      await fetch(`/api/bets/${betId}/protect`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, durationDays }),
+      });
+      // 3. Refresh
+      await loadBets();
+    } catch {
+      // silently fail
+    } finally {
+      setProtectingId(null);
+    }
+  }, [createLock, loadBets]);
 
   const handleBetLogged = useCallback(() => {
     loadBets();
@@ -684,7 +796,7 @@ export default function SessionsPage() {
                 <h2 className="text-sm font-medium text-text-primary mb-4">Open</h2>
                 <div className="space-y-4">
                   {openBets.map((bet) => (
-                    <BetCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} />
+                    <BetCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} />
                   ))}
                 </div>
               </div>
@@ -694,7 +806,7 @@ export default function SessionsPage() {
                 <h2 className="text-sm font-medium text-text-primary mb-4">Settled</h2>
                 <div className="space-y-4">
                   {settledBets.map((bet) => (
-                    <BetCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} />
+                    <BetCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} />
                   ))}
                 </div>
               </div>

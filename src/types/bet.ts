@@ -16,6 +16,7 @@ export interface BetRecord {
   settledProfitLoss?: number;
   createdAt: string;
   settledAt?: string;
+  horizonProtected?: boolean;
 }
 
 export interface CreateBetRequest {
