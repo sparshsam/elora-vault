@@ -74,10 +74,12 @@
   --color-border: #e1e0d7;
   --color-border-hover: #c8c6bb;
 
-  /* Text — darker for readability, still calm */
+  /* Text — semantic hierarchy, no opacity layering */
   --color-text-primary: #1c1d1a;
-  --color-text-secondary: #4b4e48;
-  --color-text-tertiary: #828580;
+  --color-text-secondary: #454842;
+  --color-text-tertiary: #6f736b;
+  --color-text-muted: #7a7d77;
+  --color-text-subtle: #8b8e88;
   --color-text-inverse: #ffffff;
 
   /* Green — Botanical, restrained, infrastructural */

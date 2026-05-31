@@ -95,7 +95,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full rounded-lg border border-border bg-surface-subtle px-4 py-2.5 text-small text-text-primary placeholder:text-text-tertiary/70 focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
+                className="w-full rounded-lg border border-border bg-surface-subtle px-4 py-2.5 text-small text-text-primary placeholder:text-text-muted focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
               />
             </div>
 
@@ -113,7 +113,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full rounded-lg border border-border bg-surface-subtle px-4 py-2.5 text-small text-text-primary placeholder:text-text-tertiary/70 focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
+                className="w-full rounded-lg border border-border bg-surface-subtle px-4 py-2.5 text-small text-text-primary placeholder:text-text-muted focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
               />
             </div>
 
@@ -147,7 +147,7 @@ export default function LoginPage() {
       {/* ── Footer ── */}
       <footer className="border-t border-border py-8">
         <div className="mx-auto max-w-5xl px-6 text-center">
-          <p className="text-tiny text-text-tertiary/70">
+          <p className="text-tiny text-text-muted">
             Elora Vault &mdash; Behavioral capital infrastructure
           </p>
         </div>

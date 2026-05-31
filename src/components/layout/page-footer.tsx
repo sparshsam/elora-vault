@@ -3,10 +3,10 @@ export function PageFooter() {
     <footer className="hidden md:block border-t border-border mt-auto">
       <div className="mx-auto max-w-5xl px-8 py-6">
         <div className="flex items-center justify-between">
-          <p className="text-tiny text-text-tertiary/80">
+          <p className="text-tiny text-text-muted">
             Elora Vault — Behavioral capital infrastructure
           </p>
-          <p className="text-tiny text-text-tertiary/60">
+          <p className="text-tiny text-text-subtle">
             Stored today. Available later.
           </p>
         </div>
