@@ -1,23 +1,30 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { calculateProfit, calculateTotalReturn, validateBet } from "@/lib/liability";
+
+/* ── Helpers ─────────────────────────────────────────── */
+
+function calculateProfit(odds: number, stake: number): number {
+  if (odds > 0) return stake * odds / 100;
+  return stake * 100 / Math.abs(odds);
+}
+
+function calculateTotalReturn(odds: number, stake: number): number {
+  return stake + calculateProfit(odds, stake);
+}
+
+/* ── GET /api/bets — list bets ────────────────────────── */
 
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const page = parseInt(searchParams.get("page") ?? "1");
-    const limit = parseInt(searchParams.get("limit") ?? "20");
+    const limit = parseInt(searchParams.get("limit") ?? "50");
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = { userId: user.id };
@@ -26,112 +33,75 @@ export async function GET(request: Request) {
     }
 
     const [bets, total] = await Promise.all([
-      prisma.bet.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
+      prisma.bet.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: limit }),
       prisma.bet.count({ where }),
     ]);
 
-    return NextResponse.json({
-      bets,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    });
+    return NextResponse.json({ bets, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
-    console.error("Error fetching bets:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    console.error("[bets] GET error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+/* ── POST /api/bets — log a new bet ──────────────────── */
 
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { sport, league, event_name, marketType, selection, odds, stake } = body;
+    const { description, betType, odds, stake } = body;
 
-    if (!sport || !marketType || !selection || !odds || !stake) {
-      return NextResponse.json(
-        { error: "Missing required fields: sport, marketType, selection, odds, stake" },
-        { status: 400 },
-      );
+    if (!odds || !stake || stake <= 0) {
+      return NextResponse.json({ error: "Missing required fields: odds, stake" }, { status: 400 });
     }
 
-    if (!["MONEYLINE", "SPREAD", "TOTAL"].includes(marketType)) {
-      return NextResponse.json(
-        { error: "Invalid market type" },
-        { status: 400 },
-      );
+    if (stake > 100000) {
+      return NextResponse.json({ error: "Stake exceeds maximum" }, { status: 400 });
     }
 
-    const wallet = await prisma.wallet.findUnique({
-      where: { userId: user.id },
-    });
-
+    const wallet = await prisma.wallet.findUnique({ where: { userId: user.id } });
     if (!wallet) {
-      return NextResponse.json(
-        { error: "Wallet not found. Deposit funds first." },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Wallet not found. Deposit funds first." }, { status: 404 });
     }
 
-    // Validate stake against user_balance only (no house liability cap)
-    const validation = validateBet(odds, stake, wallet.user_balance);
-    if (!validation.valid) {
-      return NextResponse.json(
-        { error: validation.reason, profit: validation.profit, totalReturn: validation.totalReturn },
-        { status: 400 },
-      );
+    if (stake > wallet.user_balance) {
+      return NextResponse.json({ error: "Stake exceeds available balance" }, { status: 400 });
     }
 
     const profit = calculateProfit(odds, stake);
     const totalReturn = calculateTotalReturn(odds, stake);
 
-    // Deduct stake from user balance
+    // Deduct from user_balance, add to at_risk_balance
     await prisma.wallet.update({
       where: { id: wallet.id },
       data: {
         user_balance: { decrement: stake },
+        at_risk_balance: { increment: stake },
         total_wagered: { increment: stake },
       },
     });
 
-    const updatedWallet = await prisma.wallet.findUnique({
-      where: { userId: user.id },
-    });
+    const updatedWallet = await prisma.wallet.findUnique({ where: { userId: user.id } });
 
     const bet = await prisma.bet.create({
       data: {
         userId: user.id,
-        sport,
-        league: league || null,
-        event_name: event_name || null,
-        marketType,
-        selection,
+        description: description || "",
+        sport: "Other",
+        marketType: (betType?.toUpperCase?.() === "SPREAD" ? "SPREAD" : betType?.toUpperCase?.() === "TOTAL" ? "TOTAL" : "MONEYLINE") as "MONEYLINE" | "SPREAD" | "TOTAL",
+        selection: description || "",
         odds,
         stake,
         potentialProfit: profit,
         potential_return: totalReturn,
         user_balance_before: wallet.user_balance,
         user_balance_after: updatedWallet?.user_balance ?? wallet.user_balance - stake,
-        house_balance_before: wallet.virtual_house_balance,
-        house_balance_after: wallet.virtual_house_balance,
-        savings_vault_before: wallet.savings_vault,
-        savings_vault_after: wallet.savings_vault,
+        at_risk_before: wallet.at_risk_balance,
+        at_risk_after: (updatedWallet?.at_risk_balance ?? wallet.at_risk_balance + stake),
       },
     });
 
@@ -143,16 +113,15 @@ export async function POST(request: Request) {
         balanceBefore: wallet.user_balance,
         balanceAfter: updatedWallet?.user_balance ?? wallet.user_balance - stake,
         betId: bet.id,
-        description: `Bet placed: ${sport}${league ? " " + league : ""} ${marketType} - ${selection} ($${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds})`,
+        description: description
+          ? `Bet logged: ${description} ($${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds})`
+          : `Bet logged: $${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds}`,
       },
     });
 
     return NextResponse.json(bet, { status: 201 });
   } catch (error) {
-    console.error("Error creating bet:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    console.error("[bets] POST error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

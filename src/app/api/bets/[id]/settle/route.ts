@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { settleWin, settleLoss, settlePush } from "@/lib/liability";
 
 export async function PATCH(
   request: Request,
@@ -9,153 +8,90 @@ export async function PATCH(
 ) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
     const { result } = await request.json();
 
     if (!["WIN", "LOSS", "PUSH"].includes(result)) {
-      return NextResponse.json(
-        { error: "Result must be WIN, LOSS, or PUSH" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Result must be WIN, LOSS, or PUSH" }, { status: 400 });
     }
 
-    const bet = await prisma.bet.findUnique({
-      where: { id },
-    });
+    const bet = await prisma.bet.findUnique({ where: { id } });
+    if (!bet) return NextResponse.json({ error: "Bet not found" }, { status: 404 });
+    if (bet.userId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (bet.status !== "OPEN") return NextResponse.json({ error: "Bet is already settled" }, { status: 400 });
 
-    if (!bet) {
-      return NextResponse.json({ error: "Bet not found" }, { status: 404 });
-    }
+    const wallet = await prisma.wallet.findUnique({ where: { userId: user.id } });
+    if (!wallet) return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
 
-    if (bet.userId !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    if (bet.status !== "OPEN") {
-      return NextResponse.json(
-        { error: "Bet is already settled" },
-        { status: 400 },
-      );
-    }
-
-    const wallet = await prisma.wallet.findUnique({
-      where: { userId: user.id },
-    });
-
-    if (!wallet) {
-      return NextResponse.json(
-        { error: "Wallet not found" },
-        { status: 404 },
-      );
-    }
-
-    // Perform settlement calculations
-    let settlement: {
-      newHouseBalance: number;
-      newUserBalance: number;
-      newSavingsVault: number;
-      withdrawableWinnings: number;
-    };
+    let newUserBalance = wallet.user_balance;
+    const newAtRisk = wallet.at_risk_balance - bet.stake;
+    let transactionAmount = 0;
     let transactionType: string;
     let description: string;
-    let transactionAmount: number;
 
     if (result === "WIN") {
-      settlement = settleWin(
-        wallet.virtual_house_balance,
-        wallet.user_balance,
-        wallet.savings_vault,
-        bet.stake,
-        bet.potentialProfit,
-      );
+      const totalReturn = bet.stake + bet.potentialProfit;
+      newUserBalance += totalReturn;
+      transactionAmount = totalReturn;
       transactionType = "WIN_PROFIT";
-      transactionAmount = bet.stake + bet.potentialProfit;
-      description = `Bet won: ${bet.sport} - ${bet.selection} (${bet.odds > 0 ? "+" : ""}${bet.odds})`;
+      description = bet.description
+        ? `Bet won: ${bet.description} — +$${bet.potentialProfit.toFixed(2)}`
+        : `Bet won: +$${bet.potentialProfit.toFixed(2)}`;
     } else if (result === "LOSS") {
-      settlement = settleLoss(
-        wallet.virtual_house_balance,
-        wallet.user_balance,
-        wallet.savings_vault,
-        bet.stake,
-      );
+      transactionAmount = bet.stake;
       transactionType = "LOSS_TO_SAVINGS";
-      transactionAmount = bet.stake;
-      description = `Bet lost: ${bet.sport} - ${bet.selection} — $${bet.stake.toFixed(2)} saved to vault`;
+      description = bet.description
+        ? `Bet lost: ${bet.description}`
+        : "Bet lost";
     } else {
-      settlement = settlePush(
-        wallet.virtual_house_balance,
-        wallet.user_balance,
-        wallet.savings_vault,
-        bet.stake,
-      );
-      transactionType = "PUSH_RETURN";
+      // PUSH — return stake
+      newUserBalance += bet.stake;
       transactionAmount = bet.stake;
-      description = `Bet push: ${bet.sport} - ${bet.selection} (stake returned)`;
+      transactionType = "PUSH_RETURN";
+      description = bet.description
+        ? `Bet pushed: ${bet.description} — stake returned`
+        : "Bet pushed: stake returned";
     }
 
-    const updatedWallet = await prisma.wallet.update({
+    await prisma.wallet.update({
       where: { id: wallet.id },
       data: {
-        virtual_house_balance: settlement.newHouseBalance,
-        user_balance: settlement.newUserBalance,
-        savings_vault: settlement.newSavingsVault,
-        withdrawable_winnings: result === "WIN"
-          ? { increment: settlement.withdrawableWinnings }
-          : result === "LOSS"
-            ? settlement.withdrawableWinnings
-            : settlement.withdrawableWinnings,
-        total_saved_from_losses: result === "LOSS"
-          ? { increment: bet.stake }
-          : undefined,
-        total_profit_won: result === "WIN"
-          ? { increment: bet.potentialProfit }
-          : undefined,
+        user_balance: newUserBalance,
+        at_risk_balance: Math.max(0, newAtRisk),
+        ...(result === "LOSS" ? { total_saved_from_losses: { increment: bet.stake } } : {}),
+        ...(result === "WIN" ? { total_profit_won: { increment: bet.potentialProfit } } : {}),
       },
     });
 
-    await prisma.bet.update({
+    const updatedBet = await prisma.bet.update({
       where: { id },
       data: {
         status: result as "WON" | "LOST" | "PUSH",
         settledAt: new Date(),
-        house_balance_after: settlement.newHouseBalance,
-        user_balance_after: settlement.newUserBalance,
-        savings_vault_after: settlement.newSavingsVault,
+        user_balance_after: newUserBalance,
+        at_risk_before: wallet.at_risk_balance,
+        at_risk_after: Math.max(0, newAtRisk),
       },
     });
 
     await prisma.transaction.create({
       data: {
         userId: user.id,
-        type: transactionType as
-          | "WIN_PROFIT"
-          | "LOSS_TO_SAVINGS"
-          | "PUSH_RETURN",
+        type: transactionType as "WIN_PROFIT" | "LOSS_TO_SAVINGS" | "PUSH_RETURN",
         amount: transactionAmount,
         balanceBefore: wallet.user_balance,
-        balanceAfter: settlement.newUserBalance,
+        balanceAfter: newUserBalance,
         betId: bet.id,
         description,
       },
     });
 
-    return NextResponse.json({
-      bet: { ...bet, status: result },
-      wallet: updatedWallet,
-    });
+    return NextResponse.json({ bet: updatedBet });
   } catch (error) {
-    console.error("Error settling bet:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    console.error("[settle] error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

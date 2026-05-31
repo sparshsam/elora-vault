@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, createElement } from "react";
+import { useCapitalState } from "@/lib/capital-state";
 import { useCreateLock } from "@/lib/web3/tx-hooks";
 import { PageShell } from "@/components/layout/page-shell";
 import { CapitalModal } from "@/components/capital/capital-modal";
@@ -9,43 +10,43 @@ import {
   TrendingDown,
   Minus,
   Shield,
-  Timer,
-  History,
+  Target,
   Plus,
-  ArrowRight,
-  BookOpen,
+  DollarSign,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type {
-  BettingSession,
-  SessionOutcome,
-  SessionAction,
-  CreateSessionRequest,
-} from "@/types/session";
+import type { BetRecord, BetType, BetStatus, SettleResult } from "@/types/bet";
 
-/* ── Summary Icons — module scope ───────────── */
+/* ── Summary Icons ─────────────────────────── */
 
 const SUMMARY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  balance: TrendingUp,
-  protected: Shield,
-  horizons: Timer,
-  recent: History,
+  atRisk: HelpCircle,
+  open: Target,
+  potential: TrendingUp,
+  settled: DollarSign,
 };
 
 const SUMMARY_COLORS: Record<string, string> = {
-  balance: "text-green-700 bg-green-100 border-green-200",
-  protected: "text-green-600 bg-green-50 border-green-200",
-  horizons: "text-text-secondary bg-surface-subtle border-border",
-  recent: "text-text-tertiary bg-surface-subtle border-border",
+  atRisk: "text-amber-700 bg-amber-50 border-amber-200",
+  open: "text-green-600 bg-green-50 border-green-200",
+  potential: "text-green-700 bg-green-100 border-green-200",
+  settled: "text-text-secondary bg-surface-subtle border-border",
 };
 
 /* ── Helpers ───────────────────────────────── */
 
 function formatUSD(n: number): string {
-  return n.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function calculateProfit(odds: number, stake: number): number {
+  if (odds > 0) return stake * odds / 100;
+  return stake * 100 / Math.abs(odds);
+}
+
+function calculateTotalReturn(odds: number, stake: number): number {
+  return stake + calculateProfit(odds, stake);
 }
 
 function formatDate(iso: string): string {
@@ -55,28 +56,12 @@ function formatDate(iso: string): string {
   const diffDays = Math.floor(diffMs / 86400000);
   if (diffDays === 0) {
     const h = Math.floor(diffMs / 3600000);
-    if (h === 0) {
-      const m = Math.floor(diffMs / 60000);
-      return `${m}m ago`;
-    }
-    return `${h}h ago`;
+    return h === 0 ? `${Math.floor(diffMs / 60000)}m ago` : `${h}h ago`;
   }
   if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) return `${diffDays}d ago`;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
-
-/* ── Types ─────────────────────────────────── */
-
-type NewSessionStep = "outcome" | "details" | "action" | "pending" | "success";
-
-const CATEGORIES = ["NBA", "MLB", "UFC", "Soccer", "Trading", "Crypto", "Other"];
-
-const HORIZON_OPTIONS = [
-  { days: 7, label: "7 days" },
-  { days: 30, label: "30 days" },
-  { days: 90, label: "90 days" },
-] as const;
 
 /* ── Summary Card ──────────────────────────── */
 
@@ -88,14 +73,12 @@ interface SummaryCardProps {
 }
 
 function SummaryCard({ label, value, subtext, iconKey }: SummaryCardProps) {
-  const Icon = SUMMARY_ICONS[iconKey] || History;
-  const colorClass = SUMMARY_COLORS[iconKey] || SUMMARY_COLORS.recent;
+  const Icon = SUMMARY_ICONS[iconKey] || DollarSign;
+  const colorClass = SUMMARY_COLORS[iconKey] || SUMMARY_COLORS.settled;
   return (
     <div className="rounded-xl border border-border bg-surface shadow-sm p-4 md:p-5 transition-all duration-200 hover:shadow-md">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-tiny font-medium uppercase tracking-wider text-text-tertiary">
-          {label}
-        </span>
+        <span className="text-tiny font-medium uppercase tracking-wider text-text-tertiary">{label}</span>
         <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg border", colorClass)}>
           <Icon className="h-3.5 w-3.5" />
         </div>
@@ -106,28 +89,43 @@ function SummaryCard({ label, value, subtext, iconKey }: SummaryCardProps) {
   );
 }
 
-/* ── Session Card (timeline) ────────────────── */
+/* ── Bet Card ───────────────────────────────── */
 
-interface SessionCardProps {
-  session: BettingSession;
+interface BetCardProps {
+  bet: BetRecord;
+  onSettle: (id: string, result: SettleResult) => void;
+  onProtect: (amount: number) => void;
 }
 
-function SessionCard({ session }: SessionCardProps) {
-  const isWin = session.pnl > 0;
-  const isLoss = session.pnl < 0;
-  const pnlColor = isWin ? "text-green-600" : isLoss ? "text-danger" : "text-text-tertiary";
-  const outcomeIcon = isWin ? TrendingUp : isLoss ? TrendingDown : Minus;
+function BetCard({ bet, onSettle, onProtect }: BetCardProps) {
+  const isOpen = bet.status === "open";
+  const isWin = bet.status === "won";
+  const isLoss = bet.status === "lost";
+  const isPush = bet.status === "push";
+  const [showProtect, setShowProtect] = useState(false);
 
-  const actionLabels: Record<string, string> = {
-    "kept-available": "Kept available",
-    "protected-gains": "Protected for " + (session.horizonId ? "horizon" : "protection"),
-    "moved-to-horizon": "Moved into horizon",
-  };
+  const statusBadge = isOpen
+    ? "bg-amber-50 text-amber-700 border-amber-200"
+    : isWin
+      ? "bg-green-50 text-green-700 border-green-200"
+      : isLoss
+        ? "bg-red-50 text-danger border-red-200"
+        : "bg-surface-subtle text-text-secondary border-border";
+
+  const statusLabel = isOpen ? "Open" : isWin ? "Won" : isLoss ? "Lost" : "Push";
+
+  const pnl = isWin
+    ? bet.potentialProfit
+    : isLoss
+      ? -bet.stake
+      : 0;
+
+  const oddsDisplay = bet.odds > 0 ? `+${bet.odds}` : `${bet.odds}`;
 
   return (
     <div className="rounded-xl border border-border bg-surface shadow-sm p-5 md:p-6 transition-all duration-200 hover:shadow-md">
       <div className="flex items-start gap-4">
-        {/* Outcome icon */}
+        {/* Status icon */}
         <div
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
@@ -135,10 +133,19 @@ function SessionCard({ session }: SessionCardProps) {
               ? "border-green-200 bg-green-50"
               : isLoss
                 ? "border-red-200 bg-red-50"
-                : "border-border bg-surface-subtle",
+                : isPush
+                  ? "border-border bg-surface-subtle"
+                  : "border-amber-200 bg-amber-50",
           )}
         >
-          {createElement(outcomeIcon, { className: cn("h-5 w-5", pnlColor) })}
+          {isOpen ? (
+            <HelpCircle className="h-5 w-5 text-amber-600" />
+          ) : (
+            createElement(
+              isWin ? TrendingUp : isLoss ? TrendingDown : Minus,
+              { className: cn("h-5 w-5", isWin ? "text-green-600" : isLoss ? "text-danger" : "text-text-tertiary") },
+            )
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -146,45 +153,97 @@ function SessionCard({ session }: SessionCardProps) {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-medium text-text-primary">
-                  {session.title || session.category || "Session"}
+                  {bet.description || "Bet"}
                 </h3>
-                {session.category && (
-                  <span className="rounded-full border border-border bg-surface-subtle px-2 py-0.5 text-[10px] font-medium text-text-tertiary">
-                    {session.category}
-                  </span>
-                )}
+                <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", statusBadge)}>
+                  {statusLabel}
+                </span>
               </div>
               <p className="text-small text-text-secondary mt-1 leading-relaxed">
-                {actionLabels[session.actionTaken] || "Session recorded"}
-                {session.notes && ` — ${session.notes}`}
+                {bet.betType.charAt(0).toUpperCase() + bet.betType.slice(1)} · {oddsDisplay} · ${formatUSD(bet.stake)} stake
               </p>
             </div>
-
-            {/* PnL */}
-            <span className={cn("text-sm font-medium tabular-nums shrink-0", pnlColor)}>
-              {isWin ? "+" : ""}${formatUSD(session.pnl)}
+            <span
+              className={cn(
+                "text-sm font-medium tabular-nums shrink-0",
+                isWin ? "text-green-600" : isLoss ? "text-danger" : "text-text-primary",
+              )}
+            >
+              ${formatUSD(isOpen ? bet.potentialReturn : bet.stake + pnl)}
             </span>
           </div>
 
-          <div className="flex items-center gap-3 mt-3 text-tiny text-text-muted">
-            <span>{formatDate(session.createdAt)}</span>
-            <span className="h-1 w-1 rounded-full bg-border" />
-            <span className="capitalize">{session.outcome}</span>
-            {session.horizonId && (
-              <>
-                <span className="h-1 w-1 rounded-full bg-border" />
-                <span className="text-green-600">Horizon linked</span>
-              </>
-            )}
-          </div>
-
-          {/* Bankroll bar */}
-          {session.bankrollBefore > 0 && (
-            <div className="mt-3 flex items-center gap-2 text-tiny text-text-muted">
-              <span>${formatUSD(session.bankrollBefore)}</span>
-              <ArrowRight className="h-3 w-3" />
-              <span className={pnlColor}>${formatUSD(session.bankrollAfter)}</span>
+          {/* Odds breakdown */}
+          {isOpen && (
+            <div className="mt-3 grid grid-cols-3 gap-4 max-w-xs">
+              <div>
+                <span className="text-tiny text-text-muted block">Stake</span>
+                <span className="text-small font-medium text-text-primary">${formatUSD(bet.stake)}</span>
+              </div>
+              <div>
+                <span className="text-tiny text-text-muted block">Profit</span>
+                <span className="text-small font-medium text-green-600">${formatUSD(bet.potentialProfit)}</span>
+              </div>
+              <div>
+                <span className="text-tiny text-text-muted block">Return</span>
+                <span className="text-small font-medium text-text-primary">${formatUSD(bet.potentialReturn)}</span>
+              </div>
             </div>
+          )}
+
+          {/* Settled PnL */}
+          {!isOpen && (
+            <p className={cn("text-small font-medium mt-2", isWin ? "text-green-600" : isLoss ? "text-danger" : "text-text-tertiary")}>
+              {isWin ? `+$${formatUSD(pnl)}` : isLoss ? `-$${formatUSD(bet.stake)}` : "Stake returned"}
+            </p>
+          )}
+
+          {/* Timestamp */}
+          <p className="text-tiny text-text-muted mt-2">{formatDate(bet.createdAt)}</p>
+
+          {/* Open bet actions */}
+          {isOpen && (
+            <div className="flex items-center gap-2 mt-4 flex-wrap">
+              <button
+                type="button"
+                onClick={() => onSettle(bet.id, "WIN")}
+                className="rounded-lg bg-green-500 text-white px-3 py-1.5 text-tiny font-medium hover:bg-green-600 transition-colors shadow-sm"
+              >
+                Won
+              </button>
+              <button
+                type="button"
+                onClick={() => onSettle(bet.id, "LOSS")}
+                className="rounded-lg border border-border bg-surface-subtle text-text-secondary px-3 py-1.5 text-tiny font-medium hover:text-danger hover:border-danger/30 transition-colors"
+              >
+                Lost
+              </button>
+              <button
+                type="button"
+                onClick={() => onSettle(bet.id, "PUSH")}
+                className="rounded-lg border border-border bg-surface-subtle text-text-muted px-3 py-1.5 text-tiny font-medium hover:text-text-secondary transition-colors"
+              >
+                Push
+              </button>
+            </div>
+          )}
+
+          {/* Post-win protection prompt */}
+          {isWin && !showProtect && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setShowProtect(true)}
+                className="inline-flex items-center gap-1.5 text-tiny font-medium text-green-600 hover:text-green-700 transition-colors"
+              >
+                <Shield className="h-3 w-3" />
+                Protect part of this return
+              </button>
+            </div>
+          )}
+
+          {isWin && showProtect && (
+            <ProtectPrompt amount={bet.potentialReturn} onProtect={onProtect} onDismiss={() => setShowProtect(false)} />
           )}
         </div>
       </div>
@@ -192,486 +251,273 @@ function SessionCard({ session }: SessionCardProps) {
   );
 }
 
-/* ── Empty State ───────────────────────────── */
+/* ── Protection Prompt (inline) ────────────── */
 
-function EmptyState({ onStartSession }: { onStartSession: () => void }) {
+function ProtectPrompt({ amount, onProtect, onDismiss }: { amount: number; onProtect: (a: number) => void; onDismiss: () => void }) {
+  const [horizon, setHorizon] = useState<number | null>(null);
+  const createLock = useCreateLock();
+
+  const handleProtectProfit = useCallback(() => {
+    if (!horizon) return;
+    const profit = amount; // For a won bet, the return is the profit amount to protect
+    onProtect(profit);
+    createLock.createLock(profit, horizon * 86400);
+    onDismiss();
+  }, [amount, horizon, createLock, onProtect, onDismiss]);
+
   return (
-    <div className="rounded-xl border border-border bg-surface p-12 md:p-16">
-      <div className="flex flex-col items-center justify-center text-center">
-        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-subtle">
-          <BookOpen className="h-5 w-5 text-text-tertiary" />
-        </div>
-        <p className="text-sm font-medium text-text-primary">
-          No sessions recorded yet.
-        </p>
-        <p className="text-small text-text-tertiary mt-2 max-w-xs">
-          Sessions provide a reflective bridge between decisions and capital
-          movement. Log your first session to begin.
-        </p>
+    <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4 space-y-3">
+      <p className="text-tiny font-medium text-green-700">Protect part of this return?</p>
+      <div className="flex gap-2">
+        {[7, 30, 90].map((d) => (
+          <button
+            key={d}
+            type="button"
+            onClick={() => setHorizon(d)}
+            className={cn(
+              "rounded-lg border px-3 py-1.5 text-tiny font-medium transition-all",
+              horizon === d
+                ? "border-green-200 bg-surface text-green-700"
+                : "border-green-200/50 bg-surface text-text-secondary",
+            )}
+          >
+            {d}d
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
         <button
           type="button"
-          onClick={onStartSession}
-          className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors"
+          onClick={handleProtectProfit}
+          disabled={!horizon}
+          className={cn(
+            "rounded-lg px-3 py-1.5 text-tiny font-medium transition-all",
+            horizon ? "bg-green-500 text-white hover:bg-green-600" : "bg-surface-hover text-text-muted cursor-not-allowed",
+          )}
         >
-          Start a session
-          <ArrowRight className="h-3.5 w-3.5" />
+          Protect
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="rounded-lg px-3 py-1.5 text-tiny font-medium text-text-tertiary hover:text-text-secondary transition-colors"
+        >
+          Keep available
         </button>
       </div>
     </div>
   );
 }
 
-/* ── New Session Modal ─────────────────────── */
+/* ── Log Bet Modal ─────────────────────────── */
 
-interface NewSessionModalProps {
+interface LogBetModalProps {
   open: boolean;
   onClose: () => void;
-  onSessionCreated: () => void;
+  onBetLogged: () => void;
+  availableBalance: number;
 }
 
-function NewSessionModal({ open, onClose, onSessionCreated }: NewSessionModalProps) {
-  const createLock = useCreateLock();
+function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetModalProps) {
+  const [description, setDescription] = useState("");
+  const [betType, setBetType] = useState<BetType>("moneyline");
+  const [odds, setOdds] = useState("");
+  const [stake, setStake] = useState("");
+  const [step, setStep] = useState<"input" | "submitting" | "success" | "error">("input");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const [step, setStep] = useState<NewSessionStep>("outcome");
-  const [outcome, setOutcome] = useState<SessionOutcome | null>(null);
-  const [category, setCategory] = useState("");
-  const [bankrollBefore, setBankrollBefore] = useState("");
-  const [bankrollAfter, setBankrollAfter] = useState("");
-  const [pnl, setPnl] = useState<number>(0);
-  const [notes, setNotes] = useState("");
-  const [action, setAction] = useState<SessionAction | null>(null);
-  const [horizonDays, setHorizonDays] = useState<number | null>(null);
-  const [horizonAmount, setHorizonAmount] = useState("");
-
-  // Reset on open
   useEffect(() => {
     if (open) {
-      setStep("outcome");
-      setOutcome(null);
-      setCategory("");
-      setBankrollBefore("");
-      setBankrollAfter("");
-      setPnl(0);
-      setNotes("");
-      setAction(null);
-      setHorizonDays(null);
-      setHorizonAmount("");
+      setDescription("");
+      setBetType("moneyline");
+      setOdds("");
+      setStake("");
+      setStep("input");
+      setErrorMsg("");
     }
   }, [open]);
 
-  // Track createLock tx
-  useEffect(() => {
-    if (step === "pending" && createLock.isConfirmed) {
-      setStep("success");
-    }
-  }, [step, createLock.isConfirmed]);
+  const numericOdds = parseInt(odds.replace(/[^0-9-]/g, ""), 10) || 0;
+  const numericStake = parseFloat(stake || "0");
+  const profit = numericOdds && numericStake ? calculateProfit(numericOdds, numericStake) : 0;
+  const totalReturn = numericOdds && numericStake ? calculateTotalReturn(numericOdds, numericStake) : 0;
+  const isValid = numericStake > 0 && numericOdds !== 0 && numericStake <= availableBalance;
 
-  // Compute pnl when bankroll values change
-  useEffect(() => {
-    const before = parseFloat(bankrollBefore || "0");
-    const after = parseFloat(bankrollAfter || "0");
-    setPnl(after - before);
-  }, [bankrollBefore, bankrollAfter]);
-
-  const handleOutcomeNext = useCallback(() => {
-    if (!outcome) return;
-    setStep("details");
-  }, [outcome]);
-
-  const handleDetailsNext = useCallback(() => {
-    setStep("action");
-  }, []);
-
-  const handleSaveSession = useCallback(
-    async (horizonId?: string) => {
-      try {
-        const payload: CreateSessionRequest = {
-          outcome: outcome || "break-even",
-          pnl,
-          bankrollBefore: parseFloat(bankrollBefore || "0"),
-          bankrollAfter: parseFloat(bankrollAfter || "0"),
-          actionTaken: action || "kept-available",
-          category: category || undefined,
-          title: category ? `${category} Session` : undefined,
-          notes: notes || undefined,
-          horizonId,
-        };
-
-        await fetch("/api/sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        onSessionCreated();
-      } catch {
-        // Silent — session save is non-critical
+  const handleSubmit = useCallback(async () => {
+    if (!isValid) return;
+    setStep("submitting");
+    try {
+      const res = await fetch("/api/bets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description,
+          betType,
+          odds: numericOdds,
+          stake: numericStake,
+        }),
+      });
+      if (res.ok) {
+        setStep("success");
+        onBetLogged();
+      } else {
+        const err = await res.json();
+        setErrorMsg(err.error || "Failed to log bet");
+        setStep("error");
       }
-    },
-    [outcome, pnl, bankrollBefore, bankrollAfter, action, category, notes, onSessionCreated],
-  );
-
-  const handleActionConfirm = useCallback(async () => {
-    if (action === "protected-gains" || action === "moved-to-horizon") {
-      const amount = parseFloat(horizonAmount || "0");
-      const days = horizonDays || 30;
-      if (amount > 0 && days > 0) {
-        setStep("pending");
-        createLock.createLock(amount, days * 86400);
-        // After lock is confirmed, save session with horizon
-        return;
-      }
+    } catch {
+      setErrorMsg("Network error. Please try again.");
+      setStep("error");
     }
-
-    // No horizon needed — save session directly
-    setStep("success");
-    await handleSaveSession();
-  }, [action, horizonAmount, horizonDays, createLock, handleSaveSession]);
-
-  // Save session after horizon confirmed
-  useEffect(() => {
-    if (createLock.isConfirmed && step === "success") {
-      // Session will be saved with horizon link
-      // For now, just refetch
-      onSessionCreated();
-    }
-  }, [createLock.isConfirmed, step, onSessionCreated]);
+  }, [isValid, description, betType, numericOdds, numericStake, onBetLogged]);
 
   const handleClose = useCallback(() => {
-    setStep("outcome");
+    setStep("input");
     onClose();
   }, [onClose]);
 
-  const numericBankrollBefore = parseFloat(bankrollBefore || "0");
-  const numericBankrollAfter = parseFloat(bankrollAfter || "0");
-
   return (
-    <CapitalModal open={open} onClose={handleClose} title="End session">
+    <CapitalModal open={open} onClose={handleClose} title="Log Bet">
       {step === "success" ? (
         <div className="flex flex-col items-center py-6 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
-            <Shield className="h-6 w-6 text-green-600" />
+            <TrendingUp className="h-6 w-6 text-green-600" />
           </div>
-          <p className="text-sm font-medium text-text-primary">
-            {action === "protected-gains"
-              ? "Session gains protected."
-              : action === "moved-to-horizon"
-                ? "Capital moved into a horizon."
-                : "Session recorded."}
-          </p>
-          <p className="text-small text-text-tertiary mt-2">
-            {action === "protected-gains" || action === "moved-to-horizon"
-              ? "Bankroll preserved after session."
-              : "Remaining bankroll kept available."}
-          </p>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="mt-6 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors"
-          >
+          <p className="text-sm font-medium text-text-primary">Bet logged successfully.</p>
+          <p className="text-small text-text-tertiary mt-2">${formatUSD(numericStake)} at risk. Good luck.</p>
+          <button type="button" onClick={handleClose}
+            className="mt-6 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors">
             Done
           </button>
         </div>
-      ) : step === "pending" ? (
+      ) : step === "error" ? (
+        <div className="flex flex-col items-center py-6 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-danger/10 mb-4">
+            <Minus className="h-6 w-6 text-danger" />
+          </div>
+          <p className="text-sm font-medium text-text-primary">{errorMsg}</p>
+          <button type="button" onClick={() => setStep("input")}
+            className="mt-6 rounded-lg bg-surface-subtle text-text-secondary px-5 py-2.5 text-small font-medium hover:text-text-primary transition-colors border border-border">
+            Try again
+          </button>
+        </div>
+      ) : step === "submitting" ? (
         <div className="flex flex-col items-center py-6 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle mb-4">
             <span className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
           </div>
-          <p className="text-sm font-medium text-text-primary">Capital entering protection.</p>
-          <p className="text-tiny text-text-muted mt-2">Confirm in your wallet when prompted.</p>
+          <p className="text-sm font-medium text-text-primary">Submitting bet...</p>
         </div>
-      ) : step === "action" ? (
+      ) : (
         <div className="space-y-5">
-          <p className="text-small text-text-secondary leading-relaxed">
-            {outcome === "won"
-              ? "You have session gains. What would you like to do?"
-              : outcome === "lost"
-                ? "The session is over. How would you like to proceed with your remaining bankroll?"
-                : "The session is done. Choose your next step."}
-          </p>
-
-          {/* Actions */}
-          <div className="space-y-2">
-            <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary">
-              Next step
-            </label>
-
-            <button
-              type="button"
-              onClick={() => { setAction("kept-available"); }}
-              className={cn(
-                "w-full rounded-lg border px-4 py-3 text-left transition-all duration-200",
-                action === "kept-available"
-                  ? "border-green-200 bg-green-50"
-                  : "border-border bg-surface hover:border-border-hover hover:shadow-sm",
-              )}
-            >
-              <span className="text-sm font-medium text-text-primary block">Keep available</span>
-              <span className="text-tiny text-text-muted block mt-0.5">Capital stays in your available balance.</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setAction("protected-gains"); }}
-              className={cn(
-                "w-full rounded-lg border px-4 py-3 text-left transition-all duration-200",
-                action === "protected-gains"
-                  ? "border-green-200 bg-green-50"
-                  : "border-border bg-surface hover:border-border-hover hover:shadow-sm",
-              )}
-            >
-              <span className="text-sm font-medium text-text-primary block">Protect gains</span>
-              <span className="text-tiny text-text-muted block mt-0.5">Move session gains into a protected horizon.</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setAction("moved-to-horizon"); }}
-              className={cn(
-                "w-full rounded-lg border px-4 py-3 text-left transition-all duration-200",
-                action === "moved-to-horizon"
-                  ? "border-green-200 bg-green-50"
-                  : "border-border bg-surface hover:border-border-hover hover:shadow-sm",
-              )}
-            >
-              <span className="text-sm font-medium text-text-primary block">Move to horizon</span>
-              <span className="text-tiny text-text-muted block mt-0.5">Secure remaining capital in a new horizon.</span>
-            </button>
-          </div>
-
-          {/* Horizon options (shown when protecting or moving) */}
-          {(action === "protected-gains" || action === "moved-to-horizon") && (
-            <div className="space-y-4 rounded-lg border border-green-200 bg-green-50 p-4">
-              <div>
-                <label className="text-tiny font-medium uppercase tracking-wider text-green-700/80 mb-1.5 block">
-                  Amount to protect
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-muted font-light">$</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={horizonAmount}
-                    onChange={(e) => setHorizonAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-                    placeholder="0.00"
-                    className="w-full rounded-lg border border-green-200 bg-surface px-8 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-tiny font-medium uppercase tracking-wider text-green-700/80 mb-1.5 block">
-                  Horizon duration
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {HORIZON_OPTIONS.map((o) => (
-                    <button
-                      key={o.days}
-                      type="button"
-                      onClick={() => setHorizonDays(o.days)}
-                      className={cn(
-                        "rounded-lg border px-2 py-2 text-center transition-all duration-200",
-                        horizonDays === o.days
-                          ? "border-green-200 bg-surface text-green-700"
-                          : "border-green-200/50 bg-surface text-text-secondary hover:border-green-200",
-                      )}
-                    >
-                      <span className="text-xs font-medium block">{o.days}</span>
-                      <span className="text-[10px] text-text-muted block">days</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={handleActionConfirm}
-              disabled={!action}
-              className={cn(
-                "w-full rounded-lg py-2.5 text-small font-medium transition-all",
-                action
-                  ? "bg-green-500 text-white hover:bg-green-600 shadow-sm"
-                  : "bg-surface-hover text-text-muted cursor-not-allowed",
-              )}
-            >
-              {action === "protected-gains" || action === "moved-to-horizon"
-                ? "Confirm & protect"
-                : "Confirm"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep("details")}
-              className="w-full rounded-lg py-2 text-small font-medium text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-surface-hover transition-colors"
-            >
-              Back
-            </button>
-          </div>
-        </div>
-      ) : step === "details" ? (
-        <div className="space-y-5">
-          <p className="text-small text-text-secondary leading-relaxed">
-            Enter your bankroll state before and after the session.
-          </p>
-
-          {/* Category */}
-          <div className="space-y-2">
-            <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary">
-              Category (optional)
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCategory(category === c ? "" : c)}
-                  className={cn(
-                    "rounded-lg border px-3 py-1.5 text-tiny font-medium transition-all duration-200",
-                    category === c
-                      ? "bg-green-50 text-green-700 border-green-200"
-                      : "bg-surface text-text-muted border-border hover:border-border-hover hover:text-text-tertiary",
-                  )}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Bankroll inputs */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary mb-1.5 block">
-                Bankroll before
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-muted font-light">$</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={bankrollBefore}
-                  onChange={(e) => setBankrollBefore(e.target.value.replace(/[^0-9.]/g, ""))}
-                  placeholder="0.00"
-                  className="w-full rounded-lg border border-border bg-surface-subtle px-8 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary mb-1.5 block">
-                Bankroll after
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-muted font-light">$</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={bankrollAfter}
-                  onChange={(e) => setBankrollAfter(e.target.value.replace(/[^0-9.]/g, ""))}
-                  placeholder="0.00"
-                  className="w-full rounded-lg border border-border bg-surface-subtle px-8 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Computed PnL */}
-          {(numericBankrollBefore > 0 || numericBankrollAfter > 0) && (
-            <div className="rounded-lg border border-border bg-surface-subtle p-3 flex items-center justify-between">
-              <span className="text-tiny font-medium text-text-tertiary uppercase tracking-wider">Session result</span>
-              <span
-                className={cn(
-                  "text-sm font-medium tabular-nums",
-                  pnl > 0 ? "text-green-600" : pnl < 0 ? "text-danger" : "text-text-tertiary",
-                )}
-              >
-                {pnl > 0 ? "+" : ""}${formatUSD(pnl)}
-              </span>
-            </div>
-          )}
-
-          {/* Notes */}
+          {/* Description */}
           <div>
             <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary mb-1.5 block">
-              Notes (optional)
+              Description
             </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="A quiet note about the session..."
-              rows={2}
-              className="w-full rounded-lg border border-border bg-surface-subtle px-3 py-2 text-small text-text-primary placeholder:text-text-muted focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors resize-none"
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Leafs moneyline vs Boston"
+              className="w-full rounded-lg border border-border bg-surface-subtle px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
             />
           </div>
 
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={handleDetailsNext}
-              disabled={!outcome}
-              className="w-full rounded-lg py-2.5 text-small font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm transition-colors"
-            >
-              Continue
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep("outcome")}
-              className="w-full rounded-lg py-2 text-small font-medium text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-surface-hover transition-colors"
-            >
-              Back
-            </button>
-          </div>
-        </div>
-      ) : (
-        // ── Outcome step ──
-        <div className="space-y-5">
-          <p className="text-small text-text-secondary leading-relaxed">
-            Before you move on — reflect on how the session went.
-          </p>
-
-          <div className="space-y-2">
-            <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary">
-              Session outcome
+          {/* Bet Type */}
+          <div>
+            <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary mb-1.5 block">
+              Bet type
             </label>
-            <div className="grid grid-cols-3 gap-3">
-              {(["won", "lost", "break-even"] as const).map((o) => (
+            <div className="grid grid-cols-3 gap-2">
+              {(["moneyline", "spread", "totals"] as const).map((t) => (
                 <button
-                  key={o}
+                  key={t}
                   type="button"
-                  onClick={() => setOutcome(o === outcome ? null : o)}
+                  onClick={() => setBetType(t)}
                   className={cn(
-                    "rounded-lg border py-3 text-center transition-all duration-200 text-sm",
-                    outcome === o
-                      ? "border-green-200 bg-green-50 text-green-700 font-medium"
-                      : "border-border bg-surface-subtle text-text-secondary hover:border-border-hover hover:text-text-primary",
+                    "rounded-lg border py-2 text-center text-small font-medium transition-all",
+                    betType === t
+                      ? "border-green-200 bg-green-50 text-green-700"
+                      : "border-border bg-surface-subtle text-text-secondary hover:border-border-hover",
                   )}
                 >
-                  {o === "won" ? "Won" : o === "lost" ? "Lost" : "Break even"}
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Odds + Stake row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary mb-1.5 block">
+                Odds
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={odds}
+                onChange={(e) => setOdds(e.target.value.replace(/[^0-9-]/g, ""))}
+                placeholder="+150"
+                className="w-full rounded-lg border border-border bg-surface-subtle px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary mb-1.5 block">
+                Stake ($)
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={stake}
+                onChange={(e) => setStake(e.target.value.replace(/[^0-9.]/g, ""))}
+                placeholder="10.00"
+                className="w-full rounded-lg border border-border bg-surface-subtle px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Calculated return */}
+          {numericStake > 0 && numericOdds !== 0 && (
+            <div className="rounded-lg border border-border bg-surface-subtle p-4 space-y-2">
+              <div className="flex justify-between text-small">
+                <span className="text-text-secondary">Stake</span>
+                <span className="font-medium text-text-primary">${formatUSD(numericStake)}</span>
+              </div>
+              <div className="flex justify-between text-small">
+                <span className="text-text-secondary">Potential profit</span>
+                <span className="font-medium text-green-600">+${formatUSD(profit)}</span>
+              </div>
+              <div className="border-t border-border pt-2 flex justify-between text-small">
+                <span className="font-medium text-text-primary">Potential return</span>
+                <span className="font-medium text-text-primary">${formatUSD(totalReturn)}</span>
+              </div>
+            </div>
+          )}
+
+          {numericStake > availableBalance && (
+            <p className="text-tiny text-danger">Stake exceeds available balance of ${formatUSD(availableBalance)}.</p>
+          )}
 
           <div className="space-y-2 pt-2">
             <button
               type="button"
-              onClick={handleOutcomeNext}
-              disabled={!outcome}
+              onClick={handleSubmit}
+              disabled={!isValid}
               className={cn(
                 "w-full rounded-lg py-2.5 text-small font-medium transition-all",
-                outcome
+                isValid
                   ? "bg-green-500 text-white hover:bg-green-600 shadow-sm"
                   : "bg-surface-hover text-text-muted cursor-not-allowed",
               )}
             >
-              Continue
+              {numericStake > 0 && numericOdds !== 0
+                ? `Log Bet · $${formatUSD(numericStake)} at ${numericOdds > 0 ? "+" : ""}${numericOdds}`
+                : "Log Bet"}
             </button>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="w-full rounded-lg py-2 text-small font-medium text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-surface-hover transition-colors"
-            >
+            <button type="button" onClick={handleClose}
+              className="w-full rounded-lg py-2 text-small font-medium text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-surface-hover transition-colors">
               Cancel
             </button>
           </div>
@@ -681,21 +527,60 @@ function NewSessionModal({ open, onClose, onSessionCreated }: NewSessionModalPro
   );
 }
 
+/* ── Empty State ───────────────────────────── */
+
+function EmptyState({ onLogBet }: { onLogBet: () => void }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface p-12 md:p-16">
+      <div className="flex flex-col items-center justify-center text-center">
+        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-subtle">
+          <HelpCircle className="h-5 w-5 text-text-tertiary" />
+        </div>
+        <p className="text-sm font-medium text-text-primary">No bets logged yet.</p>
+        <p className="text-small text-text-tertiary mt-2 max-w-xs">
+          Log your first bet to track stake, potential return, and settled results.
+        </p>
+        <button
+          type="button"
+          onClick={onLogBet}
+          className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Log your first bet
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── Page ──────────────────────────────────── */
 
 export default function SessionsPage() {
-  const [sessions, setSessions] = useState<BettingSession[]>([]);
-  const [now] = useState(() => Date.now());
+  const capital = useCapitalState();
+  const [bets, setBets] = useState<BetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const loadSessions = useCallback(async () => {
+  const loadBets = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/sessions");
+      const res = await fetch("/api/bets?limit=100");
       if (res.ok) {
         const data = await res.json();
-        setSessions(data);
+        setBets(
+          (data.bets || []).map((b: Record<string, unknown>) => ({
+            id: b.id as string,
+            description: (b.description as string) || "",
+            betType: ((b.marketType as string)?.toLowerCase?.() || "moneyline") as BetType,
+            odds: (b.odds as number) || 0,
+            stake: (b.stake as number) || 0,
+            potentialProfit: (b.potentialProfit as number) || 0,
+            potentialReturn: (b.potential_return as number) || 0,
+            status: ((b.status as string)?.toLowerCase?.() || "open") as BetStatus,
+            createdAt: (b.createdAt as string) || new Date().toISOString(),
+            settledAt: (b.settledAt as string) || undefined,
+          })),
+        );
       }
     } catch {
       // silently fail
@@ -704,33 +589,47 @@ export default function SessionsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
+  useEffect(() => { loadBets(); }, [loadBets]);
 
-  // ── Summary derived from sessions ──
+  // ── Summary ──
   const summary = useMemo(() => {
-    const totalPnl = sessions.reduce((sum, s) => sum + s.pnl, 0);
-    const protectedPnl = sessions
-      .filter((s) => s.actionTaken === "protected-gains" || s.actionTaken === "moved-to-horizon")
-      .reduce((sum, s) => sum + Math.max(0, s.pnl), 0);
-    const horizonCount = sessions.filter((s) => s.horizonId).length;
-    const recentCount = sessions.filter((s) => {
-      const diff = now - new Date(s.createdAt).getTime();
-      return diff < 7 * 86400000;
-    }).length;
+    const openBets = bets.filter((b) => b.status === "open");
+    const atRisk = openBets.reduce((sum, b) => sum + b.stake, 0);
+    const potentialReturn = openBets.reduce((sum, b) => sum + b.potentialReturn, 0);
+    const settledPnl = bets
+      .filter((b) => b.status !== "open")
+      .reduce((sum, b) => {
+        if (b.status === "won") return sum + b.potentialProfit;
+        if (b.status === "lost") return sum - b.stake;
+        return sum; // push — no change
+      }, 0);
 
-    return {
-      totalPnl: formatUSD(totalPnl),
-      protectedPnl: formatUSD(protectedPnl),
-      horizonCount,
-      recentCount,
-    };
-  }, [sessions, now]);
+    return { atRisk, openCount: openBets.length, potentialReturn, settledPnl };
+  }, [bets]);
 
-  const handleSessionCreated = useCallback(() => {
-    loadSessions();
-  }, [loadSessions]);
+  const handleSettle = useCallback(async (id: string, result: SettleResult) => {
+    try {
+      await fetch(`/api/bets/${id}/settle`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ result }),
+      });
+      await loadBets();
+    } catch {
+      // silently fail
+    }
+  }, [loadBets]);
+
+  const handleProtect = useCallback(() => {
+    // Future: create lock integration
+  }, []);
+
+  const handleBetLogged = useCallback(() => {
+    loadBets();
+  }, [loadBets]);
+
+  const openBets = bets.filter((b) => b.status === "open");
+  const settledBets = bets.filter((b) => b.status !== "open");
 
   return (
     <PageShell>
@@ -741,7 +640,7 @@ export default function SessionsPage() {
             <div>
               <h1 className="text-display text-text-primary">Sessions</h1>
               <p className="text-body text-text-secondary mt-1">
-                A quiet record of how decisions became capital movement.
+                Track bets, manage at-risk capital, and settle results.
               </p>
             </div>
             <button
@@ -750,40 +649,25 @@ export default function SessionsPage() {
               className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors shrink-0"
             >
               <Plus className="h-4 w-4" />
-              End Session
+              Log Bet
             </button>
           </div>
         </div>
 
         {/* ── Summary Cards ── */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+          <SummaryCard label="At Risk" value={`$${formatUSD(summary.atRisk)}`} subtext="Capital in open bets" iconKey="atRisk" />
+          <SummaryCard label="Open Bets" value={String(summary.openCount)} subtext="Awaiting settlement" iconKey="open" />
+          <SummaryCard label="Potential Return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If all open bets win" iconKey="potential" />
           <SummaryCard
-            label="Session Balance"
-            value={`$${summary.totalPnl}`}
-            subtext="Net from all sessions"
-            iconKey="balance"
-          />
-          <SummaryCard
-            label="Protected After"
-            value={`$${summary.protectedPnl}`}
-            subtext="Gains moved into protection"
-            iconKey="protected"
-          />
-          <SummaryCard
-            label="Horizons From Sessions"
-            value={String(summary.horizonCount)}
-            subtext="Horizons linked to sessions"
-            iconKey="horizons"
-          />
-          <SummaryCard
-            label="Recent Activity"
-            value={String(summary.recentCount)}
-            subtext="Sessions this week"
-            iconKey="recent"
+            label="Settled P/L"
+            value={`${summary.settledPnl >= 0 ? "+" : ""}$${formatUSD(summary.settledPnl)}`}
+            subtext="Net from settled bets"
+            iconKey="settled"
           />
         </div>
 
-        {/* ── Session Timeline ── */}
+        {/* ── Bet List ── */}
         {loading ? (
           <div className="space-y-4 animate-pulse">
             {[1, 2, 3].map((i) => (
@@ -793,22 +677,40 @@ export default function SessionsPage() {
               </div>
             ))}
           </div>
-        ) : sessions.length > 0 ? (
-          <div className="space-y-4">
-            {sessions.map((session) => (
-              <SessionCard key={session.id} session={session} />
-            ))}
+        ) : bets.length > 0 ? (
+          <div className="space-y-6">
+            {openBets.length > 0 && (
+              <div>
+                <h2 className="text-sm font-medium text-text-primary mb-4">Open</h2>
+                <div className="space-y-4">
+                  {openBets.map((bet) => (
+                    <BetCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {settledBets.length > 0 && (
+              <div>
+                <h2 className="text-sm font-medium text-text-primary mb-4">Settled</h2>
+                <div className="space-y-4">
+                  {settledBets.map((bet) => (
+                    <BetCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <EmptyState onStartSession={() => setModalOpen(true)} />
+          <EmptyState onLogBet={() => setModalOpen(true)} />
         )}
       </div>
 
-      {/* ── New Session Modal ── */}
-      <NewSessionModal
+      {/* ── Log Bet Modal ── */}
+      <LogBetModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSessionCreated={handleSessionCreated}
+        onBetLogged={handleBetLogged}
+        availableBalance={capital.balances.available}
       />
     </PageShell>
   );

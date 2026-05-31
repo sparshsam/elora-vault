@@ -11,6 +11,7 @@ interface WalletData {
   total_wagered: number;
   total_saved_from_losses: number;
   total_profit_won: number;
+  at_risk_balance: number;
 }
 
 interface WalletState {
@@ -24,6 +25,7 @@ interface WalletState {
   total_wagered: number;
   total_saved_from_losses: number;
   total_profit_won: number;
+  at_risk_balance: number;
   isLoading: boolean;
 
   setWallet: (wallet: WalletData) => void;
@@ -41,6 +43,7 @@ export const useWalletStore = create<WalletState>((set) => ({
   total_wagered: 0,
   total_saved_from_losses: 0,
   total_profit_won: 0,
+  at_risk_balance: 0,
   isLoading: false,
 
   setWallet: (wallet: WalletData) =>
@@ -55,6 +58,7 @@ export const useWalletStore = create<WalletState>((set) => ({
       total_wagered: wallet.total_wagered,
       total_saved_from_losses: wallet.total_saved_from_losses,
       total_profit_won: wallet.total_profit_won,
+      at_risk_balance: wallet.at_risk_balance,
     }),
 
   syncFromServer: async () => {
@@ -74,6 +78,7 @@ export const useWalletStore = create<WalletState>((set) => ({
           total_wagered: data.total_wagered ?? 0,
           total_saved_from_losses: data.total_saved_from_losses ?? 0,
           total_profit_won: data.total_profit_won ?? 0,
+          at_risk_balance: data.at_risk_balance ?? 0,
         });
       }
     } catch {
