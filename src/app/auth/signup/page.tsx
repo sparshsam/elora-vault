@@ -89,7 +89,7 @@ export default function SignupPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSignup} className="space-y-5">
+          <form onSubmit={handleSignup} className="space-y-6">
             <div>
               <label
                 htmlFor="email"
@@ -104,7 +104,7 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-small text-text-primary placeholder:text-text-tertiary focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 transition-colors"
+                className="w-full rounded-lg border border-border bg-surface-subtle px-4 py-2.5 text-small text-text-primary placeholder:text-text-tertiary/70 focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
               />
             </div>
 
@@ -123,12 +123,12 @@ export default function SignupPage() {
                 placeholder="••••••••"
                 required
                 minLength={6}
-                className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-small text-text-primary placeholder:text-text-tertiary focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 transition-colors"
+                className="w-full rounded-lg border border-border bg-surface-subtle px-4 py-2.5 text-small text-text-primary placeholder:text-text-tertiary/70 focus:border-green-400 focus:outline-none focus:ring-1 focus:ring-green-400/40 transition-colors"
               />
             </div>
 
             {error && (
-              <div className="rounded-lg bg-danger/10 border border-danger/20 px-4 py-2.5">
+              <div className="rounded-lg bg-danger/8 border border-danger/20 px-4 py-3">
                 <p className="text-small text-danger">{error}</p>
               </div>
             )}
@@ -136,7 +136,7 @@ export default function SignupPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-lg text-small font-medium transition-all disabled:opacity-50"
+              className="w-full bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-lg text-small font-medium transition-all shadow-sm disabled:opacity-50"
             >
               {loading ? "Creating vault..." : "Create vault"}
             </Button>
@@ -157,7 +157,7 @@ export default function SignupPage() {
       {/* ── Footer ── */}
       <footer className="border-t border-border py-8">
         <div className="mx-auto max-w-5xl px-6 text-center">
-          <p className="text-tiny text-text-tertiary">
+          <p className="text-tiny text-text-tertiary/70">
             Elora Vault &mdash; Behavioral capital infrastructure
           </p>
         </div>

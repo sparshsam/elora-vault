@@ -39,7 +39,7 @@ export function EnvironmentalHeader() {
   if (!context.title) return null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/40 bg-surface/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6 md:px-8">
         {/* Page context — invisible on desktop (sidebar handles it), shown on mobile */}
         <div className="flex items-center gap-3 md:opacity-0 md:pointer-events-none md:select-none">

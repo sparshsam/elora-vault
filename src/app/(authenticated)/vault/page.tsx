@@ -128,6 +128,7 @@ export default function VaultPage() {
         <VaultStateCard
           state="available"
           amount={formatBalance(availableAmount)}
+          className="shadow-sm"
         >
           <div className="mt-4">
             <Link
@@ -141,7 +142,7 @@ export default function VaultPage() {
         </VaultStateCard>
 
         {/* ── ② PROTECTED ── */}
-        <div className="rounded-xl border-2 border-green-200 bg-green-50/50 p-6 md:p-8 transition-all duration-300">
+        <div className="rounded-xl border border-green-200 bg-green-50/30 shadow-sm p-6 md:p-8 transition-all duration-300">
           <div className="flex items-start justify-between mb-3">
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -157,7 +158,7 @@ export default function VaultPage() {
                 ${formatBalance(protectedAmount)}
               </p>
               {hasLocks && (
-                <p className="text-tiny text-green-600 mt-1">
+                <p className="text-tiny text-green-600/80 mt-1">
                   {activeLockCount} active{" "}
                   {activeLockCount === 1 ? "horizon" : "horizons"}
                 </p>
@@ -200,7 +201,7 @@ export default function VaultPage() {
         </div>
 
         {/* ── ③ IN MOTION ── */}
-        <div className="rounded-xl border border-border bg-surface p-6 md:p-8">
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6 md:p-8">
           <div className="flex items-center gap-2 mb-2">
             <Activity className="h-4 w-4 text-text-tertiary" />
             <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-tiny font-medium bg-surface-subtle text-text-secondary">

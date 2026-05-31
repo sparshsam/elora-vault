@@ -17,7 +17,7 @@ interface ProtectedCapitalPanelProps {
 
 function LockCard({ lock }: { lock: LockItem }) {
   return (
-    <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 md:p-5">
+    <div className="rounded-lg border border-green-200 bg-surface shadow-sm p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
         <span className="text-lg font-semibold text-green-700">${lock.amount}</span>
         <span className="text-tiny font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded-full">

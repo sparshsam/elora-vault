@@ -64,7 +64,7 @@ export default function SettingsPage() {
             Account
           </h2>
         </div>
-        <div className="rounded-xl border border-border bg-surface px-5 py-4">
+        <div className="rounded-xl border border-border bg-surface shadow-sm px-5 py-4">
           <div>
             <p className="text-tiny text-text-tertiary mb-0.5">Email</p>
             <p className="text-sm text-text-primary">
