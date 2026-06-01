@@ -18,9 +18,13 @@ import {
   History,
   RefreshCw,
   ShieldCheck,
+  CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TX_TYPES, normalizeTransactionType } from "@/lib/transaction-types";
+import { POLICY_ACTIVITY_STORAGE_KEY } from "@/lib/policies/policy-suggestions";
+import type { PolicyActivityEvent } from "@/app/api/policies/activity/route";
+import type { PolicyActivityEvent as SuggestionEvent } from "@/lib/policies/policy-suggestions";
 
 // ── Reconciliation Status ────────────────────────
 
@@ -89,6 +93,12 @@ type ActivityEventType =
   | "prediction-won"
   | "prediction-lost"
   | "prediction-pushed"
+  | "policy-created"
+  | "policy-activated"
+  | "policy-paused"
+  | "policy-suggestion-generated"
+  | "policy-suggestion-accepted"
+  | "policy-suggestion-dismissed"
   | "pending"
   | "failed";
 
@@ -118,6 +128,12 @@ const EVENT_ICONS: Record<ActivityEventType, ComponentType<{ className?: string 
   "prediction-won": TrendingUp,
   "prediction-lost": TrendingDown,
   "prediction-pushed": Minus,
+  "policy-created": ShieldCheck,
+  "policy-activated": ShieldCheck,
+  "policy-paused": History,
+  "policy-suggestion-generated": AlertCircle,
+  "policy-suggestion-accepted": CheckCircle,
+  "policy-suggestion-dismissed": Minus,
   pending: Clock,
   failed: AlertCircle,
 };
@@ -132,6 +148,12 @@ const EVENT_COLORS: Record<ActivityEventType, string> = {
   "prediction-won": "text-green-600 bg-green-100 border-green-200",
   "prediction-lost": "text-danger bg-danger/8 border-danger/20",
   "prediction-pushed": "text-text-secondary bg-surface-subtle border-border",
+  "policy-created": "text-green-700 bg-green-50 border-green-200",
+  "policy-activated": "text-green-600 bg-green-100 border-green-200",
+  "policy-paused": "text-text-secondary bg-surface-subtle border-border",
+  "policy-suggestion-generated": "text-amber-700 bg-amber-50 border-amber-200",
+  "policy-suggestion-accepted": "text-green-600 bg-green-100 border-green-200",
+  "policy-suggestion-dismissed": "text-text-secondary bg-surface-subtle border-border",
   pending: "text-amber-700 bg-amber-50 border-amber-200",
   failed: "text-danger bg-danger/8 border-danger/20",
 };
@@ -146,6 +168,12 @@ const EVENT_LABELS: Record<ActivityEventType, string> = {
   "prediction-won": "Prediction won",
   "prediction-lost": "Prediction lost",
   "prediction-pushed": "Prediction pushed",
+  "policy-created": "Policy created",
+  "policy-activated": "Policy activated",
+  "policy-paused": "Policy paused",
+  "policy-suggestion-generated": "Suggestion",
+  "policy-suggestion-accepted": "Suggestion accepted",
+  "policy-suggestion-dismissed": "Suggestion dismissed",
   pending: "Pending",
   failed: "Failed",
 };
@@ -425,6 +453,70 @@ function TimelineSkeleton() {
   );
 }
 
+// ── Policy Activity → ActivityEvent ─────────────
+
+/**
+ * Convert a PolicyActivityEvent (from DB-derived API) to an ActivityEvent.
+ */
+function policyEventToActivity(policy: PolicyActivityEvent): ActivityEvent {
+  return {
+    id: policy.id,
+    type: policy.type as ActivityEventType,
+    amount: "—",
+    rawAmount: 0,
+    description: policy.description,
+    occurredAt: policy.occurredAt,
+    occurredAtMs: new Date(policy.occurredAt).getTime(),
+    status: "local-record",
+  };
+}
+
+/**
+ * Convert a PolicyActivityEvent (localStorage suggestion event) to an ActivityEvent.
+ * Returns null if the suggestion status doesn't map to a timeline event.
+ */
+function suggestionEventToActivity(event: SuggestionEvent): ActivityEvent | null {
+  const typeMap: Record<string, ActivityEventType> = {
+    generated: "policy-suggestion-generated",
+    accepted: "policy-suggestion-accepted",
+    dismissed: "policy-suggestion-dismissed",
+  };
+
+  const mapped = typeMap[event.status];
+  if (!mapped) return null;
+
+  // Skip "expired" and "snoozed" — they're not useful timeline entries
+  if (event.status === "expired" || event.status === "snoozed") return null;
+
+  return {
+    id: event.id,
+    type: mapped,
+    amount: "—",
+    rawAmount: 0,
+    description: `${event.title} — ${event.sourcePolicy}`,
+    occurredAt: event.timestamp,
+    occurredAtMs: new Date(event.timestamp).getTime(),
+    status: "local-record",
+  };
+}
+
+/**
+ * Read policy suggestion events from localStorage.
+ * Uses the same key as the policy-suggestions module.
+ */
+function readSuggestionEvents(): SuggestionEvent[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(POLICY_ACTIVITY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch {
+    return [];
+  }
+}
+
 // ── Transaction → ActivityEvent ─────────────────
 
 function txToEvent(tx: Record<string, unknown>): ActivityEvent | null {
@@ -493,20 +585,49 @@ export default function ActivityPage() {
 
   useEffect(() => {
     (async () => {
+      const allEvents: ActivityEvent[] = [];
+
       try {
-        const res = await fetch("/api/wallet/transactions?limit=100");
-        if (res.ok) {
-          const data = await res.json();
+        // 1. Financial transactions from the database
+        const txRes = await fetch("/api/wallet/transactions?limit=100");
+        if (txRes.ok) {
+          const data = await txRes.json();
           const txEvents: ActivityEvent[] = (data.transactions || [])
             .map(txToEvent)
             .filter(Boolean) as ActivityEvent[];
-          setRawEvents(txEvents);
+          allEvents.push(...txEvents);
         }
       } catch {
         // silently fail
-      } finally {
-        setLoading(false);
       }
+
+      try {
+        // 2. Policy lifecycle events (created, activated, paused)
+        const policyRes = await fetch("/api/policies/activity");
+        if (policyRes.ok) {
+          const data = await policyRes.json();
+          const policyEvents: ActivityEvent[] = (data.events || [])
+            .map(policyEventToActivity)
+            .filter(Boolean) as ActivityEvent[];
+          allEvents.push(...policyEvents);
+        }
+      } catch {
+        // silently fail
+      }
+
+      // 3. Policy suggestion events from localStorage
+      //    (generated, accepted, dismissed — tracked client-side)
+      const suggestionRecords = readSuggestionEvents();
+      const suggestionEvents: ActivityEvent[] = suggestionRecords
+        .map(suggestionEventToActivity)
+        .filter(Boolean) as ActivityEvent[];
+      allEvents.push(...suggestionEvents);
+
+      // Sort all events by time, most recent first
+      allEvents.sort((a, b) => b.occurredAtMs - a.occurredAtMs);
+
+      setRawEvents(allEvents);
+      setLoading(false);
     })();
   }, []);
 
