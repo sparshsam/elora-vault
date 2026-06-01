@@ -52,7 +52,7 @@ export function CapitalModal({ open, onClose, title, children, className }: Capi
       <div
         className={cn(
           "w-full max-w-md rounded-xl border border-border bg-surface shadow-xl",
-          "p-6 md:p-8 animate-in fade-in zoom-in-95 duration-300",
+          "p-6 md:p-8 pb-safe animate-in fade-in zoom-in-95 duration-300",
           className,
         )}
       >

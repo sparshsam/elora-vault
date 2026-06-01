@@ -192,7 +192,7 @@ function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, on
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-xl p-6 md:p-8 animate-in fade-in zoom-in-95 duration-300">
+      <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-xl p-6 md:p-8 pb-safe animate-in fade-in zoom-in-95 duration-300">
         <div className="flex justify-center mb-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-green-200 bg-green-50">
             <Shield className="h-5 w-5 text-green-700" />

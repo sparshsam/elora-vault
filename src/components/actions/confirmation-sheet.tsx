@@ -36,7 +36,7 @@ export function ConfirmationSheet({
       />
       <div
         className={cn(
-          "relative w-full md:w-[420px] rounded-t-2xl md:rounded-2xl bg-surface border border-border shadow-xl p-6 md:p-8",
+          "relative w-full md:w-[420px] rounded-t-2xl md:rounded-2xl bg-surface border border-border shadow-xl p-6 md:p-8 pb-safe",
           "md:mb-0",
           className,
         )}
