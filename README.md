@@ -295,11 +295,15 @@ src/
 ├── contracts/              → ProtectedVault Solidity contract
 ├── lib/
 │   ├── account/            → future account strategy abstractions
+│   ├── capital/            → release windows, delayed release system
 │   ├── capital-state.ts    → canonical capital state model
+│   ├── yield/              → yield strategy research definitions
 │   ├── web3/               → contract read/write hooks
 │   ├── contracts/          → ABIs and contract config
 │   ├── supabase/           → client/server helpers
 │   └── prisma.ts           → Prisma client singleton
+├── types/
+│   └── productive-protection.ts  → productive protection conceptual types
 ├── prisma/
 │   └── schema.prisma       → data model
 └── middleware.ts           → auth protection
@@ -341,6 +345,21 @@ Future explorations:
 - Productive protected capital strategies
 - Optional rules for automatic post-profit protection
 - Yield strategies aligned with Elora’s restraint-first philosophy
+
+Architecture layer (Phase 6.1B — research complete):
+
+- Delayed release windows: immediate, delayed, scheduled, staged, and reviewed release types
+  → `src/lib/capital/release-windows.ts`
+- Productive protection modes: static-protection, productive-protection, conservative-yield,
+  treasury-style, stable-lending (conceptual, no protocol integration)
+  → `src/types/productive-protection.ts`
+- Yield strategy definitions: Aave USDC (Base), Morpho USDC (Base), reserve-style,
+  treasury-style (research only, no execution)
+  → `src/lib/yield/yield-strategies.ts`
+- Productive Protection research surface at `/settings/productive-protection`
+- Delayed release UX mock flows integrated into the Intent page
+- Calm infrastructure diagnostics: capability detection, account strategy types, transaction
+  mode planning, and builder code attribution utilities
 
 ---
 
