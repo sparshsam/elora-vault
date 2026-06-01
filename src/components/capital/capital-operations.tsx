@@ -555,12 +555,16 @@ interface ProtectCapitalModalProps {
   open: boolean;
   onClose: () => void;
   maxAmount: number;
+  initialAmount?: number | null;
+  initialHorizon?: number | null;
 }
 
 export function ProtectCapitalModal({
   open,
   onClose,
   maxAmount,
+  initialAmount,
+  initialHorizon,
 }: ProtectCapitalModalProps) {
   const [amount, setAmount] = useState("");
   const [horizon, setHorizon] = useState<number | null>(null);
@@ -580,14 +584,14 @@ export function ProtectCapitalModal({
 
   useEffect(() => {
     if (open && !createLock.lifecycle.isActive) {
-      setAmount("");
-      setHorizon(null);
+      setAmount(initialAmount && initialAmount > 0 ? initialAmount.toFixed(2) : "");
+      setHorizon(initialHorizon ?? null);
       setStep("input");
       setErrorMsg("");
       submittingRef.current = false;
       setIsSubmitting(false);
     }
-  }, [open, createLock.lifecycle.isActive]);
+  }, [open, createLock.lifecycle.isActive, initialAmount, initialHorizon]);
 
   // Track createLock tx state
   useEffect(() => {

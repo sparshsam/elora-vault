@@ -5,6 +5,14 @@ import { useCapitalState } from "@/lib/capital-state";
 import { useReleaseLock } from "@/lib/web3/tx-hooks";
 import { useWalletStore } from "@/store/useWalletStore";
 import { PageShell } from "@/components/layout/page-shell";
+import { ProtectCapitalModal } from "@/components/capital/capital-operations";
+import {
+  evaluatePolicySuggestions,
+  readPolicyActivity,
+  recordPolicyActivity,
+  type PolicyActivityEvent,
+  type PolicySuggestion,
+} from "@/lib/policies/policy-suggestions";
 import {
   Lock,
   Clock,
@@ -15,6 +23,7 @@ import {
   Shield,
   TrendingUp,
   Calendar,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -161,6 +170,63 @@ function ActiveHorizonCard({ horizon }: { horizon: ReturnType<typeof useCapitalS
 
 /* ── Empty State ───────────────────────────── */
 
+interface PolicySuggestionCardProps {
+  suggestion: PolicySuggestion;
+  onAccept: (suggestion: PolicySuggestion) => void;
+  onDismiss: (suggestion: PolicySuggestion) => void;
+  onSnooze: (suggestion: PolicySuggestion) => void;
+}
+
+function PolicySuggestionCard({ suggestion, onAccept, onDismiss, onSnooze }: PolicySuggestionCardProps) {
+  return (
+    <div className="rounded-xl border border-border bg-surface shadow-sm p-5 md:p-6">
+      <div className="flex items-start gap-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-green-200 bg-green-50">
+          <Lightbulb className="h-5 w-5 text-green-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="text-sm font-medium text-text-primary">{suggestion.title}</h3>
+              <p className="text-small text-text-secondary mt-1 leading-relaxed">{suggestion.body}</p>
+            </div>
+            <span className="rounded-full border border-border bg-surface-subtle px-2.5 py-1 text-tiny text-text-tertiary">
+              {suggestion.sourcePolicy}
+            </span>
+          </div>
+          {suggestion.releaseTiming && (
+            <p className="text-tiny text-text-muted mt-3">Timing: {suggestion.releaseTiming}</p>
+          )}
+          <div className="flex items-center gap-2 mt-4 flex-wrap">
+            <button
+              type="button"
+              onClick={() => onAccept(suggestion)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-4 py-2 text-small font-medium hover:bg-green-600 transition-colors shadow-sm"
+            >
+              Accept
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onSnooze(suggestion)}
+              className="rounded-lg border border-border bg-surface-subtle px-4 py-2 text-small font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+            >
+              Snooze
+            </button>
+            <button
+              type="button"
+              onClick={() => onDismiss(suggestion)}
+              className="rounded-lg px-4 py-2 text-small font-medium text-text-tertiary hover:text-text-primary hover:bg-surface-subtle transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EmptyState() {
   return (
     <div className="rounded-xl border border-border bg-surface p-12 md:p-16">
@@ -267,6 +333,10 @@ export default function IntentPage() {
 
   // Recent won predictions for protection prompt.
   const [recentWins, setRecentWins] = useState<{ id: string; description: string; amount: number }[]>([]);
+  const [policyActivity, setPolicyActivity] = useState<PolicyActivityEvent[]>([]);
+  const [protectSuggestion, setProtectSuggestion] = useState<{ amount: number; durationDays: number } | null>(null);
+  const [protectModalOpen, setProtectModalOpen] = useState(false);
+  const [defaultDurationDays, setDefaultDurationDays] = useState(30);
 
   useEffect(() => {
     if (!confirmOpen || confirmed) return;
@@ -279,6 +349,13 @@ export default function IntentPage() {
     }, 1000);
     return () => clearInterval(timer);
   }, [confirmOpen, countdown, confirmed]);
+
+  useEffect(() => {
+    setPolicyActivity(readPolicyActivity());
+    const savedDuration = window.localStorage.getItem("elora_vault_default_duration");
+    const parsedDuration = savedDuration ? parseInt(savedDuration, 10) : 30;
+    if ([7, 30, 90].includes(parsedDuration)) setDefaultDurationDays(parsedDuration);
+  }, []);
 
   useEffect(() => {
     if (isReleasing && releaseLock.isConfirmed) {
@@ -350,17 +427,75 @@ export default function IntentPage() {
 
   const releasableHorizons = useMemo(() => capital.activeHorizons.filter((h) => h.canRelease), [capital.activeHorizons]);
   const activeHorizons = useMemo(() => capital.activeHorizons.filter((h) => !h.canRelease), [capital.activeHorizons]);
+  const recentGainsAmount = useMemo(() => recentWins.reduce((sum, win) => sum + win.amount, 0), [recentWins]);
+  const releasableAmount = useMemo(() => releasableHorizons.reduce((sum, horizon) => sum + horizon.amount, 0), [releasableHorizons]);
+  const policySuggestions = useMemo(() => evaluatePolicySuggestions({
+    available: capital.balances.available,
+    protected: capital.balances.protected,
+    releasing: capital.balances.releasing,
+    committed: capital.balances.committed,
+    recentGains: recentGainsAmount,
+    releasableAmount,
+    activeHorizonCount: activeHorizons.length,
+    defaultDurationDays,
+  }, policyActivity), [
+    capital.balances.available,
+    capital.balances.protected,
+    capital.balances.releasing,
+    capital.balances.committed,
+    recentGainsAmount,
+    releasableAmount,
+    activeHorizons.length,
+    defaultDurationDays,
+    policyActivity,
+  ]);
 
   const summary = useMemo(() => ({
     protected: capital.formatted.protected,
     releasing: String(releasableHorizons.length),
-    intent: String(capital.pendingReleaseCount + recentWins.length),
-  }), [capital.formatted.protected, releasableHorizons.length, capital.pendingReleaseCount, recentWins.length]);
+    intent: String(capital.pendingReleaseCount + recentWins.length + policySuggestions.length),
+  }), [capital.formatted.protected, releasableHorizons.length, capital.pendingReleaseCount, recentWins.length, policySuggestions.length]);
+
+  useEffect(() => {
+    const untracked = policySuggestions.filter((suggestion) => (
+      !policyActivity.some((event) => event.suggestionId === suggestion.id && event.status === "generated")
+    ));
+    if (untracked.length === 0) return;
+
+    setPolicyActivity((current) => {
+      let next = current;
+      for (const suggestion of untracked) {
+        if (next.some((event) => event.suggestionId === suggestion.id && event.status === "generated")) continue;
+        next = recordPolicyActivity(next, suggestion, "generated");
+      }
+      return next;
+    });
+  }, [policySuggestions, policyActivity]);
 
   const handleReleaseClick = useCallback((id: string) => {
     if (releaseLock.lifecycle.isActive || releaseSubmittingRef.current) return;
     setReleaseError(null); setConfirmingId(id); setCountdown(10); setConfirmed(false); setConfirmOpen(true);
   }, [releaseLock.lifecycle.isActive]);
+
+  const handleSuggestionAccept = useCallback((suggestion: PolicySuggestion) => {
+    setPolicyActivity((current) => recordPolicyActivity(current, suggestion, "accepted"));
+    if (
+      (suggestion.action === "protect-capital" || suggestion.action === "reprotect-capital") &&
+      suggestion.amount &&
+      suggestion.durationDays
+    ) {
+      setProtectSuggestion({ amount: suggestion.amount, durationDays: suggestion.durationDays });
+      setProtectModalOpen(true);
+    }
+  }, []);
+
+  const handleSuggestionDismiss = useCallback((suggestion: PolicySuggestion) => {
+    setPolicyActivity((current) => recordPolicyActivity(current, suggestion, "dismissed"));
+  }, []);
+
+  const handleSuggestionSnooze = useCallback((suggestion: PolicySuggestion) => {
+    setPolicyActivity((current) => recordPolicyActivity(current, suggestion, "snoozed"));
+  }, []);
 
   const handleConfirmRelease = useCallback(() => {
     if (!confirmingId || releaseSubmittingRef.current || releaseLock.lifecycle.isActive) return;
@@ -384,7 +519,7 @@ export default function IntentPage() {
     return h?.amountFormatted ?? "0.00";
   }, [confirmingId, capital.activeHorizons]);
 
-  const hasContent = releasableHorizons.length > 0 || activeHorizons.length > 0 || recentWins.length > 0;
+  const hasContent = releasableHorizons.length > 0 || activeHorizons.length > 0 || recentWins.length > 0 || policySuggestions.length > 0;
 
   return (
     <PageShell>
@@ -401,6 +536,26 @@ export default function IntentPage() {
           <SummaryCard label="Releasing" value={summary.releasing} subtext={releasableHorizons.length === 1 ? "Horizon completed" : "Horizons completed"} iconType="releasing" />
           <SummaryCard label="Intent" value={summary.intent} subtext="Decisions awaiting attention" iconType="intent" />
         </div>
+
+        {policySuggestions.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-sm font-medium text-text-primary mb-4 flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-green-600" />
+              Suggestions based on your protection settings
+            </h2>
+            <div className="space-y-4">
+              {policySuggestions.map((suggestion) => (
+                <PolicySuggestionCard
+                  key={suggestion.id}
+                  suggestion={suggestion}
+                  onAccept={handleSuggestionAccept}
+                  onDismiss={handleSuggestionDismiss}
+                  onSnooze={handleSuggestionSnooze}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Protection opportunities from won predictions */}
         {recentWins.length > 0 && (
@@ -554,6 +709,17 @@ export default function IntentPage() {
         confirmed={confirmed} onConfirm={handleConfirmRelease} onKeepProtected={handleKeepProtected}
         isSubmitting={releaseLock.lifecycle.isActive || releaseSubmitting}
         errorMessage={releaseError}
+      />
+
+      <ProtectCapitalModal
+        open={protectModalOpen}
+        onClose={() => {
+          setProtectModalOpen(false);
+          setProtectSuggestion(null);
+        }}
+        maxAmount={capital.balances.available}
+        initialAmount={protectSuggestion?.amount ?? null}
+        initialHorizon={protectSuggestion?.durationDays ?? null}
       />
     </PageShell>
   );
