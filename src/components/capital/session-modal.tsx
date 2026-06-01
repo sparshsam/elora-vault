@@ -14,9 +14,9 @@ type PostSessionAction = "keep-available" | "protect-gains" | "move-horizon" | n
 /* ── Outcome selector ────────────────────────────────── */
 
 const OUTCOMES: { key: SessionOutcome; label: string; emoji: string }[] = [
-  { key: "won", label: "Won", emoji: "—" },
-  { key: "lost", label: "Lost", emoji: "—" },
-  { key: "break-even", label: "Break even", emoji: "—" },
+  { key: "won", label: "Positive", emoji: "—" },
+  { key: "lost", label: "Negative", emoji: "—" },
+  { key: "break-even", label: "Neutral", emoji: "—" },
 ];
 
 interface OutcomeSelectorProps {
@@ -204,10 +204,10 @@ export function EndSessionModal({ open, onClose, availableBalance }: EndSessionM
         <div className="space-y-5">
           <p className="text-small text-text-secondary leading-relaxed">
             {outcome === "won"
-              ? "You have gains from your session. What would you like to do?"
+              ? "You have surplus from your session. What would you like to do?"
               : outcome === "lost"
-                ? "The session is over. How would you like to proceed with your remaining bankroll?"
-                : "The session is done. Your bankroll is where it is."}
+                ? "The session is over. How would you like to proceed with your remaining capital?"
+                : "The session is done. Your capital remains steady."}
           </p>
 
           {/* Action options */}
@@ -241,7 +241,7 @@ export function EndSessionModal({ open, onClose, availableBalance }: EndSessionM
                   onClick={() => setAction("protect-gains")}
                   className="w-full px-4 py-3 text-left"
                 >
-                  <span className="text-sm font-medium text-text-primary block">Protect gains</span>
+                  <span className="text-sm font-medium text-text-primary block">Protect surplus</span>
                   <span className="text-tiny text-text-muted block mt-0.5">
                     Move capital into a protected horizon.
                   </span>

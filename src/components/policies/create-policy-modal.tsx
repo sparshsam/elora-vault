@@ -246,7 +246,7 @@ export function CreatePolicyModal({
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Protect prediction profits"
+                  placeholder="e.g. Protect prediction surplus"
                   className="w-full rounded-lg border border-border bg-surface-subtle px-3.5 py-2.5 text-small text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-green-400 transition-all"
                 />
               </div>

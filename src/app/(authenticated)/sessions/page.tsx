@@ -63,6 +63,15 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function predictionTypeLabel(type: PredictionType): string {
+  const labels: Record<PredictionType, string> = {
+    moneyline: "Directional",
+    spread: "Range",
+    totals: "Total",
+  };
+  return labels[type] ?? "Prediction";
+}
+
 /* ── Summary Card ──────────────────────────── */
 
 interface SummaryCardProps {
@@ -116,7 +125,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
         ? "bg-red-50 text-danger border-red-200"
         : "bg-surface-subtle text-text-secondary border-border";
 
-  const statusLabel = isOpen ? "Open" : isWin ? "Won" : isLoss ? "Lost" : "Push";
+  const statusLabel = isOpen ? "Active" : isWin ? "Positive" : isLoss ? "Negative" : "Neutral";
 
   const pnl = isWin
     ? bet.potentialProfit
@@ -124,7 +133,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
       ? -bet.stake
       : 0;
 
-  const oddsDisplay = bet.odds > 0 ? `+${bet.odds}` : `${bet.odds}`;
+  const returnModelDisplay = bet.odds > 0 ? `+${bet.odds}` : `${bet.odds}`;
 
   return (
     <div className="rounded-xl border border-border bg-surface shadow-sm p-5 md:p-6 transition-all duration-200 hover:shadow-md">
@@ -170,7 +179,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
                 )}
               </div>
               <p className="text-small text-text-secondary mt-1 leading-relaxed">
-                {bet.betType.charAt(0).toUpperCase() + bet.betType.slice(1)} - {oddsDisplay} - ${formatUSD(bet.stake)} committed
+                {predictionTypeLabel(bet.betType)} - model {returnModelDisplay} - ${formatUSD(bet.stake)} committed
               </p>
             </div>
             <span
@@ -183,19 +192,19 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
             </span>
           </div>
 
-          {/* Odds breakdown */}
+          {/* Projection breakdown */}
           {isOpen && (
             <div className="mt-3 grid grid-cols-3 gap-4 max-w-xs">
               <div>
-                <span className="text-tiny text-text-muted block">Stake</span>
+                <span className="text-tiny text-text-muted block">Committed amount</span>
                 <span className="text-small font-medium text-text-primary">${formatUSD(bet.stake)}</span>
               </div>
               <div>
-                <span className="text-tiny text-text-muted block">Profit</span>
+                <span className="text-tiny text-text-muted block">Projected surplus</span>
                 <span className="text-small font-medium text-green-600">${formatUSD(bet.potentialProfit)}</span>
               </div>
               <div>
-                <span className="text-tiny text-text-muted block">Return</span>
+                <span className="text-tiny text-text-muted block">Projected return</span>
                 <span className="text-small font-medium text-text-primary">${formatUSD(bet.potentialReturn)}</span>
               </div>
             </div>
@@ -204,7 +213,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
           {/* Settled result */}
           {!isOpen && (
             <p className={cn("text-small font-medium mt-2", isWin ? "text-green-600" : isLoss ? "text-danger" : "text-text-tertiary")}>
-              {isWin ? `+$${formatUSD(pnl)}` : isLoss ? `-$${formatUSD(bet.stake)}` : "Stake returned"}
+              {isWin ? `+$${formatUSD(pnl)}` : isLoss ? `-$${formatUSD(bet.stake)}` : "Commitment returned"}
             </p>
           )}
 
@@ -228,7 +237,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
                 disabled={isSettling}
                 className="rounded-lg bg-green-500 text-white px-3 py-1.5 text-tiny font-medium hover:bg-green-600 transition-colors shadow-sm"
               >
-                {isSettling ? "Settling..." : "Won"}
+                {isSettling ? "Resolving..." : "Positive"}
               </button>
               <button
                 type="button"
@@ -236,7 +245,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
                 disabled={isSettling}
                 className="rounded-lg border border-border bg-surface-subtle text-text-secondary px-3 py-1.5 text-tiny font-medium hover:text-danger hover:border-danger/30 transition-colors"
               >
-                Lost
+                Negative
               </button>
               <button
                 type="button"
@@ -244,12 +253,12 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
                 disabled={isSettling}
                 className="rounded-lg border border-border bg-surface-subtle text-text-muted px-3 py-1.5 text-tiny font-medium hover:text-text-secondary transition-colors"
               >
-                Push
+                Neutral
               </button>
             </div>
           )}
 
-          {/* Post-win protection prompt (only if not already protected) */}
+          {/* Positive resolution protection prompt (only if not already protected) */}
           {isWin && !bet.horizonProtected && !showProtect && (
             <div className="mt-4">
               <button
@@ -267,7 +276,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
           {isWin && showProtect && (
             <ProtectPrompt
               betId={bet.id}
-              profit={bet.potentialProfit}
+              surplus={bet.potentialProfit}
               totalReturn={bet.potentialReturn}
               onProtect={onProtect}
               onDismiss={() => setShowProtect(false)}
@@ -284,7 +293,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
 
 interface ProtectPromptProps {
   betId: string;
-  profit: number;
+  surplus: number;
   totalReturn: number;
   onProtect: (betId: string, amount: number, horizon: number) => void;
   onDismiss: () => void;
@@ -293,11 +302,11 @@ interface ProtectPromptProps {
 
 const HORIZONS = [7, 30, 90, 180];
 
-function ProtectPrompt({ betId, profit, totalReturn, onProtect, onDismiss, protecting }: ProtectPromptProps) {
+function ProtectPrompt({ betId, surplus, totalReturn, onProtect, onDismiss, protecting }: ProtectPromptProps) {
   const [horizon, setHorizon] = useState<number | null>(null);
-  const [mode, setMode] = useState<"profit" | "full" | null>(null);
+  const [mode, setMode] = useState<"surplus" | "full" | null>(null);
 
-  const amount = mode === "full" ? totalReturn : mode === "profit" ? profit : 0;
+  const amount = mode === "full" ? totalReturn : mode === "surplus" ? surplus : 0;
   const canConfirm = mode !== null && horizon !== null;
 
   const handleConfirm = useCallback(() => {
@@ -307,22 +316,22 @@ function ProtectPrompt({ betId, profit, totalReturn, onProtect, onDismiss, prote
 
   return (
     <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4 space-y-3">
-      <p className="text-tiny font-medium text-green-700">Protect part of this return?</p>
+      <p className="text-tiny font-medium text-green-700">Protect part of this resolution?</p>
 
-      {/* Mode: Profit or Full Return */}
+      {/* Mode: surplus or full return */}
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => setMode("profit")}
+          onClick={() => setMode("surplus")}
           className={cn(
             "flex-1 rounded-lg border px-3 py-2 text-center transition-all",
-            mode === "profit"
+            mode === "surplus"
               ? "border-green-200 bg-surface text-green-700"
               : "border-green-200/50 bg-surface/50 text-text-secondary hover:bg-surface",
           )}
         >
-          <span className="text-tiny font-medium block">Protect Profit</span>
-          <span className="text-[10px] text-text-muted block mt-0.5">${formatUSD(profit)}</span>
+          <span className="text-tiny font-medium block">Protect surplus</span>
+          <span className="text-[10px] text-text-muted block mt-0.5">${formatUSD(surplus)}</span>
         </button>
         <button
           type="button"
@@ -334,7 +343,7 @@ function ProtectPrompt({ betId, profit, totalReturn, onProtect, onDismiss, prote
               : "border-green-200/50 bg-surface/50 text-text-secondary hover:bg-surface",
           )}
         >
-          <span className="text-tiny font-medium block">Full Return</span>
+          <span className="text-tiny font-medium block">Full return</span>
           <span className="text-[10px] text-text-muted block mt-0.5">${formatUSD(totalReturn)}</span>
         </button>
       </div>
@@ -434,7 +443,7 @@ function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBal
 
   const numericOdds = parseInt(odds.replace(/[^0-9-]/g, ""), 10) || 0;
   const numericStake = parseFloat(stake || "0");
-  const profit = numericOdds && numericStake ? calculateProfit(numericOdds, numericStake) : 0;
+  const projectedSurplus = numericOdds && numericStake ? calculateProfit(numericOdds, numericStake) : 0;
   const totalReturn = numericOdds && numericStake ? calculateTotalReturn(numericOdds, numericStake) : 0;
   const isValid = numericStake > 0 && numericOdds !== 0 && numericStake <= availableBalance;
 
@@ -543,17 +552,17 @@ function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBal
                       : "border-border bg-surface-subtle text-text-secondary hover:border-border-hover",
                   )}
                 >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                  {predictionTypeLabel(t)}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Odds + Stake row */}
+          {/* Return model + commitment row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary mb-1.5 block">
-                Odds
+                Return model
               </label>
               <input
                 type="text"
@@ -566,7 +575,7 @@ function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBal
             </div>
             <div>
               <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary mb-1.5 block">
-                Stake ($)
+                Committed amount ($)
               </label>
               <input
                 type="text"
@@ -583,22 +592,22 @@ function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBal
           {numericStake > 0 && numericOdds !== 0 && (
             <div className="rounded-lg border border-border bg-surface-subtle p-4 space-y-2">
               <div className="flex justify-between text-small">
-                <span className="text-text-secondary">Stake</span>
+                <span className="text-text-secondary">Committed amount</span>
                 <span className="font-medium text-text-primary">${formatUSD(numericStake)}</span>
               </div>
               <div className="flex justify-between text-small">
-                <span className="text-text-secondary">Potential profit</span>
-                <span className="font-medium text-green-600">+${formatUSD(profit)}</span>
+                <span className="text-text-secondary">Projected surplus</span>
+                <span className="font-medium text-green-600">+${formatUSD(projectedSurplus)}</span>
               </div>
               <div className="border-t border-border pt-2 flex justify-between text-small">
-                <span className="font-medium text-text-primary">Potential return</span>
+                <span className="font-medium text-text-primary">Projected return</span>
                 <span className="font-medium text-text-primary">${formatUSD(totalReturn)}</span>
               </div>
             </div>
           )}
 
           {numericStake > availableBalance && (
-            <p className="text-tiny text-danger">Stake exceeds available balance of ${formatUSD(availableBalance)}.</p>
+            <p className="text-tiny text-danger">Committed amount exceeds available balance of ${formatUSD(availableBalance)}.</p>
           )}
 
           <div className="space-y-2 pt-2">
@@ -614,7 +623,7 @@ function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBal
               )}
             >
               {numericStake > 0 && numericOdds !== 0
-                ? `Create Prediction - $${formatUSD(numericStake)} at ${numericOdds > 0 ? "+" : ""}${numericOdds}`
+                ? `Create Prediction - $${formatUSD(numericStake)} committed`
                 : "Create Prediction"}
             </button>
             <button type="button" onClick={handleClose}
@@ -711,7 +720,7 @@ export default function SessionsPage() {
       .reduce((sum, b) => {
         if (b.status === "won") return sum + b.potentialProfit;
         if (b.status === "lost") return sum - b.stake;
-        return sum; // push — no change
+        return sum; // neutral resolution, no change
       }, 0);
 
     return { committed, activeCount: activePredictions.length, potentialReturn, settledPnl };
@@ -814,12 +823,12 @@ export default function SessionsPage() {
         {/* ── Summary Cards ── */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <SummaryCard label="Committed" value={`$${formatUSD(summary.committed)}`} subtext="Capital in active predictions" iconKey="committed" />
-          <SummaryCard label="Active" value={String(summary.activeCount)} subtext="Awaiting settlement" iconKey="open" />
-          <SummaryCard label="Potential return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If active predictions win" iconKey="potential" />
+          <SummaryCard label="Active" value={String(summary.activeCount)} subtext="Awaiting resolution" iconKey="open" />
+          <SummaryCard label="Projected return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If active predictions resolve positively" iconKey="potential" />
           <SummaryCard
             label="Net result"
             value={`${summary.settledPnl >= 0 ? "+" : ""}$${formatUSD(summary.settledPnl)}`}
-            subtext="From settled predictions"
+            subtext="From resolved predictions"
             iconKey="settled"
           />
         </div>
@@ -848,7 +857,7 @@ export default function SessionsPage() {
             )}
             {settledPredictions.length > 0 && (
               <div>
-                <h2 className="text-sm font-medium text-text-primary mb-4">Settled</h2>
+                <h2 className="text-sm font-medium text-text-primary mb-4">Resolved</h2>
                 <div className="space-y-4">
                   {settledPredictions.map((bet) => (
                     <PredictionCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} settlingId={settlingId} />
