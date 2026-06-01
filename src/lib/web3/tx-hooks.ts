@@ -7,6 +7,23 @@ import { parseUnits, formatUnits } from "viem";
 import { USDC_ABI } from "@/lib/contracts/usdc-abi";
 import { CURRENT_CHAIN, VAULT_ABI } from "@/lib/contracts/contracts";
 import { getTransactionLifecycle } from "@/lib/tx/transaction-state";
+import { getBuilderDataSuffix } from "@/lib/account/builder-code";
+
+/* ── Builder Code Attribution ────────────────────────── */
+
+/**
+ * ERC-8021 calldata suffix for Base Builder Code attribution.
+ *
+ * When NEXT_PUBLIC_BASE_BUILDER_CODE is set and non-empty, this returns a
+ * hex-encoded suffix appended to transaction calldata for onchain attribution.
+ * When unset, returns a zero-length suffix ("0x") — a no-op that does not
+ * modify transaction behavior, gas cost, or execution path.
+ *
+ * Safety guarantee: This function never throws, never exposes the raw builder
+ * code to the client beyond the calldata suffix, and produces the same
+ * transaction regardless of whether attribution is active.
+ */
+const BUILDER_DATA_SUFFIX: `0x${string}` = getBuilderDataSuffix();
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -119,6 +136,7 @@ export function useUSDCApprove() {
         functionName: "approve",
         args: [VAULT_ADDRESS, parsed],
         chainId: CURRENT_CHAIN.chainId,
+        dataSuffix: BUILDER_DATA_SUFFIX,
       });
     },
     [writeContract],
@@ -167,6 +185,7 @@ export function useVaultDeposit() {
         functionName: "deposit",
         args: [parsed],
         chainId: CURRENT_CHAIN.chainId,
+        dataSuffix: BUILDER_DATA_SUFFIX,
       });
     },
     [writeContract],
@@ -214,6 +233,7 @@ export function useCreateLock() {
         functionName: "createLock",
         args: [parsed, BigInt(durationSeconds)],
         chainId: CURRENT_CHAIN.chainId,
+        dataSuffix: BUILDER_DATA_SUFFIX,
       });
     },
     [writeContract],
@@ -260,6 +280,7 @@ export function useReleaseLock() {
         functionName: "releaseLock",
         args: [BigInt(lockId)],
         chainId: CURRENT_CHAIN.chainId,
+        dataSuffix: BUILDER_DATA_SUFFIX,
       });
     },
     [writeContract],
@@ -305,6 +326,7 @@ export function useWithdrawUnlocked() {
       functionName: "withdrawUnlocked",
       args: [],
       chainId: CURRENT_CHAIN.chainId,
+      dataSuffix: BUILDER_DATA_SUFFIX,
     });
   }, [writeContract]);
 

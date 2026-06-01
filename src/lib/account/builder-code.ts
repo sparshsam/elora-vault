@@ -1,8 +1,9 @@
 /**
  * builder-code.ts — Base Builder Code utility for ERC-8021 attribution.
  *
- * Provides a safe getBuilderDataSuffix() function that returns a valid
- * hex-encoded suffix when NEXT_PUBLIC_BASE_BUILDER_CODE is configured.
+ * Provides getBuilderDataSuffix() for safe calldata suffix generation.
+ * The suffix is wired into production write calls (deposit, createLock,
+ * releaseLock, withdrawUnlocked, approve) via tx-hooks.ts.
  *
  * Builder codes identify applications in onchain transactions for
  * ecosystem analytics and future rewards programs. Attribution does
@@ -10,11 +11,12 @@
  *
  * See: https://docs.base.org/builder-codes
  *
- * ── Usage ──────────────────────────────────────────────
- * This suffix can be appended to transaction calldata for ERC-8021
- * attribution. It is NOT wired into production transactions yet.
- *
- * No Base.dev API keys are stored or committed in this module.
+ * ── Safety ─────────────────────────────────────────────
+ * - When NEXT_PUBLIC_BASE_BUILDER_CODE is unset/empty, getBuilderDataSuffix()
+ *   returns "0x" — a zero-length hex string that viem treats as a no-op.
+ *   Transactions execute identically with or without attribution.
+ * - The raw builder code value is never exposed to client-side UI.
+ * - This module imports no side-effect modules.
  */
 
 /**
@@ -38,11 +40,16 @@ function getBuilderCode(): string | null {
  * Returns a non-empty hex string when the builder code is set:
  *   "0x" + hexEncode(builderCode)
  *
- * Returns an empty string when no builder code is configured,
- * making it safe to use in any transaction pipeline without
- * conditional branching.
+ * Returns "0x" (zero-length) when no builder code is configured,
+ * making it safe to pass unconditionally to every writeContract call
+ * without conditional branching. viem treats "0x" as a no-op.
  *
- * This is NOT wired into production transaction flows.
+ * Wired into production writes via src/lib/web3/tx-hooks.ts:
+ *   - approve
+ *   - deposit
+ *   - createLock
+ *   - releaseLock
+ *   - withdrawUnlocked
  */
 export function getBuilderDataSuffix(): `0x${string}` {
   const code = getBuilderCode();
