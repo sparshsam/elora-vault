@@ -6,7 +6,7 @@ import { CreatePolicyModal } from "@/components/policies/create-policy-modal";
 import { PolicyCard } from "@/components/policies/policy-card";
 import { SummaryCard } from "@/components/policies/summary-card";
 import type { ProtectionPolicy } from "@/types/policy";
-import { Plus } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 
 export default function PoliciesPage() {
   const [policies, setPolicies] = useState<ProtectionPolicy[]>([]);
@@ -141,19 +141,25 @@ export default function PoliciesPage() {
             ))}
           </div>
         ) : policies.length === 0 ? (
-          <div className="rounded-xl border border-border bg-surface shadow-sm p-8 text-center">
-            <p className="text-body text-text-tertiary leading-relaxed">
-              No policies yet. Policies let you describe how capital should
-              behave before urgency arrives.
-            </p>
-            <button
-              type="button"
-              onClick={() => setCreateOpen(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-4 py-2 text-small font-medium hover:bg-green-600 transition-colors shadow-sm"
-            >
-              <Plus className="h-4 w-4" />
-              Create your first policy
-            </button>
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-12 md:p-16 text-center">
+            <div className="flex flex-col items-center justify-center">
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-subtle">
+                <FileText className="h-5 w-5 text-text-tertiary" />
+              </div>
+              <p className="text-sm font-medium text-text-primary">No policies yet.</p>
+              <p className="text-small text-text-tertiary mt-2 max-w-xs">
+                Policies let you describe how capital should behave before urgency
+                arrives.
+              </p>
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 transition-colors shadow-sm"
+              >
+                <Plus className="h-4 w-4" />
+                Create your first policy
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

@@ -172,7 +172,7 @@ export function CreatePolicyModal({
         if (e.target === overlayRef.current && step === "type") handleClose();
       }}
     >
-      <div className="w-full max-w-lg rounded-xl border border-border bg-surface shadow-xl animate-in fade-in zoom-in-95 duration-300">
+      <div className="w-full max-w-lg rounded-xl border border-border bg-surface shadow-xl animate-in fade-in zoom-in-95 duration-300 max-h-[90dvh] overflow-y-auto">
         {/* ── HEADER ── */}
         <div className="flex items-center justify-between p-6 pb-0">
           <div>

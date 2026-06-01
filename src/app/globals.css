@@ -170,7 +170,7 @@
   }
 }
 
-/* ── Mobile Touch Improvements ────────── */
+/* ── Mobile Touch & Spacing Improvements ── */
 @media (max-width: 768px) {
   button,
   a,
@@ -192,6 +192,52 @@
 
   body {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Scale down display text for mobile */
+  .text-display {
+    font-size: 1.625rem;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+  }
+
+  /* Scale down number displays for mobile */
+  .text-number {
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  /* Reduce card padding on mobile */
+  .card-body {
+    padding: 1.25rem;
+  }
+
+  /* Calmer loading pulse — more subtle, longer duration */
+  .animate-pulse {
+    animation-duration: 2.5s;
+  }
+
+/* ── No hover effects on touch devices ──── */
+@media (hover: none) and (pointer: coarse) {
+  .hover\:-translate-y-0\.5 {
+    transform: none;
+  }
+  .hover\:shadow-md {
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+/* ── Bottom safe-area for fixed elements ── */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+}
+
+/* ── Desktop-only safe-area reset ─────── */
+@media (min-width: 769px) {
+  .pb-safe {
+    padding-bottom: 0px;
   }
 }
 

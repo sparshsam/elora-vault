@@ -13,7 +13,7 @@ export default function AuthenticatedLayout({
     <Web3Provider>
       <div className="flex min-h-screen flex-col bg-surface">
         <TopHeader />
-        <main className="flex-1 overflow-auto pb-20 md:pb-0">
+        <main className="flex-1 overflow-auto pb-24 md:pb-0">
           <RouteTransition>{children}</RouteTransition>
         </main>
         <PageFooter />
