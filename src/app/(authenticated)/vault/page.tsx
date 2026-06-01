@@ -44,8 +44,8 @@ export default function VaultPage() {
 
   const { activeHorizonCount, balances } = capital;
   const hasHorizons = activeHorizonCount > 0;
-  const hasReleasing = balances.releasing > 0;
-  const hasCommitted = balances.committed > 0;
+  const hasReleasing = balances.releasingCapital > 0;
+  const hasCommitted = balances.committedCapital > 0;
 
   return (
     <PageShell>

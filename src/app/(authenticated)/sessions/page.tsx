@@ -713,7 +713,6 @@ export default function SessionsPage() {
   // ── Summary ──
   const summary = useMemo(() => {
     const activePredictions = bets.filter((b) => b.status === "open");
-    const committed = activePredictions.reduce((sum, b) => sum + b.stake, 0);
     const potentialReturn = activePredictions.reduce((sum, b) => sum + b.potentialReturn, 0);
     const settledPnl = bets
       .filter((b) => b.status !== "open")
@@ -723,8 +722,13 @@ export default function SessionsPage() {
         return sum; // neutral resolution, no change
       }, 0);
 
-    return { committed, activeCount: activePredictions.length, potentialReturn, settledPnl };
-  }, [bets]);
+    return {
+      committed: capital.balances.committedCapital,
+      activeCount: activePredictions.length,
+      potentialReturn,
+      settledPnl,
+    };
+  }, [bets, capital.balances.committedCapital]);
 
   const handleSettle = useCallback(async (id: string, result: PredictionSettleResult) => {
     if (settlingId) return;

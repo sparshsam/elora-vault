@@ -6,8 +6,6 @@ import { useWalletStore } from "@/store/useWalletStore";
 import { useVaultSummary, useVaultLocks } from "@/lib/web3/hooks";
 import { useUSDCBalance } from "@/lib/web3/tx-hooks";
 
-/* ── Types ──────────────────────────────────── */
-
 export type CapitalStateLabel =
   | "available"
   | "protected"
@@ -16,6 +14,19 @@ export type CapitalStateLabel =
   | "activity"
   | "intent"
   | "horizon";
+
+export type CapitalState = CapitalStateLabel;
+
+export interface NormalizeCapitalStateInput {
+  walletBalance?: number | null;
+  fallbackWalletBalance?: number | null;
+  availableBalance?: number | null;
+  protectedBalance?: number | null;
+  releasingBalance?: number | null;
+  committedBalance?: number | null;
+  protectedLocksTotal?: number | null;
+  vaultSummaryLockedTotal?: number | null;
+}
 
 export interface HorizonInfo {
   id: string;
@@ -31,35 +42,29 @@ export interface HorizonInfo {
   releaseDate: string;
 }
 
-/**
- * Canonical capital balances.
- *
- * These five fields are the canonical capital state shape.
- * Every UI surface should consume these from a single source.
- */
 export interface CapitalBalances {
-  /** USDC in the connected wallet (outside Elora). */
+  // External connected-wallet USDC. This is outside Elora and never enters totalEloraCapital.
   walletBalance: number;
-  /** Capital ready to use inside Elora. */
+  // Deposited capital inside Elora that can be used now.
   available: number;
-  /** Capital locked in active protection horizons. */
+  // Capital inside active protection horizons.
   protected: number;
-  /** Protected capital returning to availability. */
+  // Capital transitioning from a released horizon back into availability.
   releasing: number;
-  /** Capital allocated to active predictions. */
+  // Capital allocated to active predictions. Legacy DB field: at_risk_balance.
   committed: number;
-  /** Alias for committed — capital at risk. */
+  // Backward-compatible alias for older UI/state code.
   atRisk: number;
-  /** Sum of available + protected + releasing + committed. */
+  // Sum of available + protected + releasing + committed. Wallet balance is excluded.
   totalEloraCapital: number;
-  /** Alias for totalEloraCapital. */
+  // Backward-compatible alias for totalEloraCapital.
   total: number;
+  availableCapital: number;
+  protectedCapital: number;
+  releasingCapital: number;
+  committedCapital: number;
 }
 
-/**
- * Canonical derived capital values.
- * Every value is formatted as USD strings with consistent precision.
- */
 export interface CapitalBalancesFormatted {
   walletBalance: string;
   available: string;
@@ -69,11 +74,21 @@ export interface CapitalBalancesFormatted {
   atRisk: string;
   totalEloraCapital: string;
   total: string;
+  availableCapital: string;
+  protectedCapital: string;
+  releasingCapital: string;
+  committedCapital: string;
 }
 
-/**
- * Full capital summary returned by useCapitalState.
- */
+export interface CapitalStateMetrics {
+  activeStates: Array<"available" | "protected" | "releasing" | "committed">;
+  activeStatesCount: number;
+  hasEloraCapital: boolean;
+  hasAnyCapital: boolean;
+  protectedPct: number;
+  committedProtectedRatio: number | null;
+}
+
 export interface CapitalSummary {
   balances: CapitalBalances;
   formatted: CapitalBalancesFormatted;
@@ -84,13 +99,15 @@ export interface CapitalSummary {
   isConnected: boolean;
 }
 
-/* ── Formatting ─────────────────────────────── */
-
-function formatUSD(n: number): string {
+export function formatCapitalUSD(n: number): string {
   return n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+function nonNegative(value: number | null | undefined): number {
+  return Math.max(0, Number.isFinite(value ?? NaN) ? Number(value) : 0);
 }
 
 function computeHorizonProgress(createdAt: number, unlockAt: number, now: number): number {
@@ -108,21 +125,83 @@ function formatReleaseDate(unlockAt: number): string {
   });
 }
 
-/* ── Hook ───────────────────────────────────── */
-
 /**
- * Canonical capital state hook.
+ * Canonical Elora capital state normalization.
  *
- * Single source of truth for:
- *   walletBalance  — USDC in connected wallet (outside Elora)
- *   available      — deposited capital ready to use inside Elora
- *   protected      — capital locked in active protection horizons
- *   releasing      — capital transitioning back from protection
- *   committed      — capital allocated to active predictions
+ * The database and API still expose some legacy names:
+ * - user_balance may be used only as a disconnected wallet fallback.
+ * - savings_vault represents releasing capital, not deposited idle capital.
+ * - at_risk_balance represents committed prediction capital.
  *
- * Derived:
- *   totalEloraCapital = available + protected + releasing + committed
+ * walletBalance is deliberately excluded from totalEloraCapital.
  */
+export function normalizeCapitalState(input: NormalizeCapitalStateInput): CapitalBalances {
+  const walletBalance = nonNegative(input.walletBalance ?? input.fallbackWalletBalance);
+  const availableCapital = nonNegative(input.availableBalance);
+  const committedCapital = nonNegative(input.committedBalance);
+  const releasingCapital = nonNegative(input.releasingBalance);
+  const protectedCapital = [
+    input.protectedLocksTotal,
+    input.vaultSummaryLockedTotal,
+    input.protectedBalance,
+  ].map(nonNegative).find((amount) => amount > 0) ?? 0;
+
+  const totalEloraCapital = availableCapital + protectedCapital + releasingCapital + committedCapital;
+
+  return {
+    walletBalance,
+    available: availableCapital,
+    protected: protectedCapital,
+    releasing: releasingCapital,
+    committed: committedCapital,
+    atRisk: committedCapital,
+    totalEloraCapital,
+    total: totalEloraCapital,
+    availableCapital,
+    protectedCapital,
+    releasingCapital,
+    committedCapital,
+  };
+}
+
+export function formatCapitalBalances(balances: CapitalBalances): CapitalBalancesFormatted {
+  return {
+    walletBalance: formatCapitalUSD(balances.walletBalance),
+    available: formatCapitalUSD(balances.available),
+    protected: formatCapitalUSD(balances.protected),
+    releasing: formatCapitalUSD(balances.releasing),
+    committed: formatCapitalUSD(balances.committed),
+    atRisk: formatCapitalUSD(balances.atRisk),
+    totalEloraCapital: formatCapitalUSD(balances.totalEloraCapital),
+    total: formatCapitalUSD(balances.total),
+    availableCapital: formatCapitalUSD(balances.availableCapital),
+    protectedCapital: formatCapitalUSD(balances.protectedCapital),
+    releasingCapital: formatCapitalUSD(balances.releasingCapital),
+    committedCapital: formatCapitalUSD(balances.committedCapital),
+  };
+}
+
+export function getCapitalStateMetrics(balances: CapitalBalances): CapitalStateMetrics {
+  const activeStates: CapitalStateMetrics["activeStates"] = [];
+  if (balances.availableCapital > 0) activeStates.push("available");
+  if (balances.protectedCapital > 0) activeStates.push("protected");
+  if (balances.releasingCapital > 0) activeStates.push("releasing");
+  if (balances.committedCapital > 0) activeStates.push("committed");
+
+  return {
+    activeStates,
+    activeStatesCount: activeStates.length,
+    hasEloraCapital: balances.totalEloraCapital > 0,
+    hasAnyCapital: balances.totalEloraCapital > 0 || balances.walletBalance > 0,
+    protectedPct: balances.totalEloraCapital > 0
+      ? Math.round((balances.protectedCapital / balances.totalEloraCapital) * 100)
+      : 0,
+    committedProtectedRatio: balances.protectedCapital > 0
+      ? Math.round((balances.committedCapital / balances.protectedCapital) * 100)
+      : null,
+  };
+}
+
 export function useCapitalState(): CapitalSummary {
   const { address, isConnected } = useAccount();
   const walletStore = useWalletStore();
@@ -134,45 +213,21 @@ export function useCapitalState(): CapitalSummary {
   const isLoading = walletStore.isLoading || (isConnected && vaultSummary.isLoading);
 
   const balances: CapitalBalances = useMemo(() => {
-    // walletBalance: external wallet USDC (outside Elora)
-    const walletBalance = isConnected ? usdcBalance.balance : (walletStore.user_balance ?? 0);
-
-    // available: capital ready to use inside Elora
-    const available = Math.max(0, walletStore.available_vault_balance ?? 0);
-
-    // committed: capital in active predictions
-    const committed = Math.max(0, walletStore.at_risk_balance ?? 0);
-
-    // protected: capital in active horizons (onchain locks or fallback)
     const protectedFromLocks = (vaultLocks.locks ?? []).reduce(
       (sum, lock) => lock.withdrawn ? sum : sum + lock.amount,
       0,
     );
-    const protected_ =
-      protectedFromLocks > 0
-        ? protectedFromLocks
-        : vaultSummary.totalLocked > 0
-          ? vaultSummary.totalLocked
-          : walletStore.locked_vault_balance > 0
-            ? walletStore.locked_vault_balance
-            : 0;
 
-    // releasing: capital returning from protection (not deposited idle capital)
-    const releasing = Math.max(0, walletStore.savings_vault ?? 0);
-
-    // Derived: total capital inside Elora
-    const totalEloraCapital = available + protected_ + releasing + committed;
-
-    return {
-      walletBalance,
-      available,
-      protected: protected_,
-      releasing,
-      committed,
-      atRisk: committed,
-      totalEloraCapital,
-      total: totalEloraCapital,
-    };
+    return normalizeCapitalState({
+      walletBalance: isConnected ? usdcBalance.balance : undefined,
+      fallbackWalletBalance: walletStore.user_balance,
+      availableBalance: walletStore.available_vault_balance,
+      protectedBalance: walletStore.locked_vault_balance,
+      releasingBalance: walletStore.savings_vault,
+      committedBalance: walletStore.at_risk_balance,
+      protectedLocksTotal: protectedFromLocks,
+      vaultSummaryLockedTotal: vaultSummary.totalLocked,
+    });
   }, [
     isConnected,
     usdcBalance.balance,
@@ -185,19 +240,7 @@ export function useCapitalState(): CapitalSummary {
     vaultSummary.totalLocked,
   ]);
 
-  const formatted: CapitalBalancesFormatted = useMemo(
-    () => ({
-      walletBalance: formatUSD(balances.walletBalance),
-      available: formatUSD(balances.available),
-      protected: formatUSD(balances.protected),
-      releasing: formatUSD(balances.releasing),
-      committed: formatUSD(balances.committed),
-      atRisk: formatUSD(balances.atRisk),
-      totalEloraCapital: formatUSD(balances.totalEloraCapital),
-      total: formatUSD(balances.total),
-    }),
-    [balances],
-  );
+  const formatted: CapitalBalancesFormatted = useMemo(() => formatCapitalBalances(balances), [balances]);
 
   const activeHorizons: HorizonInfo[] = useMemo(() => {
     if (!vaultLocks.locks || vaultLocks.locks.length === 0) return [];
@@ -213,7 +256,7 @@ export function useCapitalState(): CapitalSummary {
         return {
           id: String(lock.id),
           amount: lock.amount,
-          amountFormatted: formatUSD(lock.amount),
+          amountFormatted: formatCapitalUSD(lock.amount),
           createdAt: lock.createdAt,
           unlockAt: lock.unlockAt,
           durationDays,

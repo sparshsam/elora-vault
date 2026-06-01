@@ -9,6 +9,7 @@ import { CapitalRhythmCard } from "@/components/insights/capital-rhythm-card";
 import { BehavioralObservationCard } from "@/components/insights/behavioral-observation-card";
 import { EventTimeline, type TimelineEvent } from "@/components/insights/event-timeline";
 import { generateObservations } from "@/lib/insights/behavioral-observations";
+import { getCapitalStateMetrics } from "@/lib/capital/capital-state";
 import { normalizeTransactionType, TX_TYPES } from "@/lib/transaction-types";
 import { Activity } from "lucide-react";
 
@@ -78,7 +79,7 @@ export default function InsightsPage() {
   // ── Compute rhythm metrics ──
   const rhythmMetrics = useMemo(() => {
     const { balances, activeHorizons } = capital;
-    const total = balances.protected + balances.available + balances.committed + balances.releasing;
+    const stateMetrics = getCapitalStateMetrics(balances);
 
     // Average protection horizon
     const durations = activeHorizons.map((h) => h.durationDays).filter(Boolean);
@@ -86,11 +87,6 @@ export default function InsightsPage() {
       durations.length > 0
         ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
         : null;
-
-    // Percentage protected
-    const protectedPct = total > 0
-      ? Math.round((balances.protected / total) * 100)
-      : 0;
 
     // Release frequency — count releases in the last 30 days
     const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
@@ -103,38 +99,25 @@ export default function InsightsPage() {
     // Protection consistency — how many active horizons exist
     const horizonCount = activeHorizons.length;
 
-    // Committed vs protected ratio
-    const commitVsProtect =
-      balances.protected > 0
-        ? Math.round((balances.committed / balances.protected) * 100)
-        : null;
-
-    // Capital states active
-    const activeStates: string[] = [];
-    if (balances.available > 0) activeStates.push("available");
-    if (balances.protected > 0) activeStates.push("protected");
-    if (balances.releasing > 0) activeStates.push("releasing");
-    if (balances.committed > 0) activeStates.push("committed");
-
     return {
       avgHorizon,
-      protectedPct,
+      protectedPct: stateMetrics.protectedPct,
       recentReleases,
       horizonCount,
-      commitVsProtect,
-      activeStatesCount: activeStates.length,
-      total,
-      hasCapital: total > 0 || balances.walletBalance > 0,
+      commitVsProtect: stateMetrics.committedProtectedRatio,
+      activeStatesCount: stateMetrics.activeStatesCount,
+      total: balances.totalEloraCapital,
+      hasCapital: stateMetrics.hasAnyCapital,
     };
   }, [capital, transactions, now]);
 
   // ── Generate behavioral observations ──
   const observations = useMemo(() => {
     return generateObservations({
-      protectedAmount: capital.balances.protected,
-      availableAmount: capital.balances.available,
-      committedAmount: capital.balances.committed,
-      releasingAmount: capital.balances.releasing,
+      protectedAmount: capital.balances.protectedCapital,
+      availableAmount: capital.balances.availableCapital,
+      committedAmount: capital.balances.committedCapital,
+      releasingAmount: capital.balances.releasingCapital,
       totalCapital: rhythmMetrics.total,
       activeHorizons: capital.activeHorizons.map((h) => ({
         amount: h.amount,
@@ -247,7 +230,7 @@ export default function InsightsPage() {
                   <CapitalRhythmCard
                     label="Capital protected"
                     value={`${rhythmMetrics.protectedPct}%`}
-                    description={`$${formatUSD(capital.balances.protected)} in protection`}
+                    description={`$${formatUSD(capital.balances.protectedCapital)} in protection`}
                   />
                 )}
 
@@ -286,7 +269,7 @@ export default function InsightsPage() {
                   <CapitalRhythmCard
                     label="Committed vs protected"
                     value={`${rhythmMetrics.commitVsProtect}%`}
-                    description={`$${formatUSD(capital.balances.committed)} committed to predictions`}
+                    description={`$${formatUSD(capital.balances.committedCapital)} committed to predictions`}
                   />
                 )}
 
