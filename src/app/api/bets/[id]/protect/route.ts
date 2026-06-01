@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { STORED_TX_TYPES } from "@/lib/transaction-types";
 
 export async function PATCH(
   request: Request,
@@ -18,9 +19,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Missing amount or durationDays" }, { status: 400 });
     }
 
-    const bet = await prisma.bet.findUnique({ where: { id } });
-    if (!bet) return NextResponse.json({ error: "Bet not found" }, { status: 404 });
-    if (bet.userId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const prediction = await prisma.bet.findUnique({ where: { id } });
+    if (!prediction) return NextResponse.json({ error: "Prediction not found" }, { status: 404 });
+    if (prediction.userId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const wallet = await prisma.wallet.findUnique({ where: { userId: user.id } });
     if (!wallet) return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
@@ -38,7 +39,7 @@ export async function PATCH(
           amount,
           unlockAt,
           status: "ACTIVE",
-          notes: `Protected after bet: ${bet.description || "Bet"}`,
+          notes: `Protected after prediction: ${prediction.description || "Prediction"}`,
         },
       });
 
@@ -53,7 +54,7 @@ export async function PATCH(
       await tx.bet.update({
         where: { id },
         data: {
-          description: `${bet.description || "Bet"} - protected ${amount > bet.potentialProfit ? "full return" : "profit"} for ${durationDays}d`,
+          description: `${prediction.description || "Prediction"} - protected ${amount > prediction.potentialProfit ? "full return" : "profit"} for ${durationDays}d`,
           potential_return: amount,
         },
       });
@@ -61,13 +62,13 @@ export async function PATCH(
       await tx.transaction.create({
         data: {
           userId: user.id,
-          type: "LOCK_CREATED",
+          type: STORED_TX_TYPES.protectionCreated,
           amount,
           balanceBefore: wallet.available_vault_balance,
           balanceAfter: wallet.available_vault_balance - amount,
-          betId: bet.id,
+          betId: prediction.id,
           vaultLockId: lock.id,
-          description: `Profit protected after bet${bet.description ? ": " + bet.description : "."}`,
+          description: `Return protected after prediction${prediction.description ? ": " + prediction.description : "."}`,
         },
       });
 

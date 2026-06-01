@@ -17,19 +17,19 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { BetRecord, BetType, BetStatus, SettleResult } from "@/types/bet";
+import type { BetRecord, PredictionType, PredictionStatus, PredictionSettleResult } from "@/types/prediction";
 
 /* ── Summary Icons ─────────────────────────── */
 
 const SUMMARY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  atRisk: HelpCircle,
+  committed: HelpCircle,
   open: Target,
   potential: TrendingUp,
   settled: DollarSign,
 };
 
 const SUMMARY_COLORS: Record<string, string> = {
-  atRisk: "text-amber-700 bg-amber-50 border-amber-200",
+  committed: "text-amber-700 bg-amber-50 border-amber-200",
   open: "text-green-600 bg-green-50 border-green-200",
   potential: "text-green-700 bg-green-100 border-green-200",
   settled: "text-text-secondary bg-surface-subtle border-border",
@@ -90,16 +90,16 @@ function SummaryCard({ label, value, subtext, iconKey }: SummaryCardProps) {
   );
 }
 
-/* ── Bet Card ───────────────────────────────── */
+/* Prediction Card */
 
-interface BetCardProps {
+interface PredictionCardProps {
   bet: BetRecord;
-  onSettle: (id: string, result: SettleResult) => void;
-  onProtect: (betId: string, amount: number, horizon: number) => void;
+  onSettle: (id: string, result: PredictionSettleResult) => void;
+  onProtect: (predictionId: string, amount: number, horizon: number) => void;
   protectingId: string | null;
 }
 
-function BetCard({ bet, onSettle, onProtect, protectingId }: BetCardProps) {
+function PredictionCard({ bet, onSettle, onProtect, protectingId }: PredictionCardProps) {
   const isOpen = bet.status === "open";
   const isWin = bet.status === "won";
   const isLoss = bet.status === "lost";
@@ -169,7 +169,7 @@ function BetCard({ bet, onSettle, onProtect, protectingId }: BetCardProps) {
                 )}
               </div>
               <p className="text-small text-text-secondary mt-1 leading-relaxed">
-                {bet.betType.charAt(0).toUpperCase() + bet.betType.slice(1)} · {oddsDisplay} · ${formatUSD(bet.stake)} stake
+                {bet.betType.charAt(0).toUpperCase() + bet.betType.slice(1)} - {oddsDisplay} - ${formatUSD(bet.stake)} committed
               </p>
             </div>
             <span
@@ -211,14 +211,14 @@ function BetCard({ bet, onSettle, onProtect, protectingId }: BetCardProps) {
           {bet.horizonProtected && (
             <p className="flex items-center gap-1.5 text-tiny text-green-600 mt-2">
               <CheckCircle className="h-3 w-3" />
-              Profit protected after prediction.
+              Return protected after prediction.
             </p>
           )}
 
           {/* Timestamp */}
           <p className="text-tiny text-text-muted mt-2">{formatDate(bet.createdAt)}</p>
 
-          {/* Open bet actions */}
+          {/* Active prediction actions */}
           {isOpen && (
             <div className="flex items-center gap-2 mt-4 flex-wrap">
               <button
@@ -398,18 +398,18 @@ function ProtectPrompt({ betId, profit, totalReturn, onProtect, onDismiss, prote
   );
 }
 
-/* ── Log Bet Modal ─────────────────────────── */
+/* Create Prediction Modal */
 
-interface LogBetModalProps {
+interface CreatePredictionModalProps {
   open: boolean;
   onClose: () => void;
-  onBetLogged: () => void;
+  onPredictionLogged: () => void;
   availableBalance: number;
 }
 
-function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetModalProps) {
+function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBalance }: CreatePredictionModalProps) {
   const [description, setDescription] = useState("");
-  const [betType, setBetType] = useState<BetType>("moneyline");
+  const [betType, setBetType] = useState<PredictionType>("moneyline");
   const [odds, setOdds] = useState("");
   const [stake, setStake] = useState("");
   const [step, setStep] = useState<"input" | "submitting" | "success" | "error">("input");
@@ -441,6 +441,7 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description,
+          predictionType: betType,
           betType,
           odds: numericOdds,
           stake: numericStake,
@@ -448,17 +449,17 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
       });
       if (res.ok) {
         setStep("success");
-        onBetLogged();
+        onPredictionLogged();
       } else {
         const err = await res.json();
-        setErrorMsg(err.error || "Failed to log prediction");
+        setErrorMsg(err.error || "Failed to create prediction");
         setStep("error");
       }
     } catch {
       setErrorMsg("Network error. Please try again.");
       setStep("error");
     }
-  }, [isValid, description, betType, numericOdds, numericStake, onBetLogged]);
+  }, [isValid, description, betType, numericOdds, numericStake, onPredictionLogged]);
 
   const handleClose = useCallback(() => {
     setStep("input");
@@ -466,13 +467,13 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
   }, [onClose]);
 
   return (
-    <CapitalModal open={open} onClose={handleClose} title="Log Prediction">
+    <CapitalModal open={open} onClose={handleClose} title="Create Prediction">
       {step === "success" ? (
         <div className="flex flex-col items-center py-6 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
             <TrendingUp className="h-6 w-6 text-green-600" />
           </div>
-          <p className="text-sm font-medium text-text-primary">Prediction logged.</p>
+          <p className="text-sm font-medium text-text-primary">Prediction created successfully.</p>
           <p className="text-small text-text-tertiary mt-2">${formatUSD(numericStake)} committed.</p>
           <button type="button" onClick={handleClose}
             className="mt-6 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors">
@@ -495,7 +496,7 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle mb-4">
             <span className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
           </div>
-          <p className="text-sm font-medium text-text-primary">Submitting...</p>
+          <p className="text-sm font-medium text-text-primary">Creating prediction...</p>
         </div>
       ) : (
         <div className="space-y-5">
@@ -513,10 +514,10 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
             />
           </div>
 
-          {/* Bet Type */}
+          {/* Prediction Type */}
           <div>
             <label className="text-tiny font-medium uppercase tracking-wider text-text-tertiary mb-1.5 block">
-              Bet type
+              Prediction type
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(["moneyline", "spread", "totals"] as const).map((t) => (
@@ -602,8 +603,8 @@ function LogBetModal({ open, onClose, onBetLogged, availableBalance }: LogBetMod
               )}
             >
               {numericStake > 0 && numericOdds !== 0
-                ? `Log Prediction · $${formatUSD(numericStake)} at ${numericOdds > 0 ? "+" : ""}${numericOdds}`
-                : "Log Prediction"}
+                ? `Create Prediction - $${formatUSD(numericStake)} at ${numericOdds > 0 ? "+" : ""}${numericOdds}`
+                : "Create Prediction"}
             </button>
             <button type="button" onClick={handleClose}
               className="w-full rounded-lg py-2 text-small font-medium text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-surface-hover transition-colors">
@@ -625,9 +626,9 @@ function EmptyState({ onLogBet }: { onLogBet: () => void }) {
         <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-subtle">
           <HelpCircle className="h-5 w-5 text-text-tertiary" />
         </div>
-        <p className="text-sm font-medium text-text-primary">No predictions yet.</p>
+        <p className="text-sm font-medium text-text-primary">No predictions created yet.</p>
         <p className="text-small text-text-tertiary mt-2 max-w-xs">
-          Log your first prediction to track stake, potential return, and results.
+          Create your first prediction to track committed capital, potential return, and settled results.
         </p>
         <button
           type="button"
@@ -635,7 +636,7 @@ function EmptyState({ onLogBet }: { onLogBet: () => void }) {
           className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Log your first prediction
+          Create your first prediction
         </button>
       </div>
     </div>
@@ -658,17 +659,19 @@ export default function SessionsPage() {
       if (res.ok) {
         const data = await res.json();
         setBets(
-          (data.bets || []).map((b: Record<string, unknown>) => {
+          (data.predictions || data.bets || []).map((b: Record<string, unknown>) => {
             const desc = (b.description as string) || "";
+            const predictionType = ((b.marketType as string)?.toLowerCase?.() || "moneyline") as PredictionType;
             return {
               id: b.id as string,
               description: desc.replace(/ — protected .*$/, ""), // strip protection suffix
-              betType: ((b.marketType as string)?.toLowerCase?.() || "moneyline") as BetType,
+              predictionType,
+              betType: predictionType,
               odds: (b.odds as number) || 0,
               stake: (b.stake as number) || 0,
               potentialProfit: (b.potentialProfit as number) || 0,
               potentialReturn: (b.potential_return as number) || 0,
-              status: ((b.status as string)?.toLowerCase?.() || "open") as BetStatus,
+              status: ((b.status as string)?.toLowerCase?.() || "open") as PredictionStatus,
               createdAt: (b.createdAt as string) || new Date().toISOString(),
               settledAt: (b.settledAt as string) || undefined,
               horizonProtected: desc.includes("protected"),
@@ -687,9 +690,9 @@ export default function SessionsPage() {
 
   // ── Summary ──
   const summary = useMemo(() => {
-    const openBets = bets.filter((b) => b.status === "open");
-    const atRisk = openBets.reduce((sum, b) => sum + b.stake, 0);
-    const potentialReturn = openBets.reduce((sum, b) => sum + b.potentialReturn, 0);
+    const activePredictions = bets.filter((b) => b.status === "open");
+    const committed = activePredictions.reduce((sum, b) => sum + b.stake, 0);
+    const potentialReturn = activePredictions.reduce((sum, b) => sum + b.potentialReturn, 0);
     const settledPnl = bets
       .filter((b) => b.status !== "open")
       .reduce((sum, b) => {
@@ -698,10 +701,10 @@ export default function SessionsPage() {
         return sum; // push — no change
       }, 0);
 
-    return { atRisk, openCount: openBets.length, potentialReturn, settledPnl };
+    return { committed, activeCount: activePredictions.length, potentialReturn, settledPnl };
   }, [bets]);
 
-  const handleSettle = useCallback(async (id: string, result: SettleResult) => {
+  const handleSettle = useCallback(async (id: string, result: PredictionSettleResult) => {
     try {
       await fetch(`/api/bets/${id}/settle`, {
         method: "PATCH",
@@ -740,8 +743,8 @@ export default function SessionsPage() {
     loadBets();
   }, [loadBets]);
 
-  const openBets = bets.filter((b) => b.status === "open");
-  const settledBets = bets.filter((b) => b.status !== "open");
+  const activePredictions = bets.filter((b) => b.status === "open");
+  const settledPredictions = bets.filter((b) => b.status !== "open");
 
   return (
     <PageShell>
@@ -752,7 +755,7 @@ export default function SessionsPage() {
             <div>
               <h1 className="text-display text-text-primary">Sessions</h1>
               <p className="text-body text-text-secondary mt-1">
-                Log and manage predictions. Settle results and protect returns.
+                Track predictions, manage committed capital, and settle outcomes.
               </p>
             </div>
             <button
@@ -761,16 +764,16 @@ export default function SessionsPage() {
               className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors shrink-0"
             >
               <Plus className="h-4 w-4" />
-              Log Prediction
+              Create Prediction
             </button>
           </div>
         </div>
 
         {/* ── Summary Cards ── */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-          <SummaryCard label="Committed" value={`$${formatUSD(summary.atRisk)}`} subtext="Capital in active predictions" iconKey="atRisk" />
-          <SummaryCard label="Active" value={String(summary.openCount)} subtext="Awaiting settlement" iconKey="open" />
-          <SummaryCard label="Potential Return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If all predictions win" iconKey="potential" />
+          <SummaryCard label="Committed" value={`$${formatUSD(summary.committed)}`} subtext="Capital in active predictions" iconKey="committed" />
+          <SummaryCard label="Active" value={String(summary.activeCount)} subtext="Awaiting settlement" iconKey="open" />
+          <SummaryCard label="Potential Return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If active predictions win" iconKey="potential" />
           <SummaryCard
             label="Settled P/L"
             value={`${summary.settledPnl >= 0 ? "+" : ""}$${formatUSD(summary.settledPnl)}`}
@@ -779,7 +782,7 @@ export default function SessionsPage() {
           />
         </div>
 
-        {/* ── Bet List ── */}
+        {/* Prediction List */}
         {loading ? (
           <div className="space-y-4 animate-pulse">
             {[1, 2, 3].map((i) => (
@@ -791,22 +794,22 @@ export default function SessionsPage() {
           </div>
         ) : bets.length > 0 ? (
           <div className="space-y-6">
-            {openBets.length > 0 && (
+            {activePredictions.length > 0 && (
               <div>
-                <h2 className="text-sm font-medium text-text-primary mb-4">Open</h2>
+                <h2 className="text-sm font-medium text-text-primary mb-4">Active</h2>
                 <div className="space-y-4">
-                  {openBets.map((bet) => (
-                    <BetCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} />
+                  {activePredictions.map((bet) => (
+                    <PredictionCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} />
                   ))}
                 </div>
               </div>
             )}
-            {settledBets.length > 0 && (
+            {settledPredictions.length > 0 && (
               <div>
                 <h2 className="text-sm font-medium text-text-primary mb-4">Settled</h2>
                 <div className="space-y-4">
-                  {settledBets.map((bet) => (
-                    <BetCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} />
+                  {settledPredictions.map((bet) => (
+                    <PredictionCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} />
                   ))}
                 </div>
               </div>
@@ -817,11 +820,11 @@ export default function SessionsPage() {
         )}
       </div>
 
-      {/* ── Log Bet Modal ── */}
-      <LogBetModal
+      {/* Create Prediction Modal */}
+      <CreatePredictionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onBetLogged={handleBetLogged}
+        onPredictionLogged={handleBetLogged}
         availableBalance={capital.balances.available}
       />
     </PageShell>

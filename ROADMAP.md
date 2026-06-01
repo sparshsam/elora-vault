@@ -14,7 +14,7 @@ Elora should grow as a calm savings and self-custody tool where betting mechanic
 
 ### v0.3 ✅ — Mobile UX & GitHub Presentation
 
-- [x] Mobile-responsive bet table, transactions, and navigation
+- [x] Mobile-responsive prediction table, transactions, and navigation
 - [x] Touch-optimized tap targets (44px minimum)
 - [x] Empty, loading, error, and success states for all pages
 - [x] Dashboard analytics (win/loss/push count, vault growth chart)
@@ -57,7 +57,7 @@ Elora should grow as a calm savings and self-custody tool where betting mechanic
 - [ ] **Vault action confirmations** — add high-friction confirmations for deposits, locks, releases, and withdrawals.
 - [ ] **Cooldown windows** — optional delay before large withdrawals or emergency unlock attempts.
 - [ ] **Discipline reports** — weekly/monthly summaries showing wager behaviour, saved losses, lock activity, and restraint streaks.
-- [ ] **CSV/PDF export** — export bets, transactions, locks, vault reports, and discipline summaries.
+- [ ] **CSV/PDF export** — export predictions, transactions, locks, vault reports, and discipline summaries.
 - [ ] **Advanced analytics dashboard** — interactive charts for vault growth, loss absorption, profit, lock duration, and decision patterns.
 - [ ] **Data deletion and account export** — user-owned portability and removal flows.
 
@@ -65,11 +65,11 @@ Elora should grow as a calm savings and self-custody tool where betting mechanic
 
 ## Mid-Term — Personal Operating System for Betting Discipline
 
-- [ ] **Rule-based bankroll guardrails** — user-defined max stake, max daily exposure, max open bets, and cooldown after losses.
+- [ ] **Rule-based bankroll guardrails** — user-defined max stake, max daily exposure, max active predictions, and cooldown after losses.
 - [ ] **Loss-streak intervention** — lock new simulated betting after repeated losses and redirect funds into protected capital.
-- [ ] **Intent prompts** — require a reason before placing a bet: entertainment, discipline drill, model test, emotional impulse, or planned strategy.
-- [ ] **Decision journal** — attach notes, screenshots, reasoning, and post-settlement reflections to each bet.
-- [ ] **Template library** — saved bet templates for repeated personal practice scenarios without live odds feeds.
+- [ ] **Intent prompts** — require a reason before creating a prediction: entertainment, discipline drill, model test, emotional impulse, or planned strategy.
+- [ ] **Decision journal** — attach notes, screenshots, reasoning, and post-settlement reflections to each prediction.
+- [ ] **Template library** — saved prediction templates for repeated personal practice scenarios without live odds feeds.
 - [ ] **Savings goals** — define vault targets and track progress without turning the app into a bank or investment product.
 - [ ] **PWA offline mode** — allow simulated tracking, review, and journaling when offline.
 - [ ] **Push notifications** — optional lock release, milestone, and cooldown reminders.

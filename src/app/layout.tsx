@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     title: "Elora Vault — Protected Capital Vault",
     description:
       "Self-custodied behavioral savings vault on Base. Losses become protected future capital.",
-    url: "https://elora-bet-api.vercel.app",
+    url: "https://elora-vault.vercel.app",
     siteName: "Elora Vault",
     type: "website",
     locale: "en_US",

@@ -7,7 +7,7 @@ export type SessionAction =
   | "protected-gains"
   | "moved-to-horizon";
 
-export interface BettingSession {
+export interface CapitalSession {
   id: string;
   title: string;
   category: string;
@@ -36,6 +36,8 @@ export interface CreateSessionRequest {
 }
 
 export interface CreateSessionResponse {
-  session: BettingSession;
+  session: CapitalSession;
   horizonCreated: boolean;
 }
+
+export type BettingSession = CapitalSession;

@@ -248,7 +248,7 @@ export default function IntentPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [isReleasing, setIsReleasing] = useState<string | null>(null);
 
-  // ── Recent won bets for protection prompt ──
+  // Recent won predictions for protection prompt.
   const [recentWins, setRecentWins] = useState<{ id: string; description: string; amount: number }[]>([]);
 
   useEffect(() => {
@@ -292,7 +292,7 @@ export default function IntentPage() {
     });
   }, [capital.activeHorizons, isReleasing, releaseLock.hash, releaseLock.isConfirmed, syncFromServer]);
 
-  // Load recent won bets
+  // Load recent won predictions.
   useEffect(() => {
     (async () => {
       try {
@@ -300,14 +300,14 @@ export default function IntentPage() {
         if (res.ok) {
           const data = await res.json();
           const oneDayAgo = Date.now() - 48 * 60 * 60 * 1000; // 48 hours
-          const recent = (data.bets || [])
+          const recent = (data.predictions || data.bets || [])
             .filter((b: Record<string, unknown>) => {
               const settledAt = b.settledAt ? new Date(b.settledAt as string).getTime() : 0;
               return settledAt > oneDayAgo;
             })
             .map((b: Record<string, unknown>) => ({
               id: b.id as string,
-              description: (b.description as string) || "Bet",
+              description: (b.description as string) || "Prediction",
               amount: (b.potentialProfit as number) || 0,
             }));
           setRecentWins(recent);
@@ -363,7 +363,7 @@ export default function IntentPage() {
           <SummaryCard label="Intent" value={summary.intent} subtext="Decisions awaiting attention" iconType="intent" />
         </div>
 
-        {/* ── Protection Opportunities (from won bets) ── */}
+        {/* Protection opportunities from won predictions */}
         {recentWins.length > 0 && (
           <div className="mb-8">
             <h2 className="text-sm font-medium text-text-primary mb-4 flex items-center gap-2">

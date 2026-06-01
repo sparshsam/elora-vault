@@ -30,7 +30,7 @@
 ## v0.3.1 — Rebrand to Elora Vault (2026-05-29)
 
 ### Rebrand
-- Project renamed from "Elora" / "Elora Bet API" to "Elora Vault"
+- Project renamed from "Elora" to "Elora Vault"
 - `package.json` name changed to `elora-vault`
 - All page metadata updated: title, description, OG, Twitter card now "Elora Vault"
 - Landing page nav brand updated to "EV" logo + "Elora Vault"
@@ -50,7 +50,7 @@
 ## v0.3 — Mobile Optimization & GitHub Presentation (2026-05-29)
 
 ### Mobile Optimization
-- Responsive bet table with card layout on mobile (sm breakpoint)
+- Responsive prediction table with card layout on mobile (sm breakpoint)
 - Responsive transaction list with card layout on mobile
 - Minimum 44px tap targets on mobile for all interactive elements
 - Horizontal scroll prevention on all viewports
@@ -61,23 +61,23 @@
 
 ### UI/UX Cleanup
 - Dark-mode-first glassy fintech aesthetic (charcoal/black base, soft white text, muted red accents)
-- Empty states with contextual messaging for: dashboard, open bets, history, transactions
+- Empty states with contextual messaging for: dashboard, active predictions, history, transactions
 - Loading states with spinner animation on all data-fetching pages
 - Error states with red alert banners on deposit and settlement
 - Success state with green confirmation on deposit
 - Consistent product terminology across all pages:
   - User Balance, Savings Vault, Withdrawable Winnings, Virtual House Balance
-  - Loss-to-Savings, Open Bets, Settled Bets
+  - Loss-to-Savings, Active Predictions, Settled Predictions
   - Total Deposited, Total Wagered, Saved From Losses, Total Profit Won
 - Balance/number formatting with `tabular-nums` everywhere
 - Animated number transitions on stat cards (Framer Motion)
 
 ### Dashboard Analytics
-- Bet Analytics section: settled count, won/lost/push breakdown
+- Prediction Analytics section: settled count, won/lost/push breakdown
 - Win/Loss/Push ratio bar visualization
 - Vault Growth chart (user balance trend over time)
 - House vs User comparison bars
-- Empty states: "No balance history yet", "No bets placed yet"
+- Empty states: "No balance history yet", "No predictions created yet"
 
 ### Metadata & SEO
 - New title: "Elora — Personal Savings Vault"
@@ -119,10 +119,10 @@
 - Full savings vault implementation
 - Virtual house ($1B starting balance) with liability tracking
 - Win/Loss/Push settlement with correct balance math
-- Live preview on bet form (projected win/loss/vault)
-- Settlement actions on open bets
+- Live preview on prediction form (projected win/loss/vault)
+- Settlement actions on active predictions
 - Deposit page with preset amounts
-- Bet history page with status filtering and pagination
+- Prediction history page with status filtering and pagination
 - Transaction history page with type-based icons
 - Settings page with account info and stats
 - Dashboard with 4 primary cards, secondary stats, house vs user comparison
@@ -149,13 +149,13 @@
 - Next.js 16 project scaffold with App Router
 - TypeScript configuration
 - TailwindCSS v4 setup with PostCSS
-- Prisma schema: User, Wallet (with $1B default), Bet, Transaction models
+- Prisma schema: User, Wallet, legacy Bet compatibility table, Transaction models
 - Supabase SSR Auth integration
 - Zustand wallet store for client-side state
 - Liability engine: calculateProfit, validateBet, settleWin/Loss/Push
 - Wallet API (GET wallet, POST deposit)
-- Bets API (GET list, POST create)
-- Bet settlement API (PATCH with WIN/LOSS/PUSH)
+- Predictions API (GET list, POST create)
+- Prediction settlement API (PATCH with WIN/LOSS/PUSH)
 - Transactions API (GET list with pagination)
 - Landing page with features showcase
 - Login/signup pages with Supabase auth

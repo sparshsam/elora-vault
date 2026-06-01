@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { STORED_TX_TYPES } from "@/lib/transaction-types";
 
 /**
  * POST /api/onchain/event
@@ -66,16 +67,16 @@ export async function POST(request: Request) {
 
     switch (type) {
       case "ONCHAIN_DEPOSIT":
-        description = `$${amount.toFixed(2)} deposited to onchain vault`;
+        description = `$${amount.toFixed(2)} deposited to Elora capital`;
         break;
       case "ONCHAIN_LOCK_CREATED":
-        description = `$${amount.toFixed(2)} locked onchain${unlockAt ? ` until ${new Date(unlockAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` : ""}`;
+        description = `$${amount.toFixed(2)} protected${unlockAt ? ` until ${new Date(unlockAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` : ""}`;
         break;
       case "ONCHAIN_LOCK_RELEASED":
-        description = `$${amount.toFixed(2)} lock released onchain`;
+        description = `$${amount.toFixed(2)} protection released`;
         break;
       case "ONCHAIN_WITHDRAWAL":
-        description = `$${amount.toFixed(2)} withdrawn from onchain vault`;
+        description = `$${amount.toFixed(2)} withdrawn from Elora capital`;
         break;
     }
 
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
         await tx.transaction.create({
           data: {
             userId: user.id,
-            type: "ONCHAIN_DEPOSIT",
+            type: STORED_TX_TYPES.depositCompleted,
             amount,
             balanceBefore: wallet.available_vault_balance,
             balanceAfter: updatedWallet.available_vault_balance,
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
         await tx.transaction.create({
           data: {
             userId: user.id,
-            type: "ONCHAIN_LOCK_CREATED",
+            type: STORED_TX_TYPES.protectionCreated,
             amount,
             balanceBefore: wallet.available_vault_balance,
             balanceAfter: updatedWallet.available_vault_balance,
@@ -150,7 +151,7 @@ export async function POST(request: Request) {
         await tx.transaction.create({
           data: {
             userId: user.id,
-            type: "ONCHAIN_LOCK_RELEASED",
+            type: STORED_TX_TYPES.protectionReleased,
             amount,
             balanceBefore: wallet.available_vault_balance,
             balanceAfter: updatedWallet.available_vault_balance,
@@ -187,7 +188,7 @@ export async function POST(request: Request) {
         await tx.transaction.create({
           data: {
             userId: user.id,
-            type: "ONCHAIN_WITHDRAWAL",
+            type: STORED_TX_TYPES.withdrawalCompleted,
             amount,
             balanceBefore: wallet.available_vault_balance,
             balanceAfter: updatedWallet.available_vault_balance,
