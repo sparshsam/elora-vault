@@ -10,6 +10,10 @@ out/
 # env
 .env*.local
 .env
+.env.production
+.env.vercel
+vercel-env.txt
+force-deploy.txt
 
 # IDE
 .vscode/

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, createElement } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, createElement } from "react";
 import { useCapitalState } from "@/lib/capital-state";
 import { useCreateLock } from "@/lib/web3/tx-hooks";
 import { PageShell } from "@/components/layout/page-shell";
@@ -97,15 +97,17 @@ interface PredictionCardProps {
   onSettle: (id: string, result: PredictionSettleResult) => void;
   onProtect: (predictionId: string, amount: number, horizon: number) => void;
   protectingId: string | null;
+  settlingId: string | null;
 }
 
-function PredictionCard({ bet, onSettle, onProtect, protectingId }: PredictionCardProps) {
+function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: PredictionCardProps) {
   const isOpen = bet.status === "open";
   const isWin = bet.status === "won";
   const isLoss = bet.status === "lost";
   const isPush = bet.status === "push";
   const [showProtect, setShowProtect] = useState(false);
   const isProtecting = protectingId === bet.id;
+  const isSettling = settlingId === bet.id;
 
   const statusBadge = isOpen
     ? "bg-amber-50 text-amber-700 border-amber-200"
@@ -224,13 +226,15 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId }: PredictionCa
               <button
                 type="button"
                 onClick={() => onSettle(bet.id, "WIN")}
+                disabled={isSettling}
                 className="rounded-lg bg-green-500 text-white px-3 py-1.5 text-tiny font-medium hover:bg-green-600 transition-colors shadow-sm"
               >
-                Won
+                {isSettling ? "Settling..." : "Won"}
               </button>
               <button
                 type="button"
                 onClick={() => onSettle(bet.id, "LOSS")}
+                disabled={isSettling}
                 className="rounded-lg border border-border bg-surface-subtle text-text-secondary px-3 py-1.5 text-tiny font-medium hover:text-danger hover:border-danger/30 transition-colors"
               >
                 Lost
@@ -238,6 +242,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId }: PredictionCa
               <button
                 type="button"
                 onClick={() => onSettle(bet.id, "PUSH")}
+                disabled={isSettling}
                 className="rounded-lg border border-border bg-surface-subtle text-text-muted px-3 py-1.5 text-tiny font-medium hover:text-text-secondary transition-colors"
               >
                 Push
@@ -414,6 +419,7 @@ function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBal
   const [stake, setStake] = useState("");
   const [step, setStep] = useState<"input" | "submitting" | "success" | "error">("input");
   const [errorMsg, setErrorMsg] = useState("");
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -423,6 +429,7 @@ function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBal
       setStake("");
       setStep("input");
       setErrorMsg("");
+      submittingRef.current = false;
     }
   }, [open]);
 
@@ -433,7 +440,8 @@ function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBal
   const isValid = numericStake > 0 && numericOdds !== 0 && numericStake <= availableBalance;
 
   const handleSubmit = useCallback(async () => {
-    if (!isValid) return;
+    if (!isValid || submittingRef.current) return;
+    submittingRef.current = true;
     setStep("submitting");
     try {
       const res = await fetch("/api/bets", {
@@ -452,19 +460,23 @@ function CreatePredictionModal({ open, onClose, onPredictionLogged, availableBal
         onPredictionLogged();
       } else {
         const err = await res.json();
-        setErrorMsg(err.error || "Failed to create prediction");
+        setErrorMsg(err.error || "Prediction could not be created.");
         setStep("error");
+        submittingRef.current = false;
       }
     } catch {
-      setErrorMsg("Network error. Please try again.");
+      setErrorMsg("Capital state could not be updated. Please try again.");
       setStep("error");
+      submittingRef.current = false;
     }
   }, [isValid, description, betType, numericOdds, numericStake, onPredictionLogged]);
 
   const handleClose = useCallback(() => {
+    if (step === "submitting") return;
     setStep("input");
+    submittingRef.current = false;
     onClose();
-  }, [onClose]);
+  }, [step, onClose]);
 
   return (
     <CapitalModal open={open} onClose={handleClose} title="Create Prediction">
@@ -651,6 +663,9 @@ export default function SessionsPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [protectingId, setProtectingId] = useState<string | null>(null);
+  const [settlingId, setSettlingId] = useState<string | null>(null);
+  const [pendingProtection, setPendingProtection] = useState<{ betId: string; amount: number; durationDays: number } | null>(null);
+  const loggedProtectionHash = useRef<`0x${string}` | undefined>(undefined);
 
   const loadBets = useCallback(async () => {
     try {
@@ -705,39 +720,69 @@ export default function SessionsPage() {
   }, [bets]);
 
   const handleSettle = useCallback(async (id: string, result: PredictionSettleResult) => {
+    if (settlingId) return;
+    setSettlingId(id);
     try {
-      await fetch(`/api/bets/${id}/settle`, {
+      const res = await fetch(`/api/bets/${id}/settle`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ result }),
       });
-      await loadBets();
-    } catch {
-      // silently fail
-    }
-  }, [loadBets]);
-
-  const createLock = useCreateLock();
-
-  const handleProtect = useCallback(async (betId: string, amount: number, durationDays: number) => {
-    setProtectingId(betId);
-    try {
-      // 1. Create onchain horizon
-      createLock.createLock(amount, durationDays * 86400);
-      // 2. Record in backend
-      await fetch(`/api/bets/${betId}/protect`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, durationDays }),
-      });
-      // 3. Refresh
+      if (!res.ok) return;
       await loadBets();
     } catch {
       // silently fail
     } finally {
+      setSettlingId(null);
+    }
+  }, [loadBets, settlingId]);
+
+  const createLock = useCreateLock();
+
+  const handleProtect = useCallback(async (betId: string, amount: number, durationDays: number) => {
+    if (protectingId || pendingProtection || createLock.lifecycle.isActive) return;
+    setProtectingId(betId);
+    setPendingProtection({ betId, amount, durationDays });
+    loggedProtectionHash.current = undefined;
+    try {
+      createLock.createLock(amount, durationDays * 86400);
+    } catch {
+      setPendingProtection(null);
       setProtectingId(null);
     }
-  }, [createLock, loadBets]);
+  }, [createLock, protectingId, pendingProtection]);
+
+  useEffect(() => {
+    if (!pendingProtection || !createLock.isConfirmed || !createLock.hash || loggedProtectionHash.current === createLock.hash) return;
+    loggedProtectionHash.current = createLock.hash;
+
+    (async () => {
+      const res = await fetch(`/api/bets/${pendingProtection.betId}/protect`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: pendingProtection.amount,
+          durationDays: pendingProtection.durationDays,
+          txHash: createLock.hash,
+        }),
+      });
+      if (!res.ok) throw new Error("Protection was not completed.");
+      await loadBets();
+    })()
+      .catch(() => {
+        loggedProtectionHash.current = undefined;
+      })
+      .finally(() => {
+        setPendingProtection(null);
+        setProtectingId(null);
+      });
+  }, [createLock.hash, createLock.isConfirmed, pendingProtection, loadBets]);
+
+  useEffect(() => {
+    if (!pendingProtection || !createLock.error) return;
+    setPendingProtection(null);
+    setProtectingId(null);
+  }, [createLock.error, pendingProtection]);
 
   const handleBetLogged = useCallback(() => {
     loadBets();
@@ -799,7 +844,7 @@ export default function SessionsPage() {
                 <h2 className="text-sm font-medium text-text-primary mb-4">Active</h2>
                 <div className="space-y-4">
                   {activePredictions.map((bet) => (
-                    <PredictionCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} />
+                    <PredictionCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} settlingId={settlingId} />
                   ))}
                 </div>
               </div>
@@ -809,7 +854,7 @@ export default function SessionsPage() {
                 <h2 className="text-sm font-medium text-text-primary mb-4">Settled</h2>
                 <div className="space-y-4">
                   {settledPredictions.map((bet) => (
-                    <PredictionCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} />
+                    <PredictionCard key={bet.id} bet={bet} onSettle={handleSettle} onProtect={handleProtect} protectingId={protectingId} settlingId={settlingId} />
                   ))}
                 </div>
               </div>

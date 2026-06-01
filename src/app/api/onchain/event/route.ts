@@ -3,23 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { STORED_TX_TYPES } from "@/lib/transaction-types";
+import { onchainEventSchema, formatZodErrors } from "@/lib/validation";
 
-/**
- * POST /api/onchain/event
- * Log an onchain vault event to the backend database.
- * This is called from the frontend after a successful transaction.
- * The contract is the source of truth for balances; the backend
- * tracks metadata for charts, timelines, and UX.
- *
- * Body: {
- *   type: "ONCHAIN_DEPOSIT" | "ONCHAIN_LOCK_CREATED" | "ONCHAIN_LOCK_RELEASED" | "ONCHAIN_WITHDRAWAL",
- *   amount: number,
- *   txHash: string,
- *   lockId?: number,
- *   unlockAt?: string, // ISO date string
- *   notes?: string,
- * }
- */
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -31,28 +16,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { type, amount, txHash, lockId, unlockAt, notes } =
-      await request.json();
-
-    if (!type || !amount || !txHash) {
+    const body = await request.json();
+    const parsed = onchainEventSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "type, amount, and txHash are required" },
+        { error: "Invalid request", details: formatZodErrors(parsed.error) },
         { status: 400 },
       );
     }
 
-    const validTypes = [
-      "ONCHAIN_DEPOSIT",
-      "ONCHAIN_LOCK_CREATED",
-      "ONCHAIN_LOCK_RELEASED",
-      "ONCHAIN_WITHDRAWAL",
-    ];
+    const { type, amount, txHash, lockId, unlockAt, notes } = parsed.data;
 
-    if (!validTypes.includes(type)) {
-      return NextResponse.json(
-        { error: `Invalid type. Must be one of: ${validTypes.join(", ")}` },
-        { status: 400 },
-      );
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: { userId: user.id, tx_hash: txHash },
+      select: { id: true },
+    });
+
+    if (existingTransaction) {
+      return NextResponse.json({ success: true, duplicate: true });
     }
 
     const wallet = await prisma.wallet.findUnique({
@@ -60,7 +41,7 @@ export async function POST(request: Request) {
     });
 
     if (!wallet) {
-      return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+      return NextResponse.json({ error: "Capital state could not be updated." }, { status: 404 });
     }
 
     let description = "";
@@ -103,6 +84,13 @@ export async function POST(request: Request) {
         });
       });
     } else if (type === "ONCHAIN_LOCK_CREATED" && unlockAt) {
+      if (amount > wallet.available_vault_balance) {
+        return NextResponse.json(
+          { error: "Protection was confirmed, but available capital is out of sync. Please refresh." },
+          { status: 409 },
+        );
+      }
+
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const updatedWallet = await tx.wallet.update({
           where: { userId: user.id },
@@ -138,6 +126,18 @@ export async function POST(request: Request) {
         });
       });
     } else if (type === "ONCHAIN_LOCK_RELEASED" && lockId !== undefined) {
+      const activeLock = await prisma.vaultLock.findFirst({
+        where: {
+          userId: user.id,
+          onchain_lock_id: lockId,
+          status: "ACTIVE",
+        },
+      });
+
+      if (!activeLock) {
+        return NextResponse.json({ error: "Capital release is already reflected." }, { status: 409 });
+      }
+
       // Find the vault lock by onchain_lock_id and mark as unlocked
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const updatedWallet = await tx.wallet.update({
@@ -161,22 +161,19 @@ export async function POST(request: Request) {
         });
 
         // Mark the lock as unlocked
-        const vaultLock = await tx.vaultLock.findFirst({
-          where: {
-            userId: user.id,
-            onchain_lock_id: lockId,
-            status: "ACTIVE",
-          },
+        await tx.vaultLock.update({
+          where: { id: activeLock.id },
+          data: { status: "UNLOCKED" },
         });
-
-        if (vaultLock) {
-          await tx.vaultLock.update({
-            where: { id: vaultLock.id },
-            data: { status: "UNLOCKED" },
-          });
-        }
       });
     } else {
+      if (amount > wallet.available_vault_balance) {
+        return NextResponse.json(
+          { error: "Withdrawal was confirmed, but available capital is out of sync. Please refresh." },
+          { status: 409 },
+        );
+      }
+
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const updatedWallet = await tx.wallet.update({
           where: { userId: user.id },
@@ -203,7 +200,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error logging onchain event:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Capital state could not be updated." },
       { status: 500 },
     );
   }

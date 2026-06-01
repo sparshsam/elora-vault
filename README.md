@@ -133,6 +133,22 @@ External wallet balance is intentionally excluded from `totalEloraCapital`.
 
 ## Features
 
+Elora is best understood by product layer, not as one flat checklist. The core vault, separation, routing, and release mechanics are production-built; the broader account, policy, and productive-protection layers are intentionally staged.
+
+| Layer | Actual Status |
+|---|---|
+| **Vault mechanics** | Production-built |
+| **Behavioral separation** | Production-built |
+| **Prediction routing** | Production-built |
+| **Intent/release flows** | Production-built |
+| **Base-native infrastructure** | Foundation-built |
+| **Builder attribution** | Infrastructure-built |
+| **Policy engine** | Architecture-built |
+| **Productive protection** | Research-built |
+| **Delayed liquidity** | UX/model-built |
+
+Implementation detail by feature:
+
 | Feature | Status |
 |---|---|
 | **Top-header Navigation** — Vault, Sessions, Activity, Intent | ✅ Live |
@@ -153,6 +169,17 @@ External wallet balance is intentionally excluded from `totalEloraCapital`.
 | **Supabase Persistence** — users, wallet state, predictions, sessions, locks, transactions | ✅ Live |
 | **Responsive Layout** — desktop and mobile navigation | ✅ Live |
 | **AGPLv3 License** — open-source distribution | ✅ Live |
+
+---
+
+## Layer Definitions
+
+- **Production-built** means the layer exists in the running application with user-facing flows, persistence, and accounting behavior.
+- **Foundation-built** means the repo includes working scaffolding or an isolated lab path, while the primary production flow still uses the current wallet architecture.
+- **Infrastructure-built** means the repository, licensing, contact, and distribution structure support the layer, even if it is not a major product surface.
+- **Architecture-built** means the data model, naming, and flow boundaries are prepared for the layer, but full rule execution is not yet a shipped policy product.
+- **Research-built** means the product direction is documented and constrained, but no yield or productive-capital strategy is active in production.
+- **UX/model-built** means the user-facing concept and capital model exist, even where the underlying mechanism is deliberately simple.
 
 ---
 

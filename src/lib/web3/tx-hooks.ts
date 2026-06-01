@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { parseUnits, formatUnits } from "viem";
 import { USDC_ABI } from "@/lib/contracts/usdc-abi";
 import { CURRENT_CHAIN, VAULT_ABI } from "@/lib/contracts/contracts";
+import { getTransactionLifecycle } from "@/lib/tx/transaction-state";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -98,8 +99,16 @@ export function useUSDCApprove() {
   const queryClient = useQueryClient();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+  const { data: receipt, isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({ hash, chainId: CURRENT_CHAIN.chainId });
+  const lifecycle = useMemo(() => getTransactionLifecycle({
+    hash,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    isReverted: receipt?.status === "reverted",
+    error,
+  }, "Authorization was not completed."), [hash, isPending, isConfirming, isConfirmed, receipt?.status, error]);
 
   const execute = useCallback(
     async (amount: number) => {
@@ -115,10 +124,9 @@ export function useUSDCApprove() {
     [writeContract],
   );
 
-  // Invalidate allowance queries after confirmation
-  if (isConfirmed) {
-    queryClient.invalidateQueries({ queryKey: ["readContract"] });
-  }
+  useEffect(() => {
+    if (isConfirmed) queryClient.invalidateQueries({ queryKey: ["readContract"] });
+  }, [isConfirmed, queryClient]);
 
   return {
     approve: execute,
@@ -127,6 +135,7 @@ export function useUSDCApprove() {
     isConfirming,
     isConfirmed,
     error,
+    lifecycle,
   };
 }
 
@@ -138,8 +147,16 @@ export function useVaultDeposit() {
   const queryClient = useQueryClient();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+  const { data: receipt, isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({ hash, chainId: CURRENT_CHAIN.chainId });
+  const lifecycle = useMemo(() => getTransactionLifecycle({
+    hash,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    isReverted: receipt?.status === "reverted",
+    error,
+  }, "Deposit was not completed."), [hash, isPending, isConfirming, isConfirmed, receipt?.status, error]);
 
   const execute = useCallback(
     async (amount: number) => {
@@ -155,9 +172,9 @@ export function useVaultDeposit() {
     [writeContract],
   );
 
-  if (isConfirmed) {
-    queryClient.invalidateQueries({ queryKey: ["readContract"] });
-  }
+  useEffect(() => {
+    if (isConfirmed) queryClient.invalidateQueries({ queryKey: ["readContract"] });
+  }, [isConfirmed, queryClient]);
 
   return {
     deposit: execute,
@@ -166,6 +183,7 @@ export function useVaultDeposit() {
     isConfirming,
     isConfirmed,
     error,
+    lifecycle,
   };
 }
 
@@ -176,8 +194,16 @@ export function useCreateLock() {
   const queryClient = useQueryClient();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+  const { data: receipt, isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({ hash, chainId: CURRENT_CHAIN.chainId });
+  const lifecycle = useMemo(() => getTransactionLifecycle({
+    hash,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    isReverted: receipt?.status === "reverted",
+    error,
+  }, "Protection was not completed."), [hash, isPending, isConfirming, isConfirmed, receipt?.status, error]);
 
   const execute = useCallback(
     async (amount: number, durationSeconds: number) => {
@@ -193,9 +219,9 @@ export function useCreateLock() {
     [writeContract],
   );
 
-  if (isConfirmed) {
-    queryClient.invalidateQueries({ queryKey: ["readContract"] });
-  }
+  useEffect(() => {
+    if (isConfirmed) queryClient.invalidateQueries({ queryKey: ["readContract"] });
+  }, [isConfirmed, queryClient]);
 
   return {
     createLock: execute,
@@ -204,6 +230,7 @@ export function useCreateLock() {
     isConfirming,
     isConfirmed,
     error,
+    lifecycle,
   };
 }
 
@@ -214,8 +241,16 @@ export function useReleaseLock() {
   const queryClient = useQueryClient();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+  const { data: receipt, isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({ hash, chainId: CURRENT_CHAIN.chainId });
+  const lifecycle = useMemo(() => getTransactionLifecycle({
+    hash,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    isReverted: receipt?.status === "reverted",
+    error,
+  }, "Release was not completed."), [hash, isPending, isConfirming, isConfirmed, receipt?.status, error]);
 
   const execute = useCallback(
     async (lockId: number) => {
@@ -230,9 +265,9 @@ export function useReleaseLock() {
     [writeContract],
   );
 
-  if (isConfirmed) {
-    queryClient.invalidateQueries({ queryKey: ["readContract"] });
-  }
+  useEffect(() => {
+    if (isConfirmed) queryClient.invalidateQueries({ queryKey: ["readContract"] });
+  }, [isConfirmed, queryClient]);
 
   return {
     releaseLock: execute,
@@ -241,6 +276,7 @@ export function useReleaseLock() {
     isConfirming,
     isConfirmed,
     error,
+    lifecycle,
   };
 }
 
@@ -251,8 +287,16 @@ export function useWithdrawUnlocked() {
   const queryClient = useQueryClient();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+  const { data: receipt, isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({ hash, chainId: CURRENT_CHAIN.chainId });
+  const lifecycle = useMemo(() => getTransactionLifecycle({
+    hash,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    isReverted: receipt?.status === "reverted",
+    error,
+  }, "Withdrawal was not completed."), [hash, isPending, isConfirming, isConfirmed, receipt?.status, error]);
 
   const execute = useCallback(async () => {
     writeContract({
@@ -264,9 +308,9 @@ export function useWithdrawUnlocked() {
     });
   }, [writeContract]);
 
-  if (isConfirmed) {
-    queryClient.invalidateQueries({ queryKey: ["readContract"] });
-  }
+  useEffect(() => {
+    if (isConfirmed) queryClient.invalidateQueries({ queryKey: ["readContract"] });
+  }, [isConfirmed, queryClient]);
 
   return {
     withdrawUnlocked: execute,
@@ -275,5 +319,6 @@ export function useWithdrawUnlocked() {
     isConfirming,
     isConfirmed,
     error,
+    lifecycle,
   };
 }

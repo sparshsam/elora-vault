@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { STORED_TX_TYPES } from "@/lib/transaction-types";
+import { protectProfitSchema, formatZodErrors } from "@/lib/validation";
 
 export async function PATCH(
   request: Request,
@@ -13,11 +14,15 @@ export async function PATCH(
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
-    const { amount, durationDays } = await request.json();
-
-    if (!amount || !durationDays) {
-      return NextResponse.json({ error: "Missing amount or durationDays" }, { status: 400 });
+    const body = await request.json();
+    const parsed = protectProfitSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: formatZodErrors(parsed.error) },
+        { status: 400 },
+      );
     }
+    const { amount, durationDays, txHash } = parsed.data;
 
     const prediction = await prisma.bet.findUnique({ where: { id } });
     if (!prediction) return NextResponse.json({ error: "Prediction not found" }, { status: 404 });
@@ -30,24 +35,40 @@ export async function PATCH(
       return NextResponse.json({ error: "Amount exceeds available capital" }, { status: 400 });
     }
 
+    if (txHash) {
+      const existingTransaction = await prisma.transaction.findFirst({
+        where: { userId: user.id, tx_hash: txHash },
+        select: { id: true },
+      });
+      if (existingTransaction) {
+        return NextResponse.json({ success: true, duplicate: true });
+      }
+    }
+
     const unlockAt = new Date(Date.now() + durationDays * 86400000);
 
     const vaultLock = await prisma.$transaction(async (tx) => {
+      const walletUpdate = await tx.wallet.updateMany({
+        where: {
+          userId: user.id,
+          available_vault_balance: { gte: amount },
+        },
+        data: {
+          available_vault_balance: { decrement: amount },
+          locked_vault_balance: { increment: amount },
+        },
+      });
+
+      if (walletUpdate.count !== 1) throw new Error("INSUFFICIENT_AVAILABLE");
+
       const lock = await tx.vaultLock.create({
         data: {
           userId: user.id,
           amount,
           unlockAt,
           status: "ACTIVE",
+          tx_hash: txHash || null,
           notes: `Protected after prediction: ${prediction.description || "Prediction"}`,
-        },
-      });
-
-      await tx.wallet.update({
-        where: { userId: user.id },
-        data: {
-          available_vault_balance: { decrement: amount },
-          locked_vault_balance: { increment: amount },
         },
       });
 
@@ -68,6 +89,7 @@ export async function PATCH(
           balanceAfter: wallet.available_vault_balance - amount,
           betId: prediction.id,
           vaultLockId: lock.id,
+          tx_hash: txHash || null,
           description: `Return protected after prediction${prediction.description ? ": " + prediction.description : "."}`,
         },
       });
@@ -82,6 +104,9 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("[protect] error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (error instanceof Error && error.message === "INSUFFICIENT_AVAILABLE") {
+      return NextResponse.json({ error: "Protection could not be completed because available capital changed." }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Protection was not completed." }, { status: 500 });
   }
 }
