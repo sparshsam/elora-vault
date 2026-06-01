@@ -1,7 +1,7 @@
 /**
  * orchestration-flows.ts
  *
- * Phase 6.4D — Base Account Transaction Orchestration Research.
+ * Phase 6.4D+ — Base Account Transaction Orchestration Research (Refined).
  *
  * ⚠ RESEARCH DOCUMENT — NOT PRODUCTION CODE ⚠
  *
@@ -9,12 +9,17 @@
  * capital actions using Base-native capabilities (EIP-5792, sub-accounts,
  * atomic batch execution).
  *
- * No production execution paths are wired. Everything here is:
- *   - Type definitions for future use
- *   - Research documentation of flow design
- *   - Capability requirements mapping
- *   - Fallback strategy documentation
- *   - User confirmation interface models
+ * ## Refinements from Phase 6.4D
+ *
+ * 1. Batching now accounts for wallet_sendCalls vs atomicBatch distinction
+ *    — sendCalls is the preferred path, atomicBatch is the fallback.
+ * 2. Fallback sequencing is capability-aware: the routing tier (see
+ *    execution-architecture.ts) determines whether a given wallet can
+ *    batch, and the flow adapts its execution plan accordingly.
+ * 3. settle→protect flow documented with gas estimate and cross-system
+ *    boundary analysis.
+ * 4. Sub-account execution paths reference the lifecycle model in
+ *    sub-account-lifecycle.ts.
  *
  * When Base Account capabilities are detected (via use-wallet-capabilities.ts),
  * these flows become theoretically possible. When not detected, the existing

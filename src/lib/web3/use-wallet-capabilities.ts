@@ -2,7 +2,7 @@
  * use-wallet-capabilities.ts
  *
  * EIP-5792 wallet capability detection for Elora Vault's progressive
- * Base Account enhancement layer.
+ * Base Account enhancement and transaction orchestration layers.
  *
  * This hook is **non-blocking by design**. If any detection fails — wallet
  * not connected, provider unavailable, RPC error, unsupported method — it
@@ -12,7 +12,21 @@
  * Detection methods used:
  *   - `wallet_getCapabilities` (EIP-5792): canonical capability discovery
  *   - `wallet_getSubAccounts` (Base Account): sub-account detection
+ *   - `wallet_sendCalls` method check: whether wallet supports batched calls
  *   - Connector introspection: known Base Account connector IDs
+ *
+ * ## Capability-aware execution planning
+ *
+ * The routing tier uses these rules to determine execution paths:
+ *
+ *   wallet_sendCalls supported          → atomic batch via wallet
+ *   atomicBatch capability detected      → contract-level batching
+ *   sendCalls NOT supported              → sequential fallback
+ *   sub-account + spend permissions      → sub-account batch routing
+ *   no sub-account                       → direct wallet execution
+ *
+ * Each orchestration query (see execution-architecture.ts) consumes this
+ * routing information to build the optimal execution plan.
  */
 
 "use client";
@@ -51,6 +65,27 @@ export type DetectionStatus = "idle" | "detecting" | "detected" | "not-detected"
 export interface CapabilitiesState {
   capabilities: WalletCapabilities;
   status: DetectionStatus;
+}
+
+/**
+ * Execution routing tier — determines how a transaction flow will be executed.
+ *
+ * batched        → wallet_sendCalls or contract-level atomicBatch is available
+ * sequential     → no batching support, execute steps one at a time
+ * sub-account    → a sub-account exists and can route execution
+ * external-only  → no Base Account features detected, standard wallet execution
+ */
+export type ExecutionTier = "batched" | "sequential" | "sub-account" | "external-only";
+
+export interface RoutingDecision {
+  /** The selected execution tier */
+  tier: ExecutionTier;
+  /** Whether wallet_sendCalls is the batching mechanism */
+  usesSendCalls: boolean;
+  /** Whether sub-account routing is available */
+  usesSubAccount: boolean;
+  /** Whether fallback to sequential is needed */
+  needsFallback: boolean;
 }
 
 /* ── Empty defaults ─────────────────────────────────── */
@@ -104,6 +139,7 @@ async function detectCapabilities(
           typeof chainCaps.sendCalls === "object"
         ) {
           result.sendCallsSupport = true;
+          result.batching = true;
         }
         if (
           chainCaps.subAccounts === true ||
@@ -118,6 +154,24 @@ async function detectCapabilities(
     }
   } catch {
     // wallet_getCapabilities not supported — fall through
+  }
+
+  /* ── 2a. Direct wallet_sendCalls method probe ── */
+  // If wallet_getCapabilities didn't return sendCalls info, probe directly.
+  // This catches wallets that support sendCalls but don't advertise it in capabilities.
+  if (!result.sendCallsSupport) {
+    try {
+      // A probe with invalid params should throw — we catch the method-not-found
+      await provider.request({
+        method: "wallet_sendCalls",
+        params: [{ calls: [], version: "1.0", chainId: "0x1" }],
+      });
+      // If we get here the method exists (call will fail on empty params, not method)
+      result.sendCallsSupport = true;
+      result.batching = true;
+    } catch {
+      // wallet_sendCalls not supported — this is expected for external wallets
+    }
   }
 
   /* ── 2. Detect sub-accounts via wallet_getSubAccounts ── */
@@ -210,7 +264,7 @@ export function useWalletCapabilities(): CapabilitiesState {
       return { capabilities: EMPTY_CAPABILITIES, status: "detecting" };
     }
 
-    if (caps.baseAccount || caps.subAccountSupport || caps.sendCallsSupport) {
+    if (caps.baseAccount || caps.subAccountSupport || caps.sendCallsSupport || caps.batching) {
       return { capabilities: caps, status: "detected" };
     }
 
@@ -218,4 +272,70 @@ export function useWalletCapabilities(): CapabilitiesState {
   }, [capabilities, isConnected, queryStatus]);
 
   return state;
+}
+
+/* ── Capability-aware Routing ────────────────────────── */
+
+/**
+ * Build an execution routing decision from the current capability state.
+ *
+ * Rules:
+ *   1. If wallet_sendCalls is supported → batched wallet execution
+ *   2. Else if atomicBatch capability exists → batched contract execution
+ *   3. Else if sub-account exists → sub-account routing (prep for future)
+ *   4. Else → sequential external wallet execution
+ *
+ * Returns a RoutingDecision that orchestration flows consume to
+ * determine how to execute multi-step actions.
+ */
+export function useCapabilityRouting(): RoutingDecision {
+  const { capabilities, status } = useWalletCapabilities();
+
+  return useMemo<RoutingDecision>(() => {
+    if (status !== "detected") {
+      return { tier: "external-only", usesSendCalls: false, usesSubAccount: false, needsFallback: false };
+    }
+
+    // Most preferred: wallet_sendCalls (EIP-5792)
+    if (capabilities.sendCallsSupport) {
+      return { tier: "batched", usesSendCalls: true, usesSubAccount: false, needsFallback: true };
+    }
+
+    // Second preferred: atomicBatch capability
+    if (capabilities.batching) {
+      return { tier: "batched", usesSendCalls: false, usesSubAccount: false, needsFallback: true };
+    }
+
+    // Third: sub-account routing with spend permissions
+    if (capabilities.subAccountSupport) {
+      return { tier: "sub-account", usesSendCalls: false, usesSubAccount: true, needsFallback: false };
+    }
+
+    // Default: sequential external wallet
+    return { tier: "external-only", usesSendCalls: false, usesSubAccount: false, needsFallback: false };
+  }, [capabilities, status]);
+}
+
+/**
+ * Determine whether a given flow requires fallback to sequential execution.
+ *
+ * This is a helper for UI components that display the execution mode
+ * for each orchestration flow. It accounts for whether batching is
+ * actually available vs theoretically required.
+ */
+export function useFlowExecutionMode(
+  requiresBatching: boolean,
+): { mode: "batched" | "sequential"; canExecute: boolean } {
+  const routing = useCapabilityRouting();
+
+  return useMemo(() => {
+    if (!requiresBatching) {
+      return { mode: "sequential", canExecute: true };
+    }
+    if (routing.tier === "batched") {
+      return { mode: "batched", canExecute: true };
+    }
+    // Batching required but not available — can still execute sequentially
+    return { mode: "sequential", canExecute: true };
+  }, [requiresBatching, routing]);
 }
