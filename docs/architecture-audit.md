@@ -108,4 +108,24 @@ to `docs/research/` would remove the ambiguity.
 
 ---
 
-*Next audit: 2026-06-08*
+## Next audit: 2026-06-08
+
+### Pruning actions taken this cycle
+
+- ✅ Deleted `src/lib/base/builder-code.ts` (duplicate of `src/lib/account/builder-code.ts`)
+- 🔲 `api/place-bet.js` still in 11 historical commits — needs additional filter-repo pass
+
+### Philosophy health check
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| Sportsbook drift? | ✅ No | UI calls them "predictions," model still says "Bet" (code debt, not product intent) |
+| Fintech dashboard? | ✅ No | Calm modal-driven UX, no grid/chart-heavy dashboards |
+| DeFi yield product? | ✅ No | Yield files are research-only, tagged as such, not wired into production |
+| Gamification creep? | ✅ No | No scores, no streaks, no leaderboards. Observations are quiet and non-judgmental |
+| Automation overreach? | ✅ No | Policies are commitments, not automated execution. Capital moves only with user intent |
+
+**Area to watch:** The policy engine could drift into automation if future PRs
+add execution triggers to policy conditions. The type definitions deliberately
+separate "condition" from "action" to resist this, but code review must remain
+vigilant.
