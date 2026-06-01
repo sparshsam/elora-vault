@@ -41,6 +41,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <head>
+        <meta name="base:app_id" content="6a1cdc07ac7b22973145d03b" />
+      </head>
       <body className="min-h-full bg-background text-foreground font-sans">
         {children}
       </body>
