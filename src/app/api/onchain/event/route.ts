@@ -55,12 +55,21 @@ export async function POST(request: Request) {
       );
     }
 
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: { userId: user.id, tx_hash: txHash },
+      select: { id: true },
+    });
+
+    if (existingTransaction) {
+      return NextResponse.json({ success: true, duplicate: true });
+    }
+
     const wallet = await prisma.wallet.findUnique({
       where: { userId: user.id },
     });
 
     if (!wallet) {
-      return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+      return NextResponse.json({ error: "Capital state could not be updated." }, { status: 404 });
     }
 
     let description = "";
@@ -103,6 +112,13 @@ export async function POST(request: Request) {
         });
       });
     } else if (type === "ONCHAIN_LOCK_CREATED" && unlockAt) {
+      if (amount > wallet.available_vault_balance) {
+        return NextResponse.json(
+          { error: "Protection was confirmed, but available capital is out of sync. Please refresh." },
+          { status: 409 },
+        );
+      }
+
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const updatedWallet = await tx.wallet.update({
           where: { userId: user.id },
@@ -138,6 +154,18 @@ export async function POST(request: Request) {
         });
       });
     } else if (type === "ONCHAIN_LOCK_RELEASED" && lockId !== undefined) {
+      const activeLock = await prisma.vaultLock.findFirst({
+        where: {
+          userId: user.id,
+          onchain_lock_id: lockId,
+          status: "ACTIVE",
+        },
+      });
+
+      if (!activeLock) {
+        return NextResponse.json({ error: "Capital release is already reflected." }, { status: 409 });
+      }
+
       // Find the vault lock by onchain_lock_id and mark as unlocked
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const updatedWallet = await tx.wallet.update({
@@ -161,22 +189,19 @@ export async function POST(request: Request) {
         });
 
         // Mark the lock as unlocked
-        const vaultLock = await tx.vaultLock.findFirst({
-          where: {
-            userId: user.id,
-            onchain_lock_id: lockId,
-            status: "ACTIVE",
-          },
+        await tx.vaultLock.update({
+          where: { id: activeLock.id },
+          data: { status: "UNLOCKED" },
         });
-
-        if (vaultLock) {
-          await tx.vaultLock.update({
-            where: { id: vaultLock.id },
-            data: { status: "UNLOCKED" },
-          });
-        }
       });
     } else {
+      if (amount > wallet.available_vault_balance) {
+        return NextResponse.json(
+          { error: "Withdrawal was confirmed, but available capital is out of sync. Please refresh." },
+          { status: 409 },
+        );
+      }
+
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const updatedWallet = await tx.wallet.update({
           where: { userId: user.id },
@@ -203,7 +228,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error logging onchain event:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Capital state could not be updated." },
       { status: 500 },
     );
   }
