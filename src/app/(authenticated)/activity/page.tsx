@@ -8,7 +8,7 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Lock,
-  CheckCircle,
+  Unlock,
   Clock,
   AlertCircle,
   TrendingUp,
@@ -17,28 +17,103 @@ import {
   ExternalLink,
   History,
   RefreshCw,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TX_TYPES, normalizeTransactionType } from "@/lib/transaction-types";
 
-/* ── Types ─────────────────────────────────── */
+// ── Reconciliation Status ────────────────────────
 
-type ActivityEvent = {
-  id: string;
-  type: "deposit" | "protection-created" | "protection-released" | "withdrawal" | "prediction-created" | "prediction-won" | "prediction-lost" | "prediction-pushed" | "pending" | "failed";
-  amount: string;
-  description: string;
-  occurredAt: string;
-  txHash?: string;
+type ReconciliationStatus =
+  | "confirmed"      // Has tx_hash — onchain confirmed
+  | "pending"        // No tx_hash, created recently
+  | "local-record"   // No tx_hash, created >1 hour ago
+  | "failed"         // Explicitly marked as failed
+  | "needs-review";  // Unusual state
+
+const RECONCILIATION_CONFIG: Record<ReconciliationStatus, {
+  label: string;
+  dot: string;
+  bg: string;
+  text: string;
+}> = {
+  confirmed: {
+    label: "Confirmed",
+    dot: "bg-green-500",
+    bg: "bg-green-50/60",
+    text: "text-green-700",
+  },
+  pending: {
+    label: "Pending",
+    dot: "bg-amber-400",
+    bg: "bg-amber-50/40",
+    text: "text-amber-700",
+  },
+  "local-record": {
+    label: "Local record",
+    dot: "bg-text-muted",
+    bg: "bg-surface-subtle",
+    text: "text-text-tertiary",
+  },
+  failed: {
+    label: "Failed",
+    dot: "bg-danger",
+    bg: "bg-red-50/40",
+    text: "text-danger",
+  },
+  "needs-review": {
+    label: "Needs review",
+    dot: "bg-amber-500",
+    bg: "bg-amber-50/60",
+    text: "text-amber-700",
+  },
 };
 
-/* ── Icon Maps — module scope ──────────────── */
+function determineStatus(txHash?: string, createdAt?: string, now: number = Date.now()): ReconciliationStatus {
+  if (txHash) return "confirmed";
+  if (!createdAt) return "needs-review";
+  const age = now - new Date(createdAt).getTime();
+  if (age < 60 * 60 * 1000) return "pending";
+  return "local-record";
+}
 
-const EVENT_ICONS: Record<ActivityEvent["type"], ComponentType<{ className?: string }>> = {
+// ── Event Types ──────────────────────────────────
+
+type ActivityEventType =
+  | "deposit"
+  | "withdrawal"
+  | "protection-created"
+  | "protection-released"
+  | "profit-protected"
+  | "prediction-created"
+  | "prediction-won"
+  | "prediction-lost"
+  | "prediction-pushed"
+  | "pending"
+  | "failed";
+
+interface ActivityEvent {
+  id: string;
+  type: ActivityEventType;
+  amount: string;
+  rawAmount: number;
+  description: string;
+  occurredAt: string;
+  occurredAtMs: number;
+  txHash?: string;
+  status: ReconciliationStatus;
+  balanceBefore?: number;
+  balanceAfter?: number;
+}
+
+// ── Icon & Color Maps ────────────────────────────
+
+const EVENT_ICONS: Record<ActivityEventType, ComponentType<{ className?: string }>> = {
   deposit: ArrowDownToLine,
-  "protection-created": Lock,
-  "protection-released": CheckCircle,
   withdrawal: ArrowUpFromLine,
+  "protection-created": Lock,
+  "protection-released": Unlock,
+  "profit-protected": ShieldCheck,
   "prediction-created": Clock,
   "prediction-won": TrendingUp,
   "prediction-lost": TrendingDown,
@@ -47,11 +122,12 @@ const EVENT_ICONS: Record<ActivityEvent["type"], ComponentType<{ className?: str
   failed: AlertCircle,
 };
 
-const EVENT_COLORS: Record<ActivityEvent["type"], string> = {
+const EVENT_COLORS: Record<ActivityEventType, string> = {
   deposit: "text-green-600 bg-green-100 border-green-200",
+  withdrawal: "text-text-secondary bg-surface-subtle border-border",
   "protection-created": "text-green-700 bg-green-50 border-green-200",
   "protection-released": "text-green-600 bg-green-100 border-green-200",
-  withdrawal: "text-text-secondary bg-surface-subtle border-border",
+  "profit-protected": "text-green-700 bg-green-100 border-green-200",
   "prediction-created": "text-amber-700 bg-amber-50 border-amber-200",
   "prediction-won": "text-green-600 bg-green-100 border-green-200",
   "prediction-lost": "text-danger bg-danger/8 border-danger/20",
@@ -60,10 +136,24 @@ const EVENT_COLORS: Record<ActivityEvent["type"], string> = {
   failed: "text-danger bg-danger/8 border-danger/20",
 };
 
+const EVENT_LABELS: Record<ActivityEventType, string> = {
+  deposit: "Deposit",
+  withdrawal: "Withdrawal",
+  "protection-created": "Protected",
+  "protection-released": "Released",
+  "profit-protected": "Profit protected",
+  "prediction-created": "Prediction created",
+  "prediction-won": "Prediction won",
+  "prediction-lost": "Prediction lost",
+  "prediction-pushed": "Prediction pushed",
+  pending: "Pending",
+  failed: "Failed",
+};
+
 const SUMMARY_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   protected: Lock,
   locks: RefreshCw,
-  released: CheckCircle,
+  released: Unlock,
   activity: History,
 };
 
@@ -74,13 +164,13 @@ const SUMMARY_COLORS: Record<string, string> = {
   activity: "text-text-secondary bg-surface-subtle border-border",
 };
 
-/* ── Helpers ───────────────────────────────── */
+// ── Helpers ──────────────────────────────────────
 
 function formatUSD(n: number): string {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function formatDate(dateStr: string): string {
+function formatShortDate(dateStr: string): string {
   const d = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
@@ -95,7 +185,29 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-/* ── Summary Card ──────────────────────────── */
+function formatTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function getDateGroup(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const eventDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.floor((today.getTime() - eventDay.getTime()) / 86400000);
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return d.toLocaleDateString("en-US", { weekday: "long" });
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function capitalizeType(type: ActivityEventType): string {
+  return EVENT_LABELS[type] || type;
+}
+
+// ── Summary Card ────────────────────────────────
 
 interface SummaryCardProps {
   label: string;
@@ -121,60 +233,118 @@ function SummaryCard({ label, value, subtext, iconType }: SummaryCardProps) {
   );
 }
 
-/* ── Timeline Item ─────────────────────────── */
+// ── Reconciliation Badge (inline) ────────────────
+
+function EventReconciliationBadge({ status }: { status: ReconciliationStatus }) {
+  const cfg = RECONCILIATION_CONFIG[status];
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1 rounded-full border px-2 py-0.5",
+      status === "confirmed" ? "border-green-200" :
+      status === "pending" ? "border-amber-200" :
+      status === "failed" ? "border-red-200" :
+      "border-border",
+      cfg.bg,
+    )}>
+      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", cfg.dot)} />
+      <span className={cn("text-[10px] font-medium", cfg.text)}>{cfg.label}</span>
+    </span>
+  );
+}
+
+// ── Capital Movement ────────────────────────────
+
+function CapitalMovement({ before, after }: { before?: number; after?: number }) {
+  if (before === undefined || after === undefined) return null;
+  const diff = after - before;
+  const isPositive = diff >= 0;
+  return (
+    <span className="text-[11px] font-medium tabular-nums text-text-muted">
+      <span className="text-text-tertiary">Balance:</span> ${formatUSD(before)} → ${formatUSD(after)}
+      <span className={cn(isPositive ? "text-green-600" : "text-danger", "ml-1")}>
+        {isPositive ? "+" : ""}{formatUSD(diff)}
+      </span>
+    </span>
+  );
+}
+
+// ── Timeline Item ───────────────────────────────
 
 interface TimelineItemProps {
   event: ActivityEvent;
+  isLastInGroup: boolean;
   isLast: boolean;
 }
 
-function TimelineItem({ event, isLast }: TimelineItemProps) {
+function TimelineItem({ event, isLastInGroup, isLast }: TimelineItemProps) {
   const Icon = EVENT_ICONS[event.type];
   const colorClass = EVENT_COLORS[event.type];
+  const showConnector = !isLast;
+  const showGroupConnector = !isLastInGroup;
 
   return (
     <div className="relative flex gap-4 md:gap-5">
+      {/* Icon column */}
       <div className="flex flex-col items-center">
-        <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full border", colorClass)}>
+        <div className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border",
+          colorClass,
+        )}>
           {createElement(Icon, { className: "h-4 w-4" })}
         </div>
-        {!isLast && <div className="mt-1 w-px flex-1 bg-border" aria-hidden="true" />}
+        {showConnector && showGroupConnector && (
+          <div className="mt-1 w-px flex-1 bg-border" aria-hidden="true" />
+        )}
       </div>
 
-      <div className={cn("flex-1 pb-8", isLast && "pb-0")}>
+      {/* Content */}
+      <div className={cn("flex-1", isLast ? "pb-0" : "pb-6")}>
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-tiny font-medium capitalize", colorClass)}>
-                {event.type === "prediction-created"
-                  ? "Prediction created"
-                  : event.type === "prediction-won"
-                    ? "Prediction won"
-                    : event.type === "prediction-lost"
-                      ? "Prediction lost"
-                      : event.type === "prediction-pushed"
-                        ? "Prediction pushed"
-                        : event.type === "protection-released"
-                          ? "Released"
-                          : event.type === "protection-created"
-                            ? "Protected"
-                          : event.type === "withdrawal"
-                            ? "Withdrawal"
-                            : event.type === "deposit"
-                              ? "Deposit"
-                              : event.type}
+          {/* Top row: type badge + amount + reconciliation */}
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={cn(
+                "inline-flex items-center rounded-full px-2.5 py-0.5 text-tiny font-medium",
+                colorClass,
+              )}>
+                {capitalizeType(event.type)}
               </span>
+              <EventReconciliationBadge status={event.status} />
             </div>
+            <span className={cn(
+              "text-sm font-semibold tabular-nums shrink-0",
+              event.type === "deposit" || event.type === "prediction-won" || event.type === "protection-released"
+                ? "text-green-700"
+                : event.type === "withdrawal" || event.type === "prediction-lost"
+                  ? "text-text-primary"
+                  : "text-text-primary",
+            )}>
+              {event.type === "withdrawal" || event.type === "prediction-lost" ? "-" : ""}${event.amount}
+            </span>
           </div>
 
+          {/* Description */}
           <p className="text-small text-text-secondary leading-relaxed">{event.description}</p>
 
+          {/* Capital movement */}
+          {(event.balanceBefore !== undefined || event.balanceAfter !== undefined) && (
+            <p className="mt-0.5">
+              <CapitalMovement before={event.balanceBefore} after={event.balanceAfter} />
+            </p>
+          )}
+
+          {/* Time + tx hash */}
           <div className="flex items-center gap-3 text-tiny text-text-muted">
-            <span>{formatDate(event.occurredAt)}</span>
+            <span>{formatShortDate(event.occurredAt)} · {formatTime(event.occurredAt)}</span>
             {event.txHash && (
-              <a href={`https://sepolia.basescan.org/tx/${event.txHash}`} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-text-muted hover:text-green-600 transition-colors">
-                {event.txHash} <ExternalLink className="h-3 w-3" />
+              <a
+                href={`https://sepolia.basescan.org/tx/${event.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-mono text-[10px] text-text-muted hover:text-green-600 transition-colors"
+              >
+                {event.txHash.slice(0, 10)}…
+                <ExternalLink className="h-3 w-3" />
               </a>
             )}
           </div>
@@ -184,29 +354,81 @@ function TimelineItem({ event, isLast }: TimelineItemProps) {
   );
 }
 
-/* ── Empty State ───────────────────────────── */
+// ── Date Group Section ───────────────────────────
+
+interface DateGroupSectionProps {
+  label: string;
+  events: ActivityEvent[];
+  isLastGroup: boolean;
+}
+
+function DateGroupSection({ label, events, isLastGroup }: DateGroupSectionProps) {
+  if (events.length === 0) return null;
+  return (
+    <div className={cn(isLastGroup ? "" : "mb-8")}>
+      <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary mb-4 px-1">
+        {label}
+      </h2>
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-6 md:p-8">
+        {events.map((event, index) => (
+          <TimelineItem
+            key={event.id}
+            event={event}
+            isLastInGroup={index === events.length - 1}
+            isLast={index === events.length - 1 && isLastGroup}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Empty State ─────────────────────────────────
 
 function EmptyState() {
   return (
     <div className="rounded-xl border border-border bg-surface p-12 md:p-16">
       <div className="flex flex-col items-center justify-center text-center">
-        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-subtle">
-          <History className="h-5 w-5 text-text-tertiary" />
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-subtle">
+          <History className="h-6 w-6 text-text-tertiary" />
         </div>
-        <p className="text-sm font-medium text-text-primary">No movement yet.</p>
-        <p className="text-small text-text-tertiary mt-2 max-w-xs">
-          Your activity will appear here once capital is deposited, protected,
-          released, predicted on, or withdrawn.
+        <p className="text-sm font-medium text-text-primary">No capital movement yet</p>
+        <p className="text-small text-text-tertiary mt-2 max-w-sm leading-relaxed">
+          Your activity timeline will record every deposit, protection, release, and prediction as it happens. Elora builds a quiet chronicle of how your capital moves over time.
         </p>
       </div>
     </div>
   );
 }
 
-/* ── Transaction → ActivityEvent ───────────── */
+// ── Loading Skeleton ─────────────────────────────
+
+function TimelineSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="rounded-xl border border-border bg-surface p-6">
+          <div className="flex gap-4">
+            <div className="h-9 w-9 rounded-full bg-surface-hover shrink-0" />
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-20 bg-surface-hover rounded" />
+                <div className="h-4 w-16 bg-surface-hover rounded" />
+              </div>
+              <div className="h-3 w-3/4 bg-surface-hover rounded" />
+              <div className="h-3 w-1/3 bg-surface-hover rounded" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Transaction → ActivityEvent ─────────────────
 
 function txToEvent(tx: Record<string, unknown>): ActivityEvent | null {
-  const typeMap: Record<string, ActivityEvent["type"]> = {
+  const typeMap: Record<string, ActivityEventType> = {
     [TX_TYPES.depositCompleted]: "deposit",
     [TX_TYPES.predictionCreated]: "prediction-created",
     [TX_TYPES.predictionWon]: "prediction-won",
@@ -218,48 +440,67 @@ function txToEvent(tx: Record<string, unknown>): ActivityEvent | null {
   };
 
   const txType = normalizeTransactionType(tx.type as string);
-  const mapped = typeMap[txType];
+  let mapped = typeMap[txType];
   if (!mapped) return null;
 
   const amount = typeof tx.amount === "number" ? tx.amount : 0;
-  let description = (tx.description as string) || "";
+  const description = (tx.description as string) || "";
+  const createdAt = (tx.createdAt as string) || new Date().toISOString();
+  const txHash = (tx.tx_hash as string) || undefined;
+  const now = Date.now();
 
-  // Fallback descriptions for prediction-related events.
-  if (!description) {
-    if (txType === TX_TYPES.predictionCreated) description = "Prediction created. Capital moved to Committed.";
-    else if (txType === TX_TYPES.predictionWon) description = "Prediction won. Return added to Available.";
-    else if (txType === TX_TYPES.predictionLost) description = "Prediction lost. Capital removed from Committed.";
-    else if (txType === TX_TYPES.predictionPushed) description = "Prediction pushed. Stake returned to Available.";
+  // Detect profit-protected: a protection created after a win
+  // Inferred from description keywords since there's no separate DB type
+  if (mapped === "protection-created" && description.toLowerCase().includes("profit")) {
+    mapped = "profit-protected";
+  }
+
+  let displayDescription = description;
+  if (!displayDescription) {
+    if (mapped === "deposit") displayDescription = "Capital deposited into Elora.";
+    else if (mapped === "withdrawal") displayDescription = "Capital withdrawn from Elora.";
+    else if (mapped === "protection-created") displayDescription = "Capital moved into a protection horizon.";
+    else if (mapped === "profit-protected") displayDescription = "Profit from a prediction moved into protection.";
+    else if (mapped === "protection-released") displayDescription = "Protected capital returned to availability.";
+    else if (mapped === "prediction-created") displayDescription = "Capital committed to a prediction.";
+    else if (mapped === "prediction-won") displayDescription = "Prediction won. Return added to available capital.";
+    else if (mapped === "prediction-lost") displayDescription = "Prediction lost.";
+    else if (mapped === "prediction-pushed") displayDescription = "Prediction pushed. Stake returned.";
   }
 
   return {
     id: tx.id as string,
     type: mapped,
     amount: formatUSD(amount),
-    description,
-    occurredAt: (tx.createdAt as string) || new Date().toISOString(),
-    txHash: (tx.tx_hash as string) || undefined,
+    rawAmount: amount,
+    description: displayDescription,
+    occurredAt: createdAt,
+    occurredAtMs: new Date(createdAt).getTime(),
+    txHash,
+    status: determineStatus(txHash, createdAt, now),
+    balanceBefore: typeof tx.balanceBefore === "number" ? tx.balanceBefore : undefined,
+    balanceAfter: typeof tx.balanceAfter === "number" ? tx.balanceAfter : undefined,
   };
 }
 
-/* ── Page ──────────────────────────────────── */
+// ── Page ────────────────────────────────────────
 
 export default function ActivityPage() {
   const capital = useCapitalState();
-  const [events, setEvents] = useState<ActivityEvent[]>([]);
+  const [rawEvents, setRawEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [now] = useState(() => Date.now());
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/wallet/transactions?limit=50");
+        const res = await fetch("/api/wallet/transactions?limit=100");
         if (res.ok) {
           const data = await res.json();
           const txEvents: ActivityEvent[] = (data.transactions || [])
             .map(txToEvent)
             .filter(Boolean) as ActivityEvent[];
-          setEvents(txEvents);
+          setRawEvents(txEvents);
         }
       } catch {
         // silently fail
@@ -269,14 +510,41 @@ export default function ActivityPage() {
     })();
   }, []);
 
+  // ── Group by date ──
+  const dateGroups = useMemo(() => {
+    const groups: { label: string; events: ActivityEvent[] }[] = [];
+    const groupMap = new Map<string, ActivityEvent[]>();
+
+    for (const event of rawEvents) {
+      const label = getDateGroup(event.occurredAt);
+      if (!groupMap.has(label)) groupMap.set(label, []);
+      groupMap.get(label)!.push(event);
+    }
+
+    // Preserve chronological order within groups, groups in reverse chronological
+    const order = ["Today", "Yesterday"];
+    const sorted = Array.from(groupMap.entries()).sort((a, b) => {
+      const aIdx = order.indexOf(a[0]);
+      const bIdx = order.indexOf(b[0]);
+      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+      return 0; // For weekday/month groups, keep insertion order
+    });
+
+    for (const [label, evts] of sorted) {
+      groups.push({ label, events: evts });
+    }
+
+    return groups;
+  }, [rawEvents]);
+
   // ── Summary counts ──
-  const recentCount = useMemo(
-    () => events.filter((e) => {
-      const diff = now - new Date(e.occurredAt).getTime();
-      return diff < 7 * 86400000;
-    }).length,
-    [events, now],
-  );
+  const summary = useMemo(() => {
+    const recentCount = rawEvents.filter((e) => now - e.occurredAtMs < 7 * 86400000).length;
+    const pendingCount = rawEvents.filter((e) => e.status === "pending").length;
+    return { recentCount, pendingCount };
+  }, [rawEvents, now]);
 
   return (
     <PageShell>
@@ -299,29 +567,33 @@ export default function ActivityPage() {
             iconType="locks"
           />
           <SummaryCard label="Committed" value={`$${capital.formatted.committed}`} subtext="Capital in active predictions" iconType="released" />
-          <SummaryCard label="Activity" value={String(recentCount)} subtext="Events this week" iconType="activity" />
+          <SummaryCard label="Activity" value={String(summary.recentCount)} subtext="Events this week" iconType="activity" />
         </div>
 
         {/* ── Timeline ── */}
         {loading ? (
-          <div className="space-y-4 animate-pulse">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-xl border border-border bg-surface p-6">
-                <div className="h-4 w-48 bg-surface-hover rounded mb-3" />
-                <div className="h-3 w-32 bg-surface-hover rounded" />
-              </div>
+          <TimelineSkeleton />
+        ) : rawEvents.length > 0 ? (
+          <div className="space-y-0">
+            {dateGroups.map((group, idx) => (
+              <DateGroupSection
+                key={group.label}
+                label={group.label}
+                events={group.events}
+                isLastGroup={idx === dateGroups.length - 1}
+              />
             ))}
-          </div>
-        ) : events.length > 0 ? (
-          <div className="rounded-xl border border-border bg-surface shadow-sm p-6 md:p-8">
-            <div className="space-y-0">
-              {events.map((event, index) => (
-                <TimelineItem key={event.id} event={event} isLast={index === events.length - 1} />
-              ))}
-            </div>
           </div>
         ) : (
           <EmptyState />
+        )}
+
+        {/* ── Pending notice ── */}
+        {!loading && summary.pendingCount > 0 && (
+          <p className="text-tiny text-text-muted text-center mt-6 leading-relaxed max-w-md mx-auto">
+            {summary.pendingCount} event{summary.pendingCount === 1 ? "" : "s"} pending onchain confirmation.
+            Records update automatically when transactions are confirmed.
+          </p>
         )}
       </div>
     </PageShell>

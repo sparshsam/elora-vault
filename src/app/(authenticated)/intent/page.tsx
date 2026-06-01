@@ -26,7 +26,6 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import {
   DelayedReleaseDemo,
   ScheduledReleaseDemo,
@@ -85,10 +84,11 @@ function SummaryCard({ label, value, subtext, iconType }: SummaryCardProps) {
 interface ReleaseCardProps {
   horizon: ReturnType<typeof useCapitalState>["activeHorizons"][number];
   onRelease: (id: string) => void;
+  onReleaseAndProtect: (id: string, amount: number) => void;
   isReleasing: boolean;
 }
 
-function ReleaseCard({ horizon, onRelease, isReleasing }: ReleaseCardProps) {
+function ReleaseCard({ horizon, onRelease, onReleaseAndProtect, isReleasing }: ReleaseCardProps) {
   return (
     <div className="rounded-xl border border-green-200 bg-green-50/30 shadow-sm p-5 md:p-6 transition-all duration-200 hover:shadow-md">
       <div className="flex items-start gap-4">
@@ -127,7 +127,19 @@ function ReleaseCard({ horizon, onRelease, isReleasing }: ReleaseCardProps) {
               {isReleasing ? "Releasing..." : "Release to available"}
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
+            <button
+              type="button"
+              onClick={() => onReleaseAndProtect(horizon.id, horizon.amount)}
+              disabled={isReleasing}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 text-green-700 px-4 py-2 text-small font-medium hover:bg-green-100 transition-colors"
+            >
+              <Shield className="h-3.5 w-3.5" />
+              Release &amp; protect
+            </button>
           </div>
+          <p className="text-tiny text-text-muted mt-3">
+            Capital enters availability after confirmation. From there, it can move into a new protection horizon or remain available.
+          </p>
         </div>
       </div>
     </div>
@@ -234,9 +246,11 @@ function EmptyState() {
         <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-subtle">
           <Target className="h-5 w-5 text-text-tertiary" />
         </div>
-        <p className="text-sm font-medium text-text-primary">Nothing requires attention right now.</p>
-        <p className="text-small text-text-tertiary mt-2 max-w-xs">
-          Protected capital continues according to its existing timelines.
+        <p className="text-sm font-medium text-text-primary">No decisions need your attention right now.</p>
+        <p className="text-small text-text-tertiary mt-2 max-w-sm leading-relaxed">
+          Intent is where releases, protections, and decisions converge.
+          Completed horizons, protection opportunities, and policy suggestions
+          will appear here when there is something to consider.
         </p>
       </div>
     </div>
@@ -251,24 +265,25 @@ interface ReleaseConfirmModalProps {
   countdown: number;
   confirmed: boolean;
   onConfirm: () => void;
+  onProtectInstead: () => void;
   onKeepProtected: () => void;
   isSubmitting: boolean;
   errorMessage: string | null;
 }
 
-function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, onKeepProtected, isSubmitting, errorMessage }: ReleaseConfirmModalProps) {
+function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, onProtectInstead, onKeepProtected, isSubmitting, errorMessage }: ReleaseConfirmModalProps) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-xl p-6 md:p-8 pb-safe animate-in fade-in zoom-in-95 duration-300">
+      <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-xl p-6 md:p-8 pb-safe animate-in fade-in duration-200">
         <div className="flex justify-center mb-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-green-200 bg-green-50">
             <Shield className="h-5 w-5 text-green-700" />
           </div>
         </div>
-        <h2 className="text-center text-heading font-medium text-text-primary mb-2">Confirm release of ${amount}?</h2>
+        <h2 className="text-center text-heading font-medium text-text-primary mb-2">Release ${amount} to available?</h2>
         <p className="text-center text-small text-text-secondary leading-relaxed mb-6">
-          Protected capital becomes immediately available after confirmation. No penalties. No fees.
+          Capital becomes available after confirmation. Consider whether it might serve you better in a new protection horizon.
         </p>
         {!confirmed && (
           <div className="flex flex-col items-center mb-6">
@@ -300,7 +315,15 @@ function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, on
           <button type="button" onClick={onConfirm} disabled={!confirmed || isSubmitting}
             className={cn("w-full rounded-lg py-2.5 text-small font-medium transition-all",
               confirmed && !isSubmitting ? "bg-green-500 text-white hover:bg-green-600 shadow-sm" : "bg-surface-hover text-text-muted cursor-not-allowed")}>
-            {isSubmitting ? "Releasing..." : confirmed ? "Confirm release" : `Wait ${countdown}s to confirm`}
+            {isSubmitting ? "Releasing..." : confirmed ? "Release to available" : `Wait ${countdown}s to confirm`}
+          </button>
+          <button type="button" onClick={onProtectInstead} disabled={!confirmed || isSubmitting}
+            className={cn("w-full rounded-lg py-2.5 text-small font-medium transition-all border",
+              confirmed && !isSubmitting
+                ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                : "border-border bg-surface-subtle text-text-muted cursor-not-allowed")}>
+            <Shield className="inline h-3.5 w-3.5 -ml-0.5 mr-1" />
+            Release &amp; protect
           </button>
           <button type="button" onClick={onKeepProtected} disabled={isSubmitting}
             className={cn("w-full rounded-lg py-2.5 text-small font-medium transition-colors",
@@ -331,6 +354,11 @@ export default function IntentPage() {
   const [releaseSubmitting, setReleaseSubmitting] = useState(false);
   const releaseSubmittingRef = useRef(false);
 
+  // "Release & protect" flow: after release succeeds, auto-open protect modal
+  const [releaseThenProtectAmount, setReleaseThenProtectAmount] = useState<number | null>(null);
+  // "Protect this win" flow: open protect modal for a specific win amount
+  const [protectWinAmount, setProtectWinAmount] = useState<number | null>(null);
+
   // Recent won predictions for protection prompt.
   const [recentWins, setRecentWins] = useState<{ id: string; description: string; amount: number }[]>([]);
   const [policyActivity, setPolicyActivity] = useState<PolicyActivityEvent[]>([]);
@@ -359,17 +387,23 @@ export default function IntentPage() {
 
   useEffect(() => {
     if (isReleasing && releaseLock.isConfirmed) {
+      const shouldProtect = releaseThenProtectAmount !== null;
       setConfirmOpen(false);
       setReleaseError(null);
       setReleaseSubmitting(false);
+      if (shouldProtect) {
+        setProtectModalOpen(true);
+        setReleaseThenProtectAmount(null);
+      }
     }
     if (isReleasing && releaseLock.error) {
       setIsReleasing(null);
       setReleaseError(releaseLock.lifecycle.calmError ?? "Release was not completed.");
       releaseSubmittingRef.current = false;
       setReleaseSubmitting(false);
+      setReleaseThenProtectAmount(null);
     }
-  }, [isReleasing, releaseLock.isConfirmed, releaseLock.error, releaseLock.lifecycle.calmError]);
+  }, [isReleasing, releaseLock.isConfirmed, releaseLock.error, releaseLock.lifecycle.calmError, releaseThenProtectAmount]);
 
   useEffect(() => {
     if (!isReleasing || !releaseLock.isConfirmed || !releaseLock.hash || loggedReleaseHash.current === releaseLock.hash) return;
@@ -513,6 +547,32 @@ export default function IntentPage() {
     setConfirmOpen(false); setConfirmingId(null); setReleaseError(null);
   }, [releaseLock.lifecycle.isActive]);
 
+  const handleReleaseAndProtect = useCallback((_id: string, amount: number) => {
+    if (releaseLock.lifecycle.isActive || releaseSubmittingRef.current) return;
+    setReleaseThenProtectAmount(amount);
+    setReleaseError(null); setConfirmingId(_id); setCountdown(10); setConfirmed(false); setConfirmOpen(true);
+  }, [releaseLock.lifecycle.isActive]);
+
+  const handleProtectInstead = useCallback(() => {
+    if (!confirmingId) return;
+    const h = capital.activeHorizons.find((h) => h.id === confirmingId);
+    setReleaseThenProtectAmount(h?.amount ?? null);
+    setConfirmOpen(false);
+    setConfirmingId(null);
+  }, [confirmingId, capital.activeHorizons]);
+
+  const handleProtectWin = useCallback((amount: number) => {
+    setProtectWinAmount(amount);
+    setProtectModalOpen(true);
+  }, []);
+
+  const handleProtectModalClose = useCallback(() => {
+    setProtectModalOpen(false);
+    setProtectSuggestion(null);
+    setProtectWinAmount(null);
+    setReleaseThenProtectAmount(null);
+  }, []);
+
   const confirmingAmount = useMemo(() => {
     if (!confirmingId) return "0.00";
     const h = capital.activeHorizons.find((h) => h.id === confirmingId);
@@ -576,13 +636,15 @@ export default function IntentPage() {
                       <p className="text-small text-text-secondary mt-1 leading-relaxed">
                         {win.description} — <span className="text-green-600 font-medium">+${formatUSD(win.amount)}</span> profit available.
                       </p>
-                      <Link
-                        href="/sessions"
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-green-100 text-green-700 px-4 py-2 text-small font-medium hover:bg-green-200 transition-colors border border-green-200 mt-4"
+                      <button
+                        type="button"
+                        onClick={() => handleProtectWin(win.amount)}
+                        className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-green-100 text-green-700 px-4 py-2 text-small font-medium hover:bg-green-200 transition-colors border border-green-200"
                       >
-                        Protect in Sessions
+                        <Shield className="h-3.5 w-3.5" />
+                        Protect this amount
                         <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -600,7 +662,7 @@ export default function IntentPage() {
             </h2>
             <div className="space-y-4">
               {releasableHorizons.map((horizon) => (
-                <ReleaseCard key={horizon.id} horizon={horizon} onRelease={handleReleaseClick} isReleasing={isReleasing === horizon.id} />
+                <ReleaseCard key={horizon.id} horizon={horizon} onRelease={handleReleaseClick} onReleaseAndProtect={handleReleaseAndProtect} isReleasing={isReleasing === horizon.id} />
               ))}
             </div>
           </div>
@@ -706,19 +768,17 @@ export default function IntentPage() {
       {/* ── Release Confirmation Modal ── */}
       <ReleaseConfirmModal
         open={confirmOpen} amount={confirmingAmount} countdown={countdown}
-        confirmed={confirmed} onConfirm={handleConfirmRelease} onKeepProtected={handleKeepProtected}
+        confirmed={confirmed} onConfirm={handleConfirmRelease}
+        onProtectInstead={handleProtectInstead} onKeepProtected={handleKeepProtected}
         isSubmitting={releaseLock.lifecycle.isActive || releaseSubmitting}
         errorMessage={releaseError}
       />
 
       <ProtectCapitalModal
         open={protectModalOpen}
-        onClose={() => {
-          setProtectModalOpen(false);
-          setProtectSuggestion(null);
-        }}
+        onClose={handleProtectModalClose}
         maxAmount={capital.balances.available}
-        initialAmount={protectSuggestion?.amount ?? null}
+        initialAmount={protectWinAmount ?? protectSuggestion?.amount ?? null}
         initialHorizon={protectSuggestion?.durationDays ?? null}
       />
     </PageShell>
