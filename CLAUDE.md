@@ -1,88 +1,107 @@
-# Elora Vault v0.5 — Self-Custodied Protocol on Base
+# Elora Vault v0.9 — Self-Custodied Protocol on Base
 
 ## Core Concept
-Elora Vault is a **self-custodied behavioral savings vault** on Base. NOT a sportsbook, casino, or gambling protocol.
-
-The "house" is a **virtual** opponent ($1B starting, psychological only, offchain). User losses become **onchain protected capital** in the ProtectedVault contract. Lock durations are **cryptographically enforced** — no early unlocks.
+Elora Vault is a **self-custodied behavioral capital vault** on Base. NOT a sportsbook, casino, or gambling protocol.
 
 ### Philosophy
-- "Every loss becomes saved capital."
-- "Stored today. Available later."
-- "Discipline compounds quietly."
-- "The house is virtual. The protection is real."
+- "Protect your capital from yourself."
+- "Not every dollar should feel equally available."
+- "Quiet by default. Present when needed. Invisible when not."
+
+## Capital State Model
+```
+totalEloraCapital = available + protected + releasing + committed
+```
+
+| State | Meaning |
+|---|---|
+| Connected Wallet | External USDC in wallet (outside Elora) |
+| Available | Capital ready to use inside Elora |
+| Protected | Capital in active horizons |
+| Releasing | Protected capital returning to availability |
+| Committed | Capital in active predictions |
 
 ## Architecture
 
 ### Onchain (Smart Contracts)
-- **ProtectedVault** (`contracts/src/ProtectedVault.sol`) — self-custodied USDC vault
-  - Users deposit their own USDC (Base native)
-  - Each user's state is isolated (no pooled treasury)
-  - Timed locks enforced onchain (1-365 days)
-  - Release + withdraw flow after unlock
-  - OpenZeppelin (ReentrancyGuard, SafeERC20)
-  - No admin-controlled withdrawals, no rehypothecation
-- **Foundry** toolchain for testing + deployment
+- **ProtectedVault** (`contracts/src/ProtectedVault.sol`) — Base Sepolia
+- Address: `0x7876A2fa21BAfD40F7b61F49390d0FED556Db1fd`
+- USDC (Base Sepolia): `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
 
-### Offchain (Backend — analytics / metadata only)
-- Supabase + PostgreSQL via Prisma
-- Backend tracks: analytics, timelines, user preferences, charts
-- Backend is **never the source of truth** for locked capital
-- Wallet addresses and tx hashes stored for display purposes
-
-### Frontend (Web3)
+### Frontend
+- Next.js 16 App Router, TypeScript, TailwindCSS v4
 - wagmi + viem + RainbowKit for wallet connection
-- Base network (mainnet + Sepolia)
-- Supported wallets: Coinbase Wallet, MetaMask, Rainbow, WalletConnect
+- `@base-org/account` SDK installed (isolated lab only, not production)
+- Zustand for client state
 
-## Key Rules
-- Balances live onchain (ProtectedVault contract)
-- Backend-only balances (user_balance, savings_vault, etc.) are for virtual house tracking
-- Stake cannot exceed User Balance (backend)
-- No house liability cap — the virtual house has $1B
-- Wins: user gets stake + profit, profit deducted from virtual house
-- Losses: stake moves to Savings Vault (offchain) + ProtectedVault lock created (onchain)
+### Backend
+- Supabase + PostgreSQL via Prisma
+- Backend tracks: wallet state, predictions, vault locks, transactions
 
-## Wallet Fields (Backend)
-user_balance | savings_vault | withdrawable_winnings | virtual_house_balance (default 1B)
-total_deposited | total_wagered | total_saved_from_losses | total_profit_won
-wallet_address (0x-prefixed, user's connected Base wallet)
-
-## Transaction Types (Backend)
-DEPOSIT | BET_PLACED | WIN_PROFIT | LOSS_TO_SAVINGS | PUSH_RETURN | WITHDRAWAL
-LOCK_CREATED | LOCK_RELEASED
-ONCHAIN_DEPOSIT | ONCHAIN_LOCK_CREATED | ONCHAIN_LOCK_RELEASED | ONCHAIN_WITHDRAWAL
-
-## Deployment
-- **Smart Contracts**: Foundry → Base mainnet/Sepolia
-- **Frontend**: Vercel + Supabase
-- Push Prisma schema: `npx prisma db push --accept-data-loss`
-- Deploy contract: `forge script script/DeployProtectedVault.s.sol --rpc-url base_mainnet --broadcast --verify`
-- Update `src/lib/contracts/contracts.ts` with deployed vault address
+## Route Tree (21 routes)
+```
+○ /                          (Landing)
+○ /auth/login                (Login)
+○ /auth/signup               (Signup)
+○ /vault                     (Capital state home)
+○ /activity                  (Live event timeline)
+○ /intent                    (Horizon release + protection opportunities)
+○ /sessions                  (Prediction logging + settlement)
+○ /settings                  (Account + Base Account card)
+○ /settings/base-account-lab (Hidden — Base Account prototype)
+○ /dashboard                 (Redirects to /vault)
+ƒ /api/*                     (bets, sessions, wallet, vault/locks, onchain)
+```
 
 ## Key Files
-### Contracts
-- contracts/src/ProtectedVault.sol — main vault contract
-- contracts/test/ProtectedVault.t.sol — tests (22 tests)
-- contracts/script/DeployProtectedVault.s.sol — deployment
-- contracts/foundry.toml — build config (Base RPC)
-- contracts/lib/openzeppelin-contracts/ — OpenZeppelin v5.6
 
-### Web3 Frontend
-- src/lib/web3/config.ts — wagmi/RainbowKit config
-- src/lib/web3/providers.tsx — Web3 provider wrapper
-- src/lib/web3/hooks.ts — contract interaction hooks
-- src/lib/contracts/contracts.ts — chain config + ABI imports
-- src/components/web3/ — all Web3 UI components
-- src/app/vault/page.tsx — vault dashboard page
+### Capital System
+- `src/lib/capital-state.ts` — Canonical capital state model
+- `src/lib/web3/hooks.ts` — Read hooks (useVaultSummary, useVaultLocks)
+- `src/lib/web3/tx-hooks.ts` — Write hooks (useVaultDeposit, useCreateLock, useReleaseLock, useUSDCApprove, etc.)
+- `src/store/useWalletStore.ts` — Zustand store
 
-### Existing Backend
-- prisma/schema.prisma — database schema
-- src/lib/liability.ts — profit/return/settlement calculations
-- src/store/useWalletStore.ts — Zustand client store
-- src/app/api/wallet/route.ts — wallet GET + deposit POST
-- src/app/api/wallet/connect/route.ts — wallet address registration
-- src/app/api/onchain/event/route.ts — onchain event logging
-- src/app/api/bets/route.ts — bet CRUD
-- src/app/api/bets/[id]/settle/route.ts — bet settlement
-- src/app/api/vault/locks/route.ts — vault lock CRUD
-- src/app/api/wallet/transactions/route.ts — transaction history
+### Pages
+- `src/app/(authenticated)/vault/page.tsx` — Wallet strip + 4 capital cards + modals
+- `src/app/(authenticated)/activity/page.tsx` — Transaction timeline
+- `src/app/(authenticated)/intent/page.tsx` — Release confirmations + protection opportunities
+- `src/app/(authenticated)/sessions/page.tsx` — Prediction logging, settlement, post-win protection
+
+### Components
+- `src/components/vault/vault-state-card.tsx` — Premium card with left-border accent
+- `src/components/capital/capital-operations.tsx` — Deposit/Withdraw/Protect modals
+- `src/components/capital/session-modal.tsx` — End Session modal
+- `src/components/wallet/wallet-control.tsx` — Connect/disconnect/network control
+- `src/components/layout/top-header.tsx` — Top navigation bar
+
+### Base Account (Lab only)
+- `src/lib/account/account-strategy.ts` — Strategy types
+- `src/lib/account/base-account-client.ts` — Isolated SDK wrapper
+- `src/app/(authenticated)/settings/base-account-lab/page.tsx` — Lab test page
+
+### Backend
+- `prisma/schema.prisma` — Database schema (User, Wallet, Bet, VaultLock, Session, Transaction)
+- `src/app/api/bets/route.ts` — Prediction CRUD
+- `src/app/api/bets/[id]/settle/route.ts` — Settlement
+- `src/app/api/bets/[id]/protect/route.ts` — Post-win protection
+- `src/app/api/wallet/route.ts` — Wallet state
+- `src/app/api/wallet/transactions/route.ts` — Transaction history
+- `src/app/api/sessions/route.ts` — Session persistence
+
+### Design Tokens
+- Warm stone surfaces (#fafaf8)
+- Botanical green accents (#4d8537)
+- Restrained amber for releasing/committed states
+- Soft borders, no pills, no decorative icons on capital cards
+
+## Deployment
+- **Frontend**: `npx vercel --prod` → https://elora-bet-api.vercel.app
+- **Database**: `npx prisma db push --accept-data-loss`
+- **Contracts**: Foundry → Base Sepolia
+
+## Binding Design Constraints
+1. No backend rewrites — UI wraps existing flows
+2. No dashboard density — information goes down, not up
+3. Restraint = sophistication — remove one thing before shipping
+4. Intent is the signature experience
+5. No charts, graphs, ROI, APY, PnL, or gamification
