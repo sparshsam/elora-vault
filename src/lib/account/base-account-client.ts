@@ -5,6 +5,59 @@
  * It exists only for the Base Account Lab at /settings/base-account-lab.
  *
  * Uses Base Sepolia (chain ID 84532).
+ *
+ * ── Why Sub Accounts matter for Elora ─────────────────
+ *
+ * Sub Accounts (ERC-7895) are app-specific signing contexts derived
+ * from a user's Universal Base Account. They are significant for
+ * Elora because:
+ *
+ * 1. Capital-boundary clarity
+ *    Protected capital can live inside an Elora-specific sub-account,
+ *    creating a clean separation between the user's personal wallet
+ *    and their Elora capital environment. The sub-account holds only
+ *    what the user has chosen to protect within Elora.
+ *
+ * 2. Reduced wallet friction
+ *    Sub-accounts support session keys and pre-approved execution,
+ *    meaning routine operations (deposit → protect) can happen
+ *    without repeated wallet prompts. This dramatically improves the
+ *    calmness of the protection flow.
+ *
+ * 3. Preserved self-custody
+ *    The sub-account is derived from the user's Universal Account.
+ *    The user always retains the root key. They can exit at any time
+ *    by withdrawing from the sub-account back to their universal address.
+ *
+ * 4. Paymaster-ready architecture
+ *    Sub-account execution pairs naturally with paymaster sponsorship
+ *    (ERC-7677). Protection flows can be gasless: the user signs,
+ *    Elora's paymaster covers the gas.
+ *
+ * ── How protected capital could live in sub-accounts ─
+ *
+ * Future flow (not implemented):
+ *   1. User connects their Universal Base Account
+ *   2. User deposits USDC from universal → sub-account
+ *   3. Sub-account calls createLock() on ProtectedVault
+ *   4. Protected capital is tracked within the sub-account context
+ *   5. On release, capital returns to the sub-account
+ *   6. User withdraws from sub-account → universal → external wallet
+ *
+ * ── Why capability detection matters before migration ─
+ *
+ * Before any production migration to Base Account flows, we must
+ * confirm via EIP-5792 wallet_getCapabilities that the connected
+ * provider supports:
+ *
+ * - atomic batching (wallet_sendCalls) — for bundling multi-step ops
+ * - paymasterService — for sponsored gas on protection flows
+ * - unstable_addSubAccount — for sub-account creation and execution
+ *
+ * The use-wallet-capabilities hook in src/hooks/ provides this
+ * detection layer. No migration step should proceed without
+ * capability confirmation.
+ * See: src/hooks/use-wallet-capabilities.ts
  */
 
 import { createBaseAccountSDK } from "@base-org/account";

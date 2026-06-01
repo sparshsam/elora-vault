@@ -11,8 +11,9 @@ import {
   logStep,
 } from "@/lib/account/base-account-client";
 import type { LabStep } from "@/lib/account/base-account-client";
+import { AccountCapabilityPanel } from "@/components/account/account-capability-panel";
 import { cn } from "@/lib/utils";
-import { ArrowRight, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { ArrowRight, CheckCircle, AlertCircle, Clock, ArrowDown } from "lucide-react";
 
 /* ── Helpers ───────────────────────────────── */
 
@@ -194,6 +195,27 @@ export default function BaseAccountLabPage() {
               {universalAddress ? shortenAddress(universalAddress) : "Not connected"}
             </span>
           </div>
+
+          {/* Account relationship diagram */}
+          {universalAddress && (
+            <div className="flex flex-col items-center py-2 gap-1">
+              <div className="text-tiny text-text-tertiary">
+                Universal Account
+              </div>
+              <ArrowDown className="h-3.5 w-3.5 text-text-muted" />
+              <div className={cn(
+                "rounded-md border px-3 py-1 text-tiny font-mono",
+                subAccountAddress
+                  ? "border-green-200 bg-green-50 text-green-700"
+                  : "border-dashed border-border text-text-muted",
+              )}>
+                {subAccountAddress
+                  ? `Elora Account (${shortenAddress(subAccountAddress)})`
+                  : "Elora Account (not created)"}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <span className="text-tiny text-text-tertiary">Elora Sub Account</span>
             <span className={cn(
@@ -208,6 +230,15 @@ export default function BaseAccountLabPage() {
             <span className="text-small text-text-primary">Base Sepolia (84532)</span>
           </div>
         </div>
+      </div>
+
+      {/* ── Capability Diagnostics ── */}
+      <div className="mb-8">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary mb-4 flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5" />
+          Wallet Diagnostics
+        </h2>
+        <AccountCapabilityPanel />
       </div>
 
       {/* ── Status Log ── */}
