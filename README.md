@@ -18,7 +18,7 @@
   <br />
 
   <div>
-    <img src="https://img.shields.io/badge/version-v0.6-green" alt="Version" />
+    <img src="https://img.shields.io/badge/version-v0.9-green" alt="Version" />
     <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License" />
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome" />
     <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js" />
@@ -214,14 +214,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Screenshots
 
-Screenshots may lag behind the current UI while the product is moving quickly.
-
 | Surface | Screenshot |
 |---|---|
 | Landing | `assets/screenshots/screenshot-main.png` |
-| Desktop | `assets/screenshots/landing-desktop.png` |
-| Dashboard / Vault | `assets/screenshots/dashboard-desktop.png` |
-| Mobile | `assets/screenshots/dashboard-mobile.png` |
+| Login | `assets/screenshots/login-desktop.png` |
+| Sign Up | `assets/screenshots/signup-desktop.png` |
 
 ---
 
