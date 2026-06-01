@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAccount } from "wagmi";
 import { cn } from "@/lib/utils";
-import { LogOut, User, Clock } from "lucide-react";
+import { LogOut, User, Clock, Shield } from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -152,6 +152,39 @@ export default function SettingsPage() {
           <p className="text-tiny text-text-subtle mt-2 italic">
             Future-ready — available when notifications are supported.
           </p>
+        </div>
+      </div>
+
+      {/* Base Account Roadmap */}
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-4">
+          <Shield className="h-4 w-4 text-text-tertiary" />
+          <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary">
+            Infrastructure
+          </h2>
+        </div>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-text-primary mb-0.5">
+                Base Account
+              </p>
+              <p className="text-small text-text-tertiary">
+                Future account infrastructure for calmer self-custody.
+              </p>
+              <p className="text-tiny text-text-muted mt-2 leading-relaxed">
+                Elora currently uses external wallet connections. Base Account
+                support is being explored to reduce wallet friction while
+                preserving ownership.
+              </p>
+            </div>
+            <a
+              href="/settings/base-account-lab"
+              className="shrink-0 rounded-lg border border-green-200 bg-green-50 text-green-700 px-3 py-1.5 text-tiny font-medium hover:bg-green-100 transition-colors"
+            >
+              Open lab
+            </a>
+          </div>
         </div>
       </div>
 
