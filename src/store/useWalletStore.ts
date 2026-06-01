@@ -14,7 +14,7 @@ interface WalletData {
   total_wagered: number;
   total_saved_from_losses: number;
   total_profit_won: number;
-  // Legacy DB name for committed capital allocated to open bets.
+  // Legacy DB name for committed capital allocated to active predictions.
   at_risk_balance: number;
 }
 

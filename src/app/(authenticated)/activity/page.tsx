@@ -19,12 +19,13 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TX_TYPES, normalizeTransactionType } from "@/lib/transaction-types";
 
 /* ── Types ─────────────────────────────────── */
 
 type ActivityEvent = {
   id: string;
-  type: "deposit" | "lock" | "release" | "withdrawal" | "bet-placed" | "bet-won" | "bet-lost" | "bet-pushed" | "pending" | "failed";
+  type: "deposit" | "protection-created" | "protection-released" | "withdrawal" | "prediction-created" | "prediction-won" | "prediction-lost" | "prediction-pushed" | "pending" | "failed";
   amount: string;
   description: string;
   occurredAt: string;
@@ -35,26 +36,26 @@ type ActivityEvent = {
 
 const EVENT_ICONS: Record<ActivityEvent["type"], ComponentType<{ className?: string }>> = {
   deposit: ArrowDownToLine,
-  lock: Lock,
-  release: CheckCircle,
+  "protection-created": Lock,
+  "protection-released": CheckCircle,
   withdrawal: ArrowUpFromLine,
-  "bet-placed": Clock,
-  "bet-won": TrendingUp,
-  "bet-lost": TrendingDown,
-  "bet-pushed": Minus,
+  "prediction-created": Clock,
+  "prediction-won": TrendingUp,
+  "prediction-lost": TrendingDown,
+  "prediction-pushed": Minus,
   pending: Clock,
   failed: AlertCircle,
 };
 
 const EVENT_COLORS: Record<ActivityEvent["type"], string> = {
   deposit: "text-green-600 bg-green-100 border-green-200",
-  lock: "text-green-700 bg-green-50 border-green-200",
-  release: "text-green-600 bg-green-100 border-green-200",
+  "protection-created": "text-green-700 bg-green-50 border-green-200",
+  "protection-released": "text-green-600 bg-green-100 border-green-200",
   withdrawal: "text-text-secondary bg-surface-subtle border-border",
-  "bet-placed": "text-amber-700 bg-amber-50 border-amber-200",
-  "bet-won": "text-green-600 bg-green-100 border-green-200",
-  "bet-lost": "text-danger bg-danger/8 border-danger/20",
-  "bet-pushed": "text-text-secondary bg-surface-subtle border-border",
+  "prediction-created": "text-amber-700 bg-amber-50 border-amber-200",
+  "prediction-won": "text-green-600 bg-green-100 border-green-200",
+  "prediction-lost": "text-danger bg-danger/8 border-danger/20",
+  "prediction-pushed": "text-text-secondary bg-surface-subtle border-border",
   pending: "text-amber-700 bg-amber-50 border-amber-200",
   failed: "text-danger bg-danger/8 border-danger/20",
 };
@@ -145,16 +146,18 @@ function TimelineItem({ event, isLast }: TimelineItemProps) {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-tiny font-medium capitalize", colorClass)}>
-                {event.type === "bet-placed"
-                  ? "Prediction logged"
-                  : event.type === "bet-won"
+                {event.type === "prediction-created"
+                  ? "Prediction created"
+                  : event.type === "prediction-won"
                     ? "Prediction won"
-                    : event.type === "bet-lost"
+                    : event.type === "prediction-lost"
                       ? "Prediction lost"
-                      : event.type === "bet-pushed"
+                      : event.type === "prediction-pushed"
                         ? "Prediction pushed"
-                        : event.type === "release"
+                        : event.type === "protection-released"
                           ? "Released"
+                          : event.type === "protection-created"
+                            ? "Protected"
                           : event.type === "withdrawal"
                             ? "Withdrawal"
                             : event.type === "deposit"
@@ -193,7 +196,7 @@ function EmptyState() {
         <p className="text-sm font-medium text-text-primary">No movement yet.</p>
         <p className="text-small text-text-tertiary mt-2 max-w-xs">
           Your activity will appear here once capital is deposited, protected,
-          released, bet on, or withdrawn.
+          released, predicted on, or withdrawn.
         </p>
       </div>
     </div>
@@ -204,39 +207,29 @@ function EmptyState() {
 
 function txToEvent(tx: Record<string, unknown>): ActivityEvent | null {
   const typeMap: Record<string, ActivityEvent["type"]> = {
-    DEPOSIT: "deposit",
-    BET_PLACED: "bet-placed",
-    WIN_PROFIT: "bet-won",
-    LOSS_TO_SAVINGS: "bet-lost",
-    PUSH_RETURN: "bet-pushed",
-    WITHDRAWAL: "withdrawal",
-    LOCK_CREATED: "lock",
-    LOCK_RELEASED: "release",
-    ONCHAIN_DEPOSIT: "deposit",
-    ONCHAIN_LOCK_CREATED: "lock",
-    ONCHAIN_LOCK_RELEASED: "release",
-    ONCHAIN_WITHDRAWAL: "withdrawal",
+    [TX_TYPES.depositCompleted]: "deposit",
+    [TX_TYPES.predictionCreated]: "prediction-created",
+    [TX_TYPES.predictionWon]: "prediction-won",
+    [TX_TYPES.predictionLost]: "prediction-lost",
+    [TX_TYPES.predictionPushed]: "prediction-pushed",
+    [TX_TYPES.withdrawalCompleted]: "withdrawal",
+    [TX_TYPES.protectionCreated]: "protection-created",
+    [TX_TYPES.protectionReleased]: "protection-released",
   };
 
-  const txType = tx.type as string;
+  const txType = normalizeTransactionType(tx.type as string);
   const mapped = typeMap[txType];
   if (!mapped) return null;
 
   const amount = typeof tx.amount === "number" ? tx.amount : 0;
   let description = (tx.description as string) || "";
 
-  // Fallback descriptions for bet-related events
+  // Fallback descriptions for prediction-related events.
   if (!description) {
-
-    if (txType === "BET_PLACED") description = "Bet logged. Stake moved to Committed.";
-    else if (txType === "WIN_PROFIT") description = "Bet won. Return added to Available.";
-    else if (txType === "LOSS_TO_SAVINGS") description = "Bet lost. Stake removed from active capital.";
-    else if (txType === "PUSH_RETURN") description = "Bet pushed. Stake returned to Available.";
-
-    if (txType === "BET_PLACED") description = "Prediction logged. Capital moved into Committed.";
-    else if (txType === "WIN_PROFIT") description = "Prediction settled. Return added to Available.";
-    else if (txType === "LOSS_TO_SAVINGS") description = "Prediction lost. Capital released from prediction.";
-    else if (txType === "PUSH_RETURN") description = "Prediction pushed. Capital returned to Available.";
+    if (txType === TX_TYPES.predictionCreated) description = "Prediction created. Capital moved to Committed.";
+    else if (txType === TX_TYPES.predictionWon) description = "Prediction won. Return added to Available.";
+    else if (txType === TX_TYPES.predictionLost) description = "Prediction lost. Capital removed from Committed.";
+    else if (txType === TX_TYPES.predictionPushed) description = "Prediction pushed. Stake returned to Available.";
   }
 
   return {
@@ -292,7 +285,7 @@ export default function ActivityPage() {
         <div className="mb-8">
           <h1 className="text-display text-text-primary">Activity</h1>
           <p className="text-body text-text-secondary mt-1">
-            A quiet record of how your capital moves, protects, bets, and returns.
+            A quiet record of how your capital moves, protects, predicts, and returns.
           </p>
         </div>
 
@@ -305,7 +298,7 @@ export default function ActivityPage() {
             subtext="Protection periods active"
             iconType="locks"
           />
-          <SummaryCard label="Committed" value={`$${capital.formatted.committed}`} subtext="Capital in open bets" iconType="released" />
+          <SummaryCard label="Committed" value={`$${capital.formatted.committed}`} subtext="Capital in active predictions" iconType="released" />
           <SummaryCard label="Activity" value={String(recentCount)} subtext="Events this week" iconType="activity" />
         </div>
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { STORED_TX_TYPES } from "@/lib/transaction-types";
 
 // Auto-unlock: find expired ACTIVE locks and release them
 async function autoReleaseLocks(userId: string) {
@@ -35,7 +36,7 @@ async function autoReleaseLocks(userId: string) {
       await tx.transaction.create({
         data: {
           userId,
-          type: "LOCK_RELEASED",
+          type: STORED_TX_TYPES.protectionReleased,
           amount: lock.amount,
           balanceBefore: wallet.available_vault_balance,
           balanceAfter: wallet.available_vault_balance + lock.amount,
@@ -175,7 +176,7 @@ export async function POST(request: Request) {
       await tx.transaction.create({
         data: {
           userId: user.id,
-          type: "LOCK_CREATED",
+          type: STORED_TX_TYPES.protectionCreated,
           amount,
           balanceBefore: wallet.available_vault_balance,
           balanceAfter: wallet.available_vault_balance - amount,

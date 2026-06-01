@@ -9,6 +9,7 @@ datasource db {
 }
 
 enum TransactionType {
+  /// Legacy transaction names retained for existing rows.
   DEPOSIT
   BET_PLACED
   WIN_PROFIT
@@ -73,13 +74,14 @@ model Wallet {
   total_saved_from_losses Float @default(0)
   total_profit_won      Float   @default(0)
 
-  /// Capital currently committed to open bets
+  /// Capital currently committed to active predictions.
   at_risk_balance       Float   @default(0)
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
 
+/// Legacy table/model name for prediction records.
 model Bet {
   id            String      @id @default(cuid())
   userId        String

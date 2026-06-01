@@ -23,7 +23,7 @@ export function calculateTotalReturn(odds: number, stake: number): number {
 }
 
 /**
- * Validate a potential bet against user balance only (no house liability cap).
+ * Validate a prediction against available capital only (no external house liability cap).
  */
 export function validateBet(
   odds: number,
@@ -53,8 +53,10 @@ export function validateBet(
   return { valid: true, profit, totalReturn };
 }
 
+export const validatePrediction = validateBet;
+
 /**
- * Settlement calculations for a winning bet.
+ * Settlement calculations for a winning prediction.
  * User gets stake + profit back. Virtual house pays the profit.
  */
 export function settleWin(
@@ -77,9 +79,11 @@ export function settleWin(
   return { newHouseBalance, newUserBalance, newSavingsVault, withdrawableWinnings };
 }
 
+export const calculateWinSettlementForPrediction = settleWin;
+
 /**
- * Settlement calculations for a losing bet.
- * Stake goes to savings vault. Virtual house gains the stake.
+ * Settlement calculations for a losing prediction.
+ * Stake leaves committed capital. Virtual house gains the stake.
  */
 export function settleLoss(
   houseBalance: number,
@@ -93,15 +97,17 @@ export function settleLoss(
   withdrawableWinnings: number;
 } {
   const newHouseBalance = houseBalance + stake;
-  const newUserBalance = userBalance; // already deducted when bet was placed
+  const newUserBalance = userBalance; // already deducted when prediction was created
   const newSavingsVault = savingsVault + stake;
   const withdrawableWinnings = 0;
 
   return { newHouseBalance, newUserBalance, newSavingsVault, withdrawableWinnings };
 }
 
+export const calculateLossSettlementForPrediction = settleLoss;
+
 /**
- * Settlement for a push (tie) — stake returned to user balance.
+ * Settlement for a push/tie — stake returned to available capital.
  */
 export function settlePush(
   houseBalance: number,
@@ -121,3 +127,5 @@ export function settlePush(
 
   return { newHouseBalance, newUserBalance, newSavingsVault, withdrawableWinnings };
 }
+
+export const calculatePushSettlementForPrediction = settlePush;

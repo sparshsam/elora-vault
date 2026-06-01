@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-
-/* ── Helpers ─────────────────────────────────────────── */
+import { STORED_TX_TYPES } from "@/lib/transaction-types";
 
 function calculateProfit(odds: number, stake: number): number {
   if (odds > 0) return stake * odds / 100;
@@ -13,8 +12,14 @@ function calculateTotalReturn(odds: number, stake: number): number {
   return stake + calculateProfit(odds, stake);
 }
 
-/* ── GET /api/bets — list bets ────────────────────────── */
+function toMarketType(type: unknown): "MONEYLINE" | "SPREAD" | "TOTAL" {
+  const normalized = String(type ?? "").toUpperCase();
+  if (normalized === "SPREAD") return "SPREAD";
+  if (normalized === "TOTAL" || normalized === "TOTALS") return "TOTAL";
+  return "MONEYLINE";
+}
 
+// GET /api/bets - list predictions. Route name is retained for compatibility.
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();
@@ -32,20 +37,25 @@ export async function GET(request: Request) {
       where.status = status;
     }
 
-    const [bets, total] = await Promise.all([
+    const [predictions, total] = await Promise.all([
       prisma.bet.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: limit }),
       prisma.bet.count({ where }),
     ]);
 
-    return NextResponse.json({ bets, total, page, totalPages: Math.ceil(total / limit) });
+    return NextResponse.json({
+      predictions,
+      bets: predictions,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
-    console.error("[bets] GET error:", error);
+    console.error("[predictions] GET error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-/* ── POST /api/bets — log a new bet ──────────────────── */
-
+// POST /api/bets - create a prediction. Route name is retained for compatibility.
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -53,7 +63,8 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { description, betType, odds, stake } = body;
+    const { description, odds, stake } = body;
+    const predictionType = body.predictionType ?? body.betType;
 
     if (!odds || !stake || stake <= 0) {
       return NextResponse.json({ error: "Missing required fields: odds, stake" }, { status: 400 });
@@ -75,7 +86,6 @@ export async function POST(request: Request) {
     const profit = calculateProfit(odds, stake);
     const totalReturn = calculateTotalReturn(odds, stake);
 
-    // Move deposited Elora capital from available to committed (legacy DB: at_risk_balance).
     await prisma.wallet.update({
       where: { id: wallet.id },
       data: {
@@ -87,12 +97,12 @@ export async function POST(request: Request) {
 
     const updatedWallet = await prisma.wallet.findUnique({ where: { userId: user.id } });
 
-    const bet = await prisma.bet.create({
+    const prediction = await prisma.bet.create({
       data: {
         userId: user.id,
         description: description || "",
         sport: "Other",
-        marketType: (betType?.toUpperCase?.() === "SPREAD" ? "SPREAD" : betType?.toUpperCase?.() === "TOTAL" ? "TOTAL" : "MONEYLINE") as "MONEYLINE" | "SPREAD" | "TOTAL",
+        marketType: toMarketType(predictionType),
         selection: description || "",
         odds,
         stake,
@@ -101,27 +111,27 @@ export async function POST(request: Request) {
         user_balance_before: wallet.user_balance,
         user_balance_after: wallet.user_balance,
         at_risk_before: wallet.at_risk_balance,
-        at_risk_after: (updatedWallet?.at_risk_balance ?? wallet.at_risk_balance + stake),
+        at_risk_after: updatedWallet?.at_risk_balance ?? wallet.at_risk_balance + stake,
       },
     });
 
     await prisma.transaction.create({
       data: {
         userId: user.id,
-        type: "BET_PLACED",
+        type: STORED_TX_TYPES.predictionCreated,
         amount: stake,
         balanceBefore: wallet.available_vault_balance,
         balanceAfter: updatedWallet?.available_vault_balance ?? wallet.available_vault_balance - stake,
-        betId: bet.id,
+        betId: prediction.id,
         description: description
-          ? `Bet logged: ${description} ($${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds})`
-          : `Bet logged: $${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds}`,
+          ? `Prediction created: ${description} ($${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds})`
+          : `Prediction created: $${stake.toFixed(2)} at ${odds > 0 ? "+" : ""}${odds}`,
       },
     });
 
-    return NextResponse.json(bet, { status: 201 });
+    return NextResponse.json({ ...prediction, prediction }, { status: 201 });
   } catch (error) {
-    console.error("[bets] POST error:", error);
+    console.error("[predictions] POST error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

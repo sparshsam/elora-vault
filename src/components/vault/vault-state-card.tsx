@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type StateType = "available" | "protected" | "releasing" | "committed" | "at-risk";
+type StateType = "available" | "protected" | "releasing" | "committed";
 
 interface VaultStateCardProps {
   state: StateType;
@@ -41,13 +41,6 @@ const stateConfig: Record<StateType, {
     accent: "bg-amber-400",
     bg: "bg-amber-50/20",
     border: "border-amber-200/30",
-    labelColor: "text-amber-700/70",
-    valueColor: "text-text-primary",
-  },
-  "at-risk": {
-    accent: "bg-amber-500",
-    bg: "bg-surface",
-    border: "border-border",
     labelColor: "text-amber-700/70",
     valueColor: "text-text-primary",
   },

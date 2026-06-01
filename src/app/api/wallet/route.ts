@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { STORED_TX_TYPES } from "@/lib/transaction-types";
 
 /**
  * Ensure the Prisma User record exists for the given Supabase user.
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
     await prisma.transaction.create({
       data: {
         userId: user.id,
-        type: "DEPOSIT",
+        type: STORED_TX_TYPES.depositCompleted,
         amount,
         balanceBefore: wallet.available_vault_balance,
         balanceAfter: updatedWallet.available_vault_balance,

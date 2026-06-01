@@ -11,7 +11,6 @@ export type CapitalState =
   | "protected"
   | "releasing"
   | "committed"
-  | "at-risk"
   | "activity"
   | "intent"
   | "horizon";
@@ -106,29 +105,21 @@ export function useCapitalState(): CapitalSummary {
     const walletBalance = isConnected ? usdcBalance.balance : (walletStore.user_balance ?? 0);
     const available = Math.max(0, walletStore.available_vault_balance ?? 0);
     const committed = Math.max(0, walletStore.at_risk_balance ?? 0);
-    const lockBalances = (vaultLocks.locks ?? []).reduce(
-      (sum, lock) => {
-        if (lock.withdrawn) return sum;
-        if (lock.unlockAt <= now) {
-          return { ...sum, releasing: sum.releasing + lock.amount };
-        }
-        return { ...sum, protected: sum.protected + lock.amount };
-      },
-      { protected: 0, releasing: 0 },
+    const protectedFromLocks = (vaultLocks.locks ?? []).reduce(
+      (sum, lock) => lock.withdrawn ? sum : sum + lock.amount,
+      0,
     );
 
     const protected_ =
-      lockBalances.protected > 0
-        ? lockBalances.protected
+      protectedFromLocks > 0
+        ? protectedFromLocks
         : vaultSummary.totalLocked > 0
         ? vaultSummary.totalLocked
         : walletStore.locked_vault_balance > 0
           ? walletStore.locked_vault_balance
           : 0;
 
-    const releasing = lockBalances.releasing > 0
-      ? lockBalances.releasing
-      : Math.max(0, walletStore.savings_vault ?? 0);
+    const releasing = Math.max(0, walletStore.savings_vault ?? 0);
     const totalEloraCapital = available + protected_ + releasing + committed;
 
     return {
@@ -151,7 +142,6 @@ export function useCapitalState(): CapitalSummary {
     walletStore.at_risk_balance,
     vaultLocks.locks,
     vaultSummary.totalLocked,
-    now,
   ]);
 
   const formatted: CapitalBalancesFormatted = useMemo(
