@@ -83,7 +83,7 @@ export function VaultStateCard({
         "shadow-sm",
         cfg.bg,
         cfg.border,
-        isClickable && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
+        isClickable && "cursor-pointer hover:shadow-md",
         className,
       )}
     >

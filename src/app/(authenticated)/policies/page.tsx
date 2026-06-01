@@ -98,9 +98,8 @@ export default function PoliciesPage() {
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-4 py-2 text-small font-medium hover:bg-green-600 transition-colors shadow-sm shrink-0"
+            className="rounded-lg bg-green-500 text-white px-4 py-2 text-small font-medium hover:bg-green-600 transition-colors shadow-sm shrink-0"
           >
-            <Plus className="h-4 w-4" />
             Create Policy
           </button>
         </div>
@@ -187,9 +186,8 @@ export default function PoliciesPage() {
               <button
                 type="button"
                 onClick={() => setCreateOpen(true)}
-                className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 transition-colors shadow-sm"
+                className="mt-6 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 transition-colors shadow-sm"
               >
-                <Plus className="h-4 w-4" />
                 Create your first policy
               </button>
             </div>

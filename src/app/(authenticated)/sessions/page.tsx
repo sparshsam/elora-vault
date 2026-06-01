@@ -11,7 +11,6 @@ import {
   Minus,
   Shield,
   Target,
-  Plus,
   DollarSign,
   HelpCircle,
   CheckCircle,
@@ -202,7 +201,7 @@ function PredictionCard({ bet, onSettle, onProtect, protectingId, settlingId }: 
             </div>
           )}
 
-          {/* Settled PnL */}
+          {/* Settled result */}
           {!isOpen && (
             <p className={cn("text-small font-medium mt-2", isWin ? "text-green-600" : isLoss ? "text-danger" : "text-text-tertiary")}>
               {isWin ? `+$${formatUSD(pnl)}` : isLoss ? `-$${formatUSD(bet.stake)}` : "Stake returned"}
@@ -640,14 +639,13 @@ function EmptyState({ onLogBet }: { onLogBet: () => void }) {
         </div>
         <p className="text-sm font-medium text-text-primary">No predictions created yet.</p>
         <p className="text-small text-text-tertiary mt-2 max-w-xs">
-          Create your first prediction to track committed capital, potential return, and settled results.
+          Predictions appear here once created.
         </p>
         <button
           type="button"
           onClick={onLogBet}
-          className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors"
+          className="mt-6 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors"
         >
-          <Plus className="h-4 w-4" />
           Create your first prediction
         </button>
       </div>
@@ -800,15 +798,14 @@ export default function SessionsPage() {
             <div>
               <h1 className="text-display text-text-primary">Sessions</h1>
               <p className="text-body text-text-secondary mt-1">
-                Track predictions and settle outcomes.
+                Track predictions and their outcomes.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors shrink-0"
+              className="rounded-lg bg-green-500 text-white px-5 py-2.5 text-small font-medium hover:bg-green-600 shadow-sm transition-colors shrink-0"
             >
-              <Plus className="h-4 w-4" />
               Create Prediction
             </button>
           </div>
@@ -818,11 +815,11 @@ export default function SessionsPage() {
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <SummaryCard label="Committed" value={`$${formatUSD(summary.committed)}`} subtext="Capital in active predictions" iconKey="committed" />
           <SummaryCard label="Active" value={String(summary.activeCount)} subtext="Awaiting settlement" iconKey="open" />
-          <SummaryCard label="Potential Return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If active predictions win" iconKey="potential" />
+          <SummaryCard label="Potential return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If active predictions win" iconKey="potential" />
           <SummaryCard
             label="Net result"
             value={`${summary.settledPnl >= 0 ? "+" : ""}$${formatUSD(summary.settledPnl)}`}
-            subtext="Net from settled predictions"
+            subtext="From settled predictions"
             iconKey="settled"
           />
         </div>

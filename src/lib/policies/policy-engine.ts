@@ -2,15 +2,15 @@
  * Behavioral Protection Policy Engine
  *
  * This is the core of Elora's policy system — definitions, validation,
- * normalization, and evaluation stubs. It is NOT execution.
+ * normalization, orchestration, and behavioral evaluation.
  *
  * Policies describe how capital should behave under specific conditions.
- * Currently they save, display, edit, and pause. They do NOT automatically
- * move funds.
+ * The engine evaluates policies against capital events, generates calm
+ * suggestions, manages reflection periods, and records a quiet timeline
+ * of behavioral interventions.
  *
- * Future execution phases will wire these definitions into actual onchain
- * and offchain flows. For now, the engine validates that policies are
- * structurally sound and provides the vocabulary for the policy system.
+ * The engine does NOT move funds automatically, create aggressive
+ * automation, use AI-agent behavior, or build dashboards.
  */
 
 import type {

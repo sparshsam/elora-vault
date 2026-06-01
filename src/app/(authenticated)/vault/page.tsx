@@ -258,7 +258,7 @@ export default function VaultPage() {
 
         {/* ── Explanatory footer ── */}
         <p className="text-tiny text-text-muted text-center leading-relaxed max-w-md mx-auto pb-8">
-          Wallet funds are outside Elora. Capital begins after deposit.
+          Wallet funds are outside Elora. Capital enters when deposited.
         </p>
       </div>
       )}
