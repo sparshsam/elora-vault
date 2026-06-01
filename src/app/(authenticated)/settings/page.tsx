@@ -155,7 +155,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Base Account Roadmap */}
+      {/* Infrastructure */}
       <div className="mb-10">
         <div className="flex items-center gap-2 mb-4">
           <Shield className="h-4 w-4 text-text-tertiary" />
@@ -163,27 +163,55 @@ export default function SettingsPage() {
             Infrastructure
           </h2>
         </div>
-        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-text-primary mb-0.5">
-                Base Account
-              </p>
-              <p className="text-small text-text-tertiary">
-                Future account infrastructure for calmer self-custody.
-              </p>
-              <p className="text-tiny text-text-muted mt-2 leading-relaxed">
-                Elora currently uses external wallet connections. Base Account
-                support is being explored to reduce wallet friction while
-                preserving ownership.
-              </p>
+        <div className="space-y-3">
+          {/* Base Account */}
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-primary mb-0.5">
+                  Base Account
+                </p>
+                <p className="text-small text-text-tertiary">
+                  Future account infrastructure for calmer self-custody.
+                </p>
+                <p className="text-tiny text-text-muted mt-2 leading-relaxed">
+                  Elora currently uses external wallet connections. Base Account
+                  support is being explored to reduce wallet friction while
+                  preserving ownership.
+                </p>
+              </div>
+              <a
+                href="/settings/base-account-lab"
+                className="shrink-0 rounded-lg border border-green-200 bg-green-50 text-green-700 px-3 py-1.5 text-tiny font-medium hover:bg-green-100 transition-colors"
+              >
+                Open lab
+              </a>
             </div>
-            <a
-              href="/settings/base-account-lab"
-              className="shrink-0 rounded-lg border border-green-200 bg-green-50 text-green-700 px-3 py-1.5 text-tiny font-medium hover:bg-green-100 transition-colors"
-            >
-              Open lab
-            </a>
+          </div>
+
+          {/* Productive Protection Research */}
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-primary mb-0.5">
+                  Productive Protection
+                </p>
+                <p className="text-small text-text-tertiary">
+                  Future optional low-risk yield for protected capital.
+                </p>
+                <p className="text-tiny text-text-muted mt-2 leading-relaxed">
+                  Protected capital may eventually support optional low-risk
+                  productivity while remaining separated. This is a research
+                  surface — no yield strategies are active.
+                </p>
+              </div>
+              <a
+                href="/settings/productive-protection"
+                className="shrink-0 rounded-lg border border-border bg-surface-subtle text-text-secondary px-3 py-1.5 text-tiny font-medium hover:text-text-primary hover:bg-surface-hover transition-colors"
+              >
+                View research
+              </a>
+            </div>
           </div>
         </div>
       </div>

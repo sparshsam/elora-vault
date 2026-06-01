@@ -14,9 +14,16 @@ import {
   Timer,
   Shield,
   TrendingUp,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import {
+  DelayedReleaseDemo,
+  ScheduledReleaseDemo,
+  ReviewedReleaseDemo,
+  StagedReleaseDemo,
+} from "@/components/capital/delayed-release-mocks";
 
 /* ── Summary Icons ────────────────────────── */
 
@@ -429,6 +436,84 @@ export default function IntentPage() {
 
         {/* ── Empty state ── */}
         {!hasContent && <EmptyState />}
+
+        {/* ── Delayed Release Previews (research concepts) ── */}
+        <div className="mt-12 mb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Calendar className="h-4 w-4 text-text-tertiary" />
+            <h2 className="text-sm font-medium text-text-primary">
+              Future release options
+            </h2>
+            <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-tiny text-text-muted ml-auto">
+              research
+            </span>
+          </div>
+          <p className="text-tiny text-text-tertiary mb-6 leading-relaxed">
+            Protected capital release could support intentional timing.
+            These are architectural concepts — not yet available.
+          </p>
+        </div>
+
+        <div className="space-y-8 mb-8">
+          {/* Delayed release — 12-hour window */}
+          <div className="rounded-xl border border-dashed border-border bg-surface-subtle/30 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="h-3.5 w-3.5 text-text-muted" />
+              <span className="text-tiny font-medium uppercase tracking-wider text-text-tertiary">
+                Delayed release
+              </span>
+            </div>
+            <p className="text-tiny text-text-tertiary mb-4">
+              Capital becomes available after a fixed waiting period.
+              No further action required after confirmation.
+            </p>
+            <DelayedReleaseDemo />
+          </div>
+
+          {/* Scheduled release — pick the time */}
+          <div className="rounded-xl border border-dashed border-border bg-surface-subtle/30 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="h-3.5 w-3.5 text-text-muted" />
+              <span className="text-tiny font-medium uppercase tracking-wider text-text-tertiary">
+                Scheduled release
+              </span>
+            </div>
+            <p className="text-tiny text-text-tertiary mb-4">
+              Choose the exact moment capital becomes available.
+            </p>
+            <ScheduledReleaseDemo />
+          </div>
+
+          {/* Reviewed release — reflection period */}
+          <div className="rounded-xl border border-dashed border-border bg-surface-subtle/30 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="h-3.5 w-3.5 text-text-muted" />
+              <span className="text-tiny font-medium uppercase tracking-wider text-text-tertiary">
+                Reviewed release
+              </span>
+            </div>
+            <p className="text-tiny text-text-tertiary mb-4">
+              Confirm intent, then reflect. Cancel during the review
+              period if your plans have changed.
+            </p>
+            <ReviewedReleaseDemo />
+          </div>
+
+          {/* Staged release — gradual return */}
+          <div className="rounded-xl border border-dashed border-border bg-surface-subtle/30 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <ArrowRight className="h-3.5 w-3.5 text-text-muted" />
+              <span className="text-tiny font-medium uppercase tracking-wider text-text-tertiary">
+                Staged release
+              </span>
+            </div>
+            <p className="text-tiny text-text-tertiary mb-4">
+              Capital returns in tranches over time. Each portion becomes
+              available automatically.
+            </p>
+            <StagedReleaseDemo />
+          </div>
+        </div>
       </div>
 
       {/* ── Release Confirmation Modal ── */}
