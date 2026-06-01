@@ -127,7 +127,7 @@ External wallet balance is intentionally excluded from `totalEloraCapital`.
 | **Sessions / Predictions** | Log predictions, commit capital, calculate potential return, settle outcomes, and protect profit. |
 | **Activity** | Chronological record of deposits, protections, releases, withdrawals, and prediction events. |
 | **Intent** | Decision layer for release confirmations, protection opportunities, and deliberate capital movement. |
-| **Settings** | Account and application controls. |
+| **Settings** | Account and application controls, including future Base Account direction. |
 
 ---
 
@@ -149,9 +149,41 @@ External wallet balance is intentionally excluded from `totalEloraCapital`.
 | **Post-Win Protection** — protect profit or full return into a horizon | ✅ Live |
 | **Activity Timeline** — live capital and prediction event feed | ✅ Live |
 | **Intent Layer** — protection opportunities and release decisions | ✅ Live |
+| **Base Account Roadmap Foundation** — future account abstraction layer preparation | ✅ Live |
 | **Supabase Persistence** — users, wallet state, predictions, sessions, locks, transactions | ✅ Live |
 | **Responsive Layout** — desktop and mobile navigation | ✅ Live |
 | **AGPLv3 License** — open-source distribution | ✅ Live |
+
+---
+
+## Base Account Direction
+
+Elora is intentionally moving toward quieter self-custody.
+
+Today, the app uses external wallet infrastructure through RainbowKit, wagmi, and Base Sepolia wallet connections.
+
+Long-term, Elora is being architected toward a Base Account model where:
+
+- ownership remains self-custodied
+- wallet friction is reduced
+- protection flows become calmer and less technical
+- onchain permanence exists underneath a simple interface
+
+The goal is not to make users think about crypto more.
+The goal is to let Base quietly handle ownership, settlement, and permanence beneath a calm behavioral capital system.
+
+Current architecture preparation:
+
+```text
+src/lib/account/account-strategy.ts
+```
+
+This abstraction layer introduces future support for:
+
+- external-wallet
+- base-account
+
+while keeping today’s production flows stable.
 
 ---
 
@@ -237,6 +269,7 @@ src/
 │   └── ui/                 → shared interface primitives
 ├── contracts/              → ProtectedVault Solidity contract
 ├── lib/
+│   ├── account/            → future account strategy abstractions
 │   ├── capital-state.ts    → canonical capital state model
 │   ├── web3/               → contract read/write hooks
 │   ├── contracts/          → ABIs and contract config
@@ -246,66 +279,6 @@ src/
 │   └── schema.prisma       → data model
 └── middleware.ts           → auth protection
 ```
-
----
-
-## Database Concepts
-
-The schema is evolving, but the main product entities are:
-
-| Entity | Purpose |
-|---|---|
-| **User** | Authenticated Supabase user mapped into app data. |
-| **Wallet** | User-level capital accounting, including available and committed balances. |
-| **VaultLock** | A protected horizon with amount, duration, release timing, and ownership. |
-| **Bet / Prediction** | A private prediction record with odds, stake, potential return, and settlement status. |
-| **Session** | Optional behavioral context around prediction activity. |
-| **Transaction** | Activity feed events for deposits, protections, releases, withdrawals, and prediction outcomes. |
-
-Backward-compatible database names may still use `Bet` or `at_risk_balance` internally while the user-facing product language moves toward Predictions and Committed Capital.
-
----
-
-## Smart Contract Model
-
-`ProtectedVault.sol` is the onchain protection layer for USDC vault actions.
-
-Core properties:
-
-- Self-custodied USDC vault behavior
-- Timed capital locks / horizons
-- No pooled treasury assumption in the product model
-- No admin withdrawal UX
-- User-specific balances and lock state
-- Base Sepolia deployment for current testing
-
-Core actions:
-
-```text
-deposit USDC
-create protection horizon
-release eligible horizon
-withdraw available capital
-```
-
----
-
-## Base-Native Mission
-
-Elora’s long-term direction is to become a fully Base-native behavioral capital app.
-
-That means Base is not an add-on or branding layer. It is the settlement, custody, account, and composability foundation for the product.
-
-Planned Base-native evolution:
-
-- **Base Account / smart-wallet UX** — reduce wallet friction while keeping self-custody intact
-- **Gas abstraction where appropriate** — make protection flows feel calm and non-technical
-- **Onchain activity provenance** — capital movement should be independently verifiable
-- **Deeper contract-backed horizons** — protection periods should become durable onchain commitments
-- **Base-native USDC flows** — keep the core product focused on simple, understandable capital movement
-- **Optional future yield layers** — only if risk, custody, and UX remain aligned with Elora’s restraint-first philosophy
-
-The goal is not to make users think about crypto more. The goal is to make Base quietly handle ownership, settlement, and permanence underneath a simple capital interface.
 
 ---
 
@@ -324,23 +297,23 @@ The product should feel less like a dashboard and more like a calm financial ope
 Near-term priorities:
 
 - Complete prediction terminology migration across code and UI
-- Improve homepage positioning and public product narrative
 - Build richer horizon detail surfaces
 - Strengthen Activity event indexing and reconciliation
 - Improve Intent protection opportunities and release decisions
 - Add clearer empty states and first-run onboarding
 - Transition wallet UX toward Base Account / smart-wallet infrastructure
 - Continue moving Elora toward a fully Base-native app architecture
+- Explore productive protection / low-risk yield for protected USDC
 
 Future explorations:
 
 - Named horizons
 - Longitudinal capital memory
-- Optional rules for automatic post-profit protection
-- Base-native account abstraction
 - Quiet gas abstraction and sponsored protection flows
-- Contract-level horizon improvements
-- Yield strategies for protected USDC, only if aligned with the product’s calm-risk philosophy
+- Base-native account abstraction
+- Productive protected capital strategies
+- Optional rules for automatic post-profit protection
+- Yield strategies aligned with Elora’s restraint-first philosophy
 
 ---
 
