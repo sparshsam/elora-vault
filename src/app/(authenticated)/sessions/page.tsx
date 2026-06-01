@@ -755,7 +755,7 @@ export default function SessionsPage() {
             <div>
               <h1 className="text-display text-text-primary">Sessions</h1>
               <p className="text-body text-text-secondary mt-1">
-                Track predictions, manage committed capital, and settle outcomes.
+                Track predictions and settle outcomes.
               </p>
             </div>
             <button
@@ -775,7 +775,7 @@ export default function SessionsPage() {
           <SummaryCard label="Active" value={String(summary.activeCount)} subtext="Awaiting settlement" iconKey="open" />
           <SummaryCard label="Potential Return" value={`$${formatUSD(summary.potentialReturn)}`} subtext="If active predictions win" iconKey="potential" />
           <SummaryCard
-            label="Settled P/L"
+            label="Net result"
             value={`${summary.settledPnl >= 0 ? "+" : ""}$${formatUSD(summary.settledPnl)}`}
             subtext="Net from settled predictions"
             iconKey="settled"

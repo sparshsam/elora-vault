@@ -285,7 +285,7 @@ export default function ActivityPage() {
         <div className="mb-8">
           <h1 className="text-display text-text-primary">Activity</h1>
           <p className="text-body text-text-secondary mt-1">
-            A quiet record of how your capital moves, protects, predicts, and returns.
+            A quiet record of how your capital moves and returns.
           </p>
         </div>
 
@@ -295,7 +295,7 @@ export default function ActivityPage() {
           <SummaryCard
             label={`Active Horizon${capital.activeHorizonCount === 1 ? "" : "s"}`}
             value={String(capital.activeHorizonCount)}
-            subtext="Protection periods active"
+            subtext="Horizons active"
             iconType="locks"
           />
           <SummaryCard label="Committed" value={`$${capital.formatted.committed}`} subtext="Capital in active predictions" iconType="released" />

@@ -99,7 +99,7 @@ export default function PoliciesPage() {
         {/* ═══════════════════════════════════════ */}
         {/* SUMMARY CARDS                         */}
         {/* ═══════════════════════════════════════ */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <SummaryCard
             label="Active Policies"
             value={activeCount}
@@ -109,18 +109,6 @@ export default function PoliciesPage() {
             label="Draft Policies"
             value={draftCount}
             color="muted"
-          />
-          <SummaryCard
-            label="Delayed Releases"
-            value={0}
-            color="muted"
-            subtitle="Not yet active"
-          />
-          <SummaryCard
-            label="Reflection Rules"
-            value={0}
-            color="muted"
-            subtitle="Not yet active"
           />
         </div>
 
@@ -178,8 +166,8 @@ export default function PoliciesPage() {
         {/* CALM FOOTER                           */}
         {/* ═══════════════════════════════════════ */}
         <p className="text-tiny text-text-muted text-center leading-relaxed max-w-md mx-auto pb-8">
-          Policies describe how capital should behave. They do not move funds
-          automatically yet — this is the beginning of a behavioral engine.
+          Policies describe how capital should behave. They define intentions —
+          execution is a separate layer.
         </p>
       </div>
 

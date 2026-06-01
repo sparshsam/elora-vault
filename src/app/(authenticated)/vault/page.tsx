@@ -102,7 +102,7 @@ export default function VaultPage() {
               Elora Capital
             </h2>
             <p className="text-small text-text-tertiary mt-0.5">
-              Capital currently inside Elora.
+              Capital inside Elora.
             </p>
           </div>
 
@@ -214,7 +214,7 @@ export default function VaultPage() {
               amount={capital.formatted.releasing}
               description={
                 hasReleasing
-                  ? "Protected capital returning to availability."
+                  ? "Capital returning to availability."
                   : "No active releases."
               }
             >
@@ -242,7 +242,7 @@ export default function VaultPage() {
                 state="committed"
                 label="Committed"
                 amount={capital.formatted.committed}
-                description="Capital allocated to active predictions."
+                description="Capital in active predictions."
               >
                 <Link
                   href="/sessions"
@@ -257,12 +257,8 @@ export default function VaultPage() {
         </div>
 
         {/* ── Explanatory footer ── */}
-        <p className="text-tiny text-text-muted text-center leading-relaxed max-w-md mx-auto">
-          Wallet funds are outside Elora. Elora Capital begins after deposit.
-        </p>
-
-        <p className="text-tiny text-text-muted text-center pb-8">
-          Four states of capital. One coherent system.
+        <p className="text-tiny text-text-muted text-center leading-relaxed max-w-md mx-auto pb-8">
+          Wallet funds are outside Elora. Capital begins after deposit.
         </p>
       </div>
       )}
