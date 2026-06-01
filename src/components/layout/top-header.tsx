@@ -8,6 +8,7 @@ import { WalletControl } from "@/components/wallet/wallet-control";
 
 const navItems = [
   { href: "/vault", label: "Vault" },
+  { href: "/policies", label: "Policies" },
   { href: "/sessions", label: "Sessions" },
   { href: "/activity", label: "Activity" },
   { href: "/intent", label: "Intent" },
