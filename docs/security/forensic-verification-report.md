@@ -27,8 +27,8 @@
 the Elora Vault restructure). It hardcodes:
 
 ```javascript
-const PRIVATE_KEY = "***KEY-REVOKED***";
-const provider = new ethers.providers.JsonRpcProvider("https://polygon-amoy.g.alchemy.com/v2/***KEY-REVOKED***");
+const PRIVATE_KEY = "&lt;redacted&gt;";
+const provider = new ethers.providers.JsonRpcProvider("https://polygon-amoy.g.alchemy.com/v2/&lt;redacted&gt;");
 ```
 
 This file is NOT in the current HEAD (deleted in a later commit), but

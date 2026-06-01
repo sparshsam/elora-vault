@@ -33,7 +33,7 @@
 
 ## Step 2: Supabase Database Password
 
-**Old password:** `***REDACTED****` (appears in `.env.vercel` history)
+**Old password:** `&lt;redacted&gt;*` (appears in `.env.vercel` history)
 
 - [ ] Log into Supabase dashboard → Database → Settings → Reset database password
 - [ ] Update connection string in:
