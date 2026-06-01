@@ -53,6 +53,8 @@ The product is designed around one simple idea: not every dollar should feel equ
 
 Elora is not a sportsbook, casino, prediction market, or gambling operator. It does not place wagers, provide odds, or connect to live events. Its prediction tools are a private bankroll-accounting layer: users can record decisions, commit capital, settle outcomes, and protect profits into timed horizons.
 
+The mission is to grow Elora into a **fully Base-native behavioral capital app**: self-custodied, account-aware, low-friction, and quietly onchain. Base should become the invisible settlement and account layer beneath a calm financial interface — not the loudest part of the product.
+
 ### What Elora Vault IS
 
 - A self-custodied USDC vault with timed protection horizons
@@ -288,6 +290,25 @@ withdraw available capital
 
 ---
 
+## Base-Native Mission
+
+Elora’s long-term direction is to become a fully Base-native behavioral capital app.
+
+That means Base is not an add-on or branding layer. It is the settlement, custody, account, and composability foundation for the product.
+
+Planned Base-native evolution:
+
+- **Base Account / smart-wallet UX** — reduce wallet friction while keeping self-custody intact
+- **Gas abstraction where appropriate** — make protection flows feel calm and non-technical
+- **Onchain activity provenance** — capital movement should be independently verifiable
+- **Deeper contract-backed horizons** — protection periods should become durable onchain commitments
+- **Base-native USDC flows** — keep the core product focused on simple, understandable capital movement
+- **Optional future yield layers** — only if risk, custody, and UX remain aligned with Elora’s restraint-first philosophy
+
+The goal is not to make users think about crypto more. The goal is to make Base quietly handle ownership, settlement, and permanence underneath a simple capital interface.
+
+---
+
 ## Design Philosophy
 
 Elora is intentionally restrained.
@@ -308,7 +329,8 @@ Near-term priorities:
 - Strengthen Activity event indexing and reconciliation
 - Improve Intent protection opportunities and release decisions
 - Add clearer empty states and first-run onboarding
-- Prepare Base Account / smart-wallet integration as quiet infrastructure
+- Transition wallet UX toward Base Account / smart-wallet infrastructure
+- Continue moving Elora toward a fully Base-native app architecture
 
 Future explorations:
 
@@ -316,6 +338,8 @@ Future explorations:
 - Longitudinal capital memory
 - Optional rules for automatic post-profit protection
 - Base-native account abstraction
+- Quiet gas abstraction and sponsored protection flows
+- Contract-level horizon improvements
 - Yield strategies for protected USDC, only if aligned with the product’s calm-risk philosophy
 
 ---
