@@ -12,8 +12,19 @@ import {
 } from "@/lib/account/base-account-client";
 import type { LabStep } from "@/lib/account/base-account-client";
 import { AccountCapabilityPanel } from "@/components/account/account-capability-panel";
+import { AccountModeTable } from "@/components/account/account-mode-table";
+import { useWalletCapabilities } from "@/hooks/use-wallet-capabilities";
 import { cn } from "@/lib/utils";
-import { ArrowRight, CheckCircle, AlertCircle, Clock, ArrowDown } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  ArrowDown,
+  Target,
+  Info,
+  Shield,
+} from "lucide-react";
 
 /* ── Helpers ───────────────────────────────── */
 
@@ -25,6 +36,7 @@ function shortenAddress(addr: string): string {
 /* ── Page ──────────────────────────────────── */
 
 export default function BaseAccountLabPage() {
+  const caps = useWalletCapabilities();
   const [logs, setLogs] = useState<LabStep[]>([]);
   const [universalAddress, setUniversalAddress] = useState<string | null>(null);
   const [subAccountAddress, setSubAccountAddress] = useState<string | null>(null);
@@ -56,7 +68,6 @@ export default function BaseAccountLabPage() {
         addLog("connected", `Connected. Account: ${shortenAddress(accounts[0])}`);
         addLog("universal-detected", `Universal Account: ${accounts[0]}`);
 
-        // Check for existing sub-account
         const existing = await getExistingSubAccount();
         if (existing?.address) {
           setSubAccountAddress(existing.address);
@@ -110,7 +121,7 @@ export default function BaseAccountLabPage() {
     setLogs([]);
   }, []);
 
-  const sdkInitialized = true; // SDK is a singleton, init is idempotent
+  const sdkInitialized = true;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 md:py-12">
@@ -129,58 +140,57 @@ export default function BaseAccountLabPage() {
           Test area — production unaffected
         </p>
         <p className="text-tiny text-amber-600/80 mt-1">
-          Current wallet flows remain unchanged. This page only tests future Base
+          Current wallet flows remain unchanged. This page only explores future Base
           Account support. No real vault transactions are sent from this page.
         </p>
       </div>
 
-      {/* ── Controls ── */}
+      {/* ═══════════════════════════════════════ */}
+      {/* CAPABILITY OVERVIEW                     */}
+      {/* ═══════════════════════════════════════ */}
       <div className="space-y-4 mb-8">
-        {/* Init + Connect row */}
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={handleInit}
-            disabled={!sdkInitialized}
-            className="rounded-lg bg-green-500 text-white px-4 py-2 text-small font-medium hover:bg-green-600 shadow-sm transition-colors disabled:opacity-50"
-          >
-            Init SDK
-          </button>
-          <button
-            type="button"
-            onClick={handleConnect}
-            disabled={connecting}
-            className="rounded-lg bg-green-500 text-white px-4 py-2 text-small font-medium hover:bg-green-600 shadow-sm transition-colors disabled:opacity-50"
-          >
-            {connecting ? "Connecting..." : "Connect Base Account"}
-          </button>
-          <button
-            type="button"
-            onClick={handleCreateSubAccount}
-            disabled={creatingSub || !universalAddress}
-            className="rounded-lg border border-green-200 bg-green-50 text-green-700 px-4 py-2 text-small font-medium hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {creatingSub ? "Creating..." : "Create Sub Account"}
-          </button>
-          <button
-            type="button"
-            onClick={handleDisconnect}
-            disabled={!universalAddress}
-            className="rounded-lg border border-border bg-surface-subtle text-text-secondary px-4 py-2 text-small font-medium hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Disconnect
-          </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="rounded-lg border border-border bg-surface-subtle text-text-muted px-4 py-2 text-tiny font-medium hover:text-text-secondary transition-colors"
-          >
-            Reset
-          </button>
-        </div>
+        <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary flex items-center gap-2">
+          <Shield className="h-3.5 w-3.5" />
+          Wallet Infrastructure
+        </h2>
+
+        <AccountCapabilityPanel />
+
+        {/* Wallet type guide — shown when connected */}
+        {caps.isConnected && (
+          <div className="rounded-xl border border-border bg-surface-subtle p-4">
+            <div className="flex items-start gap-2">
+              <Info className="h-3.5 w-3.5 text-text-tertiary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-tiny font-medium text-text-primary">
+                  {caps.walletType === "eoa"
+                    ? "EOA detected — fallback mode active"
+                    : caps.walletType === "base-account"
+                      ? "Base Account detected — progressive enhancement ready"
+                      : caps.walletType === "smart-wallet"
+                        ? "Smart wallet detected — batching available"
+                        : "Wallet type undetermined"}
+                </p>
+                <p className="text-tiny text-text-tertiary mt-1 leading-relaxed">
+                  {caps.walletType === "eoa"
+                    ? "External wallets work with Elora through direct-wallet mode. Batch execution, paymaster sponsorship, and sub-account flows are unavailable until a compatible smart wallet or Base Account is connected."
+                    : caps.walletType === "base-account"
+                      ? "Base Account detected. All execution modes are available for exploration in this lab. Production migration requires capability confirmation and a phased rollout."
+                      : caps.walletType === "smart-wallet"
+                        ? "Smart wallet detected. Atomic batching is available. Paymaster sponsorship and sub-account flows require additional capability confirmation."
+                        : "Connect a wallet to determine capability support."}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <AccountModeTable />
       </div>
 
-      {/* ── Account State ── */}
+      {/* ═══════════════════════════════════════ */}
+      {/* ACCOUNT STATE                          */}
+      {/* ═══════════════════════════════════════ */}
       <div className="rounded-xl border border-border bg-surface shadow-sm p-5 mb-8">
         <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary mb-4">
           Account State
@@ -229,26 +239,90 @@ export default function BaseAccountLabPage() {
             <span className="text-tiny text-text-tertiary">Chain</span>
             <span className="text-small text-text-primary">Base Sepolia (84532)</span>
           </div>
+          {caps.isConnected && caps.address && (
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              <span className="text-tiny text-text-tertiary">Connected wallet</span>
+              <span className="text-small font-mono text-text-muted">
+                {shortenAddress(caps.address)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── Capability Diagnostics ── */}
+      {/* ═══════════════════════════════════════ */}
+      {/* SDK CONTROLS                            */}
+      {/* ═══════════════════════════════════════ */}
       <div className="mb-8">
         <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary mb-4 flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5" />
-          Wallet Diagnostics
+          <Target className="h-3.5 w-3.5" />
+          Base Account SDK controls
         </h2>
-        <AccountCapabilityPanel />
+
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleInit}
+              disabled={!sdkInitialized}
+              className="rounded-lg bg-green-500 text-white px-4 py-2 text-small font-medium hover:bg-green-600 shadow-sm transition-colors disabled:opacity-50"
+            >
+              Init SDK
+            </button>
+            <button
+              type="button"
+              onClick={handleConnect}
+              disabled={connecting}
+              className="rounded-lg bg-green-500 text-white px-4 py-2 text-small font-medium hover:bg-green-600 shadow-sm transition-colors disabled:opacity-50"
+            >
+              {connecting ? "Connecting..." : "Connect Base Account"}
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateSubAccount}
+              disabled={creatingSub || !universalAddress}
+              className="rounded-lg border border-green-200 bg-green-50 text-green-700 px-4 py-2 text-small font-medium hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creatingSub ? "Creating..." : "Create Sub Account"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDisconnect}
+              disabled={!universalAddress}
+              className="rounded-lg border border-border bg-surface-subtle text-text-secondary px-4 py-2 text-small font-medium hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Disconnect
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="rounded-lg border border-border bg-surface-subtle text-text-muted px-4 py-2 text-tiny font-medium hover:text-text-secondary transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* ── Status Log ── */}
+      {/* ═══════════════════════════════════════ */}
+      {/* STATUS LOG                              */}
+      {/* ═══════════════════════════════════════ */}
       <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
         <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary mb-4 flex items-center gap-2">
           <Clock className="h-3.5 w-3.5" />
           Status Log
         </h2>
         {logs.length === 0 ? (
-          <p className="text-tiny text-text-muted">No activity yet. Click a button above to begin.</p>
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface-subtle">
+              <Clock className="h-4 w-4 text-text-tertiary" />
+            </div>
+            <p className="text-small text-text-tertiary">No activity yet.</p>
+            <p className="text-tiny text-text-muted mt-1 max-w-xs">
+              Start by initializing the SDK, then connect to explore Base
+              Account capabilities.
+            </p>
+          </div>
         ) : (
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {logs.map((log, i) => (

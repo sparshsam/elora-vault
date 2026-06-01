@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { useCapitalState } from "@/lib/capital-state";
-import { useUSDCBalance } from "@/lib/web3/tx-hooks";
 import { useWalletStore } from "@/store/useWalletStore";
 import { PageShell } from "@/components/layout/page-shell";
 import { VaultSkeleton } from "@/components/vault/vault-skeleton";
@@ -18,7 +17,6 @@ import { cn } from "@/lib/utils";
 export default function VaultPage() {
   const { isConnected } = useAccount();
   const capital = useCapitalState();
-  const { balance: walletBalance } = useUSDCBalance();
   const { syncFromServer } = useWalletStore();
 
   // ── Modal state ──
@@ -77,7 +75,7 @@ export default function VaultPage() {
                 Connected Wallet
               </p>
               <p className="text-[22px] font-light tabular-nums text-text-primary">
-                ${(!walletBalance || isNaN(walletBalance) ? 0 : walletBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+                ${capital.formatted.walletBalance} USDC
               </p>
               <p className="text-small text-text-tertiary mt-1">
                 Outside Elora.
