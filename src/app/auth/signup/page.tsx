@@ -84,7 +84,7 @@ export default function SignupPage() {
               Create your vault
             </h1>
             <p className="text-body text-text-secondary mt-1.5">
-              Discipline starts with a single step.
+              Protect capital with clearer separation.
             </p>
           </div>
 
@@ -138,7 +138,7 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-lg text-small font-medium transition-all shadow-sm disabled:opacity-50"
             >
-              {loading ? "Creating vault..." : "Create vault"}
+              {loading ? "Creating your vault..." : "Create your vault"}
             </Button>
           </form>
 
@@ -158,7 +158,7 @@ export default function SignupPage() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <p className="text-tiny text-text-muted">
-            Elora Vault &mdash; Behavioral capital infrastructure
+            Elora Vault - Behavioral capital infrastructure
           </p>
         </div>
       </footer>
