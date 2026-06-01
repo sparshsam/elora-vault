@@ -10,7 +10,7 @@ import {
   readPolicyActivity,
   type PolicyActivityEvent,
 } from "@/lib/policies/policy-suggestions";
-import { Plus, FileText, ClipboardList } from "lucide-react";
+import { FileText, ClipboardList } from "lucide-react";
 
 export default function PoliciesPage() {
   const [policies, setPolicies] = useState<ProtectionPolicy[]>([]);

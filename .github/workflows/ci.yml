@@ -7,7 +7,12 @@ on:
     branches: [main]
 
 env:
-  NODE_VERSION: "22"
+  NODE_VERSION: "22.x"
+  NPM_VERSION: "11.12.1"
+  CI_DATABASE_URL: "postgresql://placeholder:password@localhost:5432/elora"
+  CI_SUPABASE_URL: "https://placeholder.supabase.co"
+  CI_PLACEHOLDER_KEY: "placeholder-key"
+  CI_WALLETCONNECT_PROJECT_ID: "00000000000000000000000000000000"
 
 jobs:
   lint-and-typecheck:
@@ -23,7 +28,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install -g npm@latest
+          npm install -g npm@${{ env.NPM_VERSION }}
           npm ci
 
       - name: Generate Prisma client
@@ -31,6 +36,9 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+      - name: Run TypeScript
+        run: npm run typecheck
 
   build:
     name: Build
@@ -46,7 +54,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install -g npm@latest
+          npm install -g npm@${{ env.NPM_VERSION }}
           npm ci
 
       - name: Generate Prisma client
@@ -55,12 +63,12 @@ jobs:
       - name: Build Next.js
         run: npm run build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://placeholder:password@localhost:5432/elora' }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL || 'postgresql://placeholder:password@localhost:5432/elora' }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || env.CI_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL || env.CI_DATABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || env.CI_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.CI_PLACEHOLDER_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || env.CI_PLACEHOLDER_KEY }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://localhost:3000' }}
-          NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '210cfeb8b04cb510271414fb54157799' }}
+          NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || env.CI_WALLETCONNECT_PROJECT_ID }}
           NEXT_PUBLIC_BASE_RPC_URL: ${{ secrets.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org' }}
           NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL: ${{ secrets.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org' }}

@@ -1,25 +1,19 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "🔍 Checking staged files for secrets..."
+blocked_files='(^|/)(\.env($|\.|_)|\.env\.production$|\.env\.vercel$|vercel-env\.txt$|SECURITY_NOTES\.md$)'
+blocked_patterns='(PRIVATE_KEY=|SUPABASE_SERVICE_ROLE_KEY=|DATABASE_URL=postgresql://|DIRECT_URL=postgresql://|VERCEL_OIDC_TOKEN=|ALCHEMY_RPC_URL=.*alchemy\.com/v2/|0x[0-9a-fA-F]{64}|gh[pousr]_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+)'
 
-# Block .env files that should never be committed
-ENV_BLOCKLIST="\.env\.(production|vercel|staging)$"
-if git diff --cached --name-only | grep -qE "$ENV_BLOCKLIST"; then
-  echo "❌ ERROR: Blocked files in commit:"
-  git diff --cached --name-only | grep -E "$ENV_BLOCKLIST"
-  echo ""
-  echo "These files contain sensitive credentials and must not be committed."
-  echo "Remove them from staging with: git restore --staged <file>"
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if printf '%s\n' "$staged_files" | grep -E "$blocked_files" >/dev/null; then
+  echo "Blocked commit: secret-bearing environment or incident files must not be committed."
+  printf '%s\n' "$staged_files" | grep -E "$blocked_files"
   exit 1
 fi
 
-# Warn about potential private keys (64-char hex strings)
-if git diff --cached -U0 | grep -E '^\+.*[0-9a-f]{64}' | grep -vE '(test|mock|placeholder|0x[a-f0-9]{40})' > /dev/null 2>&1; then
-  echo "⚠️  WARNING: Possible private key detected in diff."
-  echo "   Review before pushing:"
-  git diff --cached -U0 | grep -E '^\+.*[0-9a-f]{64}' | head -5
-  echo ""
+if git diff --cached --unified=0 --no-ext-diff -- . ':!package-lock.json' | grep -E "$blocked_patterns" >/dev/null; then
+  echo "Blocked commit: staged diff appears to contain a credential or token pattern."
+  echo "Move secrets to Vercel/GitHub/Supabase secret stores and commit placeholders only."
+  exit 1
 fi
-
-echo "✅ Pre-commit checks passed"

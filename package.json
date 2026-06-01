@@ -2,6 +2,7 @@
   "name": "elora-vault",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@11.12.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -60,6 +61,7 @@
     "typescript": "^5"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.0.0 <25.0.0",
+    "npm": ">=10.0.0"
   }
 }
