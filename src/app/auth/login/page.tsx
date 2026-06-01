@@ -148,7 +148,7 @@ export default function LoginPage() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <p className="text-tiny text-text-muted">
-            Elora Vault &mdash; Behavioral capital infrastructure
+            Elora Vault - Behavioral capital infrastructure
           </p>
         </div>
       </footer>

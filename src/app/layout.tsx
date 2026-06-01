@@ -8,13 +8,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Elora Vault — Protected Capital Vault",
+  title: "Elora Vault - Behavioral Capital Infrastructure",
   description:
-    "Elora Vault is a self-custodied behavioral savings vault on Base. Connect your wallet to protect future capital. Losses become saved capital.",
+    "Elora Vault helps separate available capital from protected capital for intentional capital management.",
   openGraph: {
-    title: "Elora Vault — Protected Capital Vault",
+    title: "Elora Vault - Behavioral Capital Infrastructure",
     description:
-      "Self-custodied behavioral savings vault on Base. Losses become protected future capital.",
+      "Capital separation infrastructure for intentional capital management.",
     url: "https://elora-vault.vercel.app",
     siteName: "Elora Vault",
     type: "website",
@@ -22,9 +22,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Elora Vault — Protected Capital Vault",
+    title: "Elora Vault - Behavioral Capital Infrastructure",
     description:
-      "Self-custodied behavioral savings vault on Base. Losses become protected future capital.",
+      "Capital separation infrastructure for intentional capital management.",
   },
 };
 

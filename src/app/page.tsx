@@ -83,9 +83,9 @@ export default function LandingPage() {
             Separate availability from protection
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-body text-text-secondary">
-            Three clear categories. No ambiguity about what your capital is doing.
+            A clear distinction between capital you can use now and capital you have chosen to keep apart.
           </p>
-          <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+          <div className="mx-auto mt-16 grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
             {/* Available */}
             <div className="rounded-xl border border-border bg-surface shadow-sm p-8 transition-all duration-300 hover:border-border-hover hover:shadow-md">
               <h3 className="text-heading mb-2 text-text-primary">Available</h3>
@@ -98,13 +98,6 @@ export default function LandingPage() {
               <h3 className="text-heading mb-2 text-green-700">Protected</h3>
               <p className="text-body leading-relaxed text-text-secondary">
                 Capital intentionally separated from impulse.
-              </p>
-            </div>
-            {/* Releasing */}
-            <div className="rounded-xl border border-amber-200/20 bg-amber-50/20 shadow-sm p-8 transition-all duration-300 hover:shadow-md">
-              <h3 className="text-heading mb-2 text-text-primary">Releasing</h3>
-              <p className="text-body leading-relaxed text-text-secondary">
-                Protected capital becoming available again.
               </p>
             </div>
           </div>
@@ -151,7 +144,7 @@ export default function LandingPage() {
               Invisible when not.
             </p>
             <p className="mt-3 text-tiny text-text-tertiary">
-              Built on Base. Self-custodied by design.
+              Behavioral capital infrastructure for intentional separation.
             </p>
           </div>
         </PageShell>
@@ -178,7 +171,7 @@ export default function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <p className="text-tiny text-text-muted">
-            Elora — Behavioral capital infrastructure
+            Elora - Behavioral capital infrastructure
           </p>
         </div>
       </footer>
