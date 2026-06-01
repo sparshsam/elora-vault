@@ -12,6 +12,7 @@ const navItems = [
   { href: "/sessions", label: "Sessions" },
   { href: "/activity", label: "Activity" },
   { href: "/intent", label: "Intent" },
+  { href: "/insights", label: "Insights" },
 ];
 
 export function TopHeader() {

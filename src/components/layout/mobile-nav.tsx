@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Shield, History, Target, BookOpen, Settings, FileText } from "lucide-react";
+import { Shield, History, Target, BookOpen, Settings, FileText, Activity } from "lucide-react";
 
 const primaryItems = [
   { href: "/vault", label: "Vault", icon: Shield },
@@ -11,6 +11,7 @@ const primaryItems = [
   { href: "/sessions", label: "Sessions", icon: BookOpen },
   { href: "/activity", label: "Activity", icon: History },
   { href: "/intent", label: "Intent", icon: Target },
+  { href: "/insights", label: "Insights", icon: Activity },
 ];
 
 export function MobileNav() {
