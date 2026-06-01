@@ -187,6 +187,34 @@ while keeping today’s production flows stable.
 
 ---
 
+## Base-Native Infrastructure
+
+Elora is preparing support for Base-native attribution infrastructure to better understand how protected capital systems are used onchain.
+
+### Builder Code Attribution
+
+Elora supports optional [Builder Codes](https://docs.base.org/builder-codes) — app-specific identifiers registered with Base's onchain attribution registry. When configured, onchain transactions can include an ERC-8021 data suffix that attributes activity to Elora without modifying transaction execution.
+
+Key properties:
+
+- **No smart contract changes required** — attribution is purely an append to existing transaction calldata
+- **Attribution does not affect execution** — the data suffix is informational metadata, not executable logic
+- **Fully optional** — if `NEXT_PUBLIC_BASE_BUILDER_CODE` is not set, no attribution occurs
+
+Current preparation:
+
+```text
+src/lib/base/builder-code.ts    → Builder Code helper (getBuilderCode, getBuilderDataSuffix, hasBuilderCode)
+```
+
+### Ecosystem Participation
+
+Builder Code attribution lays the groundwork for future [Base.dev](https://base.dev) ecosystem analytics and rewards participation. By attributing onchain activity, Elora can gain visibility into how its capital protection system is used without adding dashboards, charts, or gamification to the product.
+
+This infrastructure is intentionally invisible to users — it operates entirely behind the scenes and has no impact on wallet UX, vault flows, or capital movement.
+
+---
+
 ## Quick Start
 
 ```bash
@@ -298,6 +326,7 @@ Near-term priorities:
 - Strengthen Activity event indexing and reconciliation
 - Improve Intent protection opportunities and release decisions
 - Add clearer empty states and first-run onboarding
+- Wire Builder Code attribution into production write calls
 - Transition wallet UX toward Base Account / smart-wallet infrastructure
 - Continue moving Elora toward a fully Base-native app architecture
 - Explore productive protection / low-risk yield for protected USDC
@@ -308,6 +337,7 @@ Future explorations:
 - Longitudinal capital memory
 - Quiet gas abstraction and sponsored protection flows
 - Base-native account abstraction
+- Base.dev ecosystem analytics and rewards participation
 - Productive protected capital strategies
 - Optional rules for automatic post-profit protection
 - Yield strategies aligned with Elora’s restraint-first philosophy
