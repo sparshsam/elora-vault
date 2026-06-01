@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { STORED_TX_TYPES } from "@/lib/transaction-types";
+import { createPredictionSchema, formatZodErrors } from "@/lib/validation";
 
 function calculateProfit(odds: number, stake: number): number {
   if (odds > 0) return stake * odds / 100;
@@ -63,16 +64,16 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { description, odds, stake } = body;
-    const predictionType = body.predictionType ?? body.betType;
+    const parsed = createPredictionSchema.safeParse(body);
 
-    if (!odds || !stake || stake <= 0) {
-      return NextResponse.json({ error: "Missing required fields: odds, stake" }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: formatZodErrors(parsed.error) },
+        { status: 400 },
+      );
     }
 
-    if (stake > 100000) {
-      return NextResponse.json({ error: "Stake exceeds maximum" }, { status: 400 });
-    }
+    const { description, odds, stake, predictionType } = parsed.data;
 
     const profit = calculateProfit(odds, stake);
     const totalReturn = calculateTotalReturn(odds, stake);

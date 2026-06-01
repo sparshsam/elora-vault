@@ -77,7 +77,7 @@ export default function VaultPage() {
                 Connected Wallet
               </p>
               <p className="text-[22px] font-light tabular-nums text-text-primary">
-                ${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+                ${(!walletBalance || isNaN(walletBalance) ? 0 : walletBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
               </p>
               <p className="text-small text-text-tertiary mt-1">
                 Outside Elora.

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { STORED_TX_TYPES } from "@/lib/transaction-types";
+import { protectProfitSchema, formatZodErrors } from "@/lib/validation";
 
 export async function PATCH(
   request: Request,
@@ -13,11 +14,15 @@ export async function PATCH(
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
-    const { amount, durationDays, txHash } = await request.json();
-
-    if (!amount || !durationDays) {
-      return NextResponse.json({ error: "Missing amount or durationDays" }, { status: 400 });
+    const body = await request.json();
+    const parsed = protectProfitSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: formatZodErrors(parsed.error) },
+        { status: 400 },
+      );
     }
+    const { amount, durationDays, txHash } = parsed.data;
 
     const prediction = await prisma.bet.findUnique({ where: { id } });
     if (!prediction) return NextResponse.json({ error: "Prediction not found" }, { status: 404 });
