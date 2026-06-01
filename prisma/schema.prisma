@@ -53,6 +53,7 @@ model User {
   transactions Transaction[]
   vaultLocks VaultLock[]
   sessions  Session[]
+  policies  Policy[]
 }
 
 model Wallet {
@@ -148,6 +149,29 @@ model VaultLock {
 
   transaction Transaction?
   sessions    Session[]
+}
+
+model Policy {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  /// Human-readable name for the policy.
+  title       String
+  /// Policy type identifier (e.g. "protect-profit-percentage")
+  type        String
+  /// Policy lifecycle: "active" | "paused" | "draft"
+  status      String   @default("draft")
+  /// Longer behavioral description (optional).
+  description String?
+
+  /// Trigger conditions stored as JSON: { description, minAmount?, percentageThreshold?, windowHours? }
+  condition   Json
+  /// Action definition stored as JSON: { description, protectPercentage?, delayHours?, thresholdAmount? }
+  action      Json
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Session {
