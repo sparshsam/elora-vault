@@ -6,12 +6,17 @@ import { CreatePolicyModal } from "@/components/policies/create-policy-modal";
 import { PolicyCard } from "@/components/policies/policy-card";
 import { SummaryCard } from "@/components/policies/summary-card";
 import type { ProtectionPolicy } from "@/types/policy";
-import { Plus, FileText } from "lucide-react";
+import {
+  readPolicyActivity,
+  type PolicyActivityEvent,
+} from "@/lib/policies/policy-suggestions";
+import { Plus, FileText, ClipboardList } from "lucide-react";
 
 export default function PoliciesPage() {
   const [policies, setPolicies] = useState<ProtectionPolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [policyActivity, setPolicyActivity] = useState<PolicyActivityEvent[]>([]);
 
   const fetchPolicies = useCallback(async () => {
     try {
@@ -29,6 +34,7 @@ export default function PoliciesPage() {
 
   useEffect(() => {
     fetchPolicies();
+    setPolicyActivity(readPolicyActivity());
   }, [fetchPolicies]);
 
   const handleCreated = () => {
@@ -70,6 +76,9 @@ export default function PoliciesPage() {
   // ── Summary metrics ──
   const activeCount = policies.filter((p) => p.status === "active").length;
   const draftCount = policies.filter((p) => p.status === "draft").length;
+  const recentPolicyActivity = [...policyActivity]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 8);
 
   return (
     <PageShell>
@@ -115,6 +124,42 @@ export default function PoliciesPage() {
         {/* ═══════════════════════════════════════ */}
         {/* POLICY LIST                           */}
         {/* ═══════════════════════════════════════ */}
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <ClipboardList className="h-4 w-4 text-text-tertiary" />
+            <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary">
+              Policy activity history
+            </h2>
+          </div>
+          <p className="text-small text-text-tertiary mb-4">
+            Suggestions are recorded here. Policies never move capital without your confirmation.
+          </p>
+          {recentPolicyActivity.length > 0 ? (
+            <div className="space-y-3">
+              {recentPolicyActivity.map((event) => (
+                <div key={event.id} className="flex items-start justify-between gap-3 border-t border-border pt-3 first:border-t-0 first:pt-0">
+                  <div className="min-w-0">
+                    <p className="text-small font-medium text-text-primary">{event.title}</p>
+                    <p className="text-tiny text-text-tertiary mt-0.5">
+                      {event.sourcePolicy} - {event.status}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-tiny text-text-muted">
+                    {new Date(event.timestamp).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-border bg-surface-subtle px-4 py-3 text-small text-text-tertiary">
+              No policy suggestions recorded yet.
+            </p>
+          )}
+        </div>
+
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
