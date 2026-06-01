@@ -1,11 +1,13 @@
 export type AccountMode = "external-wallet" | "base-account";
 
+export type AccountStatus = "active" | "progressive" | "coming-later";
+
 export type AccountStrategy = {
   mode: AccountMode;
   label: string;
   description: string;
   isAvailable: boolean;
-  status: "active" | "coming-later";
+  status: AccountStatus;
 };
 
 export const accountStrategies: AccountStrategy[] = [
@@ -21,9 +23,9 @@ export const accountStrategies: AccountStrategy[] = [
     mode: "base-account",
     label: "Base Account",
     description:
-      "Future account infrastructure for calmer self-custody, simpler protection flows, and quieter onchain ownership.",
-    isAvailable: false,
-    status: "coming-later",
+      "Progressive enhancement layer for Base-native wallets. Detection, badges, and visibility are live. Batching and sub-account vault routing are in research.",
+    isAvailable: true,
+    status: "progressive",
   },
 ];
 

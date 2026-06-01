@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAccount } from "wagmi";
 import { cn } from "@/lib/utils";
-import { LogOut, User, Clock, Shield } from "lucide-react";
+import {
+  LogOut,
+  User,
+  Clock,
+  Shield,
+  Sparkles,
+} from "lucide-react";
+import { BaseAccountBadge, WalletCapabilitiesInfo, SubAccountHierarchy } from "@/components/web3/base-account-badge";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -155,27 +162,34 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Base Account Roadmap */}
+      {/* Base Account Infrastructure */}
       <div className="mb-10">
         <div className="flex items-center gap-2 mb-4">
           <Shield className="h-4 w-4 text-text-tertiary" />
           <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary">
-            Infrastructure
+            Base Account
           </h2>
         </div>
-        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+
+        {/* Capability status */}
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5 mb-3">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <p className="text-sm font-medium text-text-primary mb-0.5">
-                Base Account
-              </p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-medium text-text-primary">
+                  Progressive Enhancement
+                </p>
+                <BaseAccountBadge variant="pill" />
+              </div>
               <p className="text-small text-text-tertiary">
-                Future account infrastructure for calmer self-custody.
+                Quiet infrastructure layer for Base-native wallets. Detection is
+                automatic — nothing changes unless capabilities are found.
               </p>
               <p className="text-tiny text-text-muted mt-2 leading-relaxed">
-                Elora currently uses external wallet connections. Base Account
-                support is being explored to reduce wallet friction while
-                preserving ownership.
+                When a Base Account is detected, Elora enhances the experience
+                with sub-account visibility, feature badges, and future
+                batching opportunities. External wallets continue working
+                exactly as before.
               </p>
             </div>
             <a
@@ -184,6 +198,98 @@ export default function SettingsPage() {
             >
               Open lab
             </a>
+          </div>
+        </div>
+
+        {/* Capability details — only when detected */}
+        {isConnected && (
+          <>
+            {/* Supported features */}
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5 mb-3">
+              <WalletCapabilitiesInfo />
+            </div>
+
+            {/* Sub-account hierarchy */}
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5 mb-3">
+              <SubAccountHierarchy />
+            </div>
+          </>
+        )}
+
+        {/* Future enhancement roadmap */}
+        <div className="rounded-xl border border-border bg-surface-subtle px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-text-tertiary mb-3 flex items-center gap-1.5">
+            <Sparkles className="h-3 w-3" />
+            Enhancement roadmap
+          </p>
+          <div className="space-y-2.5">
+            {[
+              {
+                label: "Sub-account visibility",
+                status: "now" as const,
+                desc: "Display Elora Account connection status",
+              },
+              {
+                label: "Capability detection",
+                status: "now" as const,
+                desc: "Auto-detect Base Account, batching, and sendCalls",
+              },
+              {
+                label: "Safe transaction batching",
+                status: "research" as const,
+                desc: "Deposit + protect, release + reprotect (research phase)",
+              },
+              {
+                label: "Gas sponsorship",
+                status: "future" as const,
+                desc: "Optional sponsored gas for vault operations",
+              },
+              {
+                label: "Sub-account vault routing",
+                status: "future" as const,
+                desc: "Route vault deposits through Elora sub-account",
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-start gap-3 text-tiny"
+              >
+                <span
+                  className={cn(
+                    "mt-0.5 h-2 w-2 shrink-0 rounded-full",
+                    item.status === "now"
+                      ? "bg-green-500"
+                      : item.status === "research"
+                        ? "bg-amber-400"
+                        : "bg-text-subtle",
+                  )}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-text-primary">
+                      {item.label}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium uppercase tracking-wider",
+                        item.status === "now"
+                          ? "text-green-600"
+                          : item.status === "research"
+                            ? "text-amber-600"
+                            : "text-text-subtle",
+                      )}
+                    >
+                      {item.status === "now"
+                        ? "✓ now"
+                        : item.status === "research"
+                          ? "◎ research"
+                          : "○ future"}
+                    </span>
+                  </div>
+                  <p className="text-text-tertiary mt-0.5">{item.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
