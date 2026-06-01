@@ -56,42 +56,51 @@ export async function PATCH(
         : "Prediction pushed: stake returned";
     }
 
-    await prisma.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        available_vault_balance: newAvailableBalance,
-        at_risk_balance: Math.max(0, newCommitted),
-        ...(result === "LOSS" ? { total_saved_from_losses: { increment: prediction.stake } } : {}),
-        ...(result === "WIN" ? { total_profit_won: { increment: prediction.potentialProfit } } : {}),
-      },
-    });
+    const updatedPrediction = await prisma.$transaction(async (tx) => {
+      const settlementClaim = await tx.bet.updateMany({
+        where: { id, userId: user.id, status: "OPEN" },
+        data: {
+          status,
+          settledAt: new Date(),
+          user_balance_after: wallet.user_balance,
+          at_risk_before: wallet.at_risk_balance,
+          at_risk_after: Math.max(0, newCommitted),
+        },
+      });
 
-    const updatedPrediction = await prisma.bet.update({
-      where: { id },
-      data: {
-        status,
-        settledAt: new Date(),
-        user_balance_after: wallet.user_balance,
-        at_risk_before: wallet.at_risk_balance,
-        at_risk_after: Math.max(0, newCommitted),
-      },
-    });
+      if (settlementClaim.count !== 1) throw new Error("ALREADY_SETTLED");
 
-    await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: transactionType,
-        amount: transactionAmount,
-        balanceBefore: wallet.available_vault_balance,
-        balanceAfter: newAvailableBalance,
-        betId: prediction.id,
-        description,
-      },
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: {
+          available_vault_balance: newAvailableBalance,
+          at_risk_balance: Math.max(0, newCommitted),
+          ...(result === "LOSS" ? { total_saved_from_losses: { increment: prediction.stake } } : {}),
+          ...(result === "WIN" ? { total_profit_won: { increment: prediction.potentialProfit } } : {}),
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          userId: user.id,
+          type: transactionType,
+          amount: transactionAmount,
+          balanceBefore: wallet.available_vault_balance,
+          balanceAfter: newAvailableBalance,
+          betId: prediction.id,
+          description,
+        },
+      });
+
+      return tx.bet.findUniqueOrThrow({ where: { id } });
     });
 
     return NextResponse.json({ prediction: updatedPrediction, bet: updatedPrediction });
   } catch (error) {
     console.error("[settle] error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (error instanceof Error && error.message === "ALREADY_SETTLED") {
+      return NextResponse.json({ error: "Prediction is already settled." }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Prediction settlement could not be completed." }, { status: 500 });
   }
 }

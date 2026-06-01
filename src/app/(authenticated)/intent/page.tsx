@@ -179,9 +179,11 @@ interface ReleaseConfirmModalProps {
   confirmed: boolean;
   onConfirm: () => void;
   onKeepProtected: () => void;
+  isSubmitting: boolean;
+  errorMessage: string | null;
 }
 
-function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, onKeepProtected }: ReleaseConfirmModalProps) {
+function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, onKeepProtected, isSubmitting, errorMessage }: ReleaseConfirmModalProps) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
@@ -216,15 +218,20 @@ function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, on
             <span className="text-tiny font-medium text-green-600">Confirmed</span>
           </div>
         )}
+        {errorMessage && (
+          <p className="mb-4 rounded-lg border border-danger/20 bg-danger/8 px-3 py-2 text-center text-small text-danger">
+            {errorMessage}
+          </p>
+        )}
         <div className="space-y-2">
-          <button type="button" onClick={onConfirm} disabled={!confirmed}
+          <button type="button" onClick={onConfirm} disabled={!confirmed || isSubmitting}
             className={cn("w-full rounded-lg py-2.5 text-small font-medium transition-all",
-              confirmed ? "bg-green-500 text-white hover:bg-green-600 shadow-sm" : "bg-surface-hover text-text-muted cursor-not-allowed")}>
-            {confirmed ? "Confirm release" : `Wait ${countdown}s to confirm`}
+              confirmed && !isSubmitting ? "bg-green-500 text-white hover:bg-green-600 shadow-sm" : "bg-surface-hover text-text-muted cursor-not-allowed")}>
+            {isSubmitting ? "Releasing..." : confirmed ? "Confirm release" : `Wait ${countdown}s to confirm`}
           </button>
-          <button type="button" onClick={onKeepProtected} disabled={confirmed}
+          <button type="button" onClick={onKeepProtected} disabled={isSubmitting}
             className={cn("w-full rounded-lg py-2.5 text-small font-medium transition-colors",
-              confirmed ? "text-text-muted cursor-not-allowed" : "text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-surface-hover")}>
+              isSubmitting ? "text-text-muted cursor-not-allowed" : "text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-surface-hover")}>
             Keep protected
           </button>
         </div>
@@ -247,6 +254,9 @@ export default function IntentPage() {
   const [countdown, setCountdown] = useState(10);
   const [confirmed, setConfirmed] = useState(false);
   const [isReleasing, setIsReleasing] = useState<string | null>(null);
+  const [releaseError, setReleaseError] = useState<string | null>(null);
+  const [releaseSubmitting, setReleaseSubmitting] = useState(false);
+  const releaseSubmittingRef = useRef(false);
 
   // Recent won predictions for protection prompt.
   const [recentWins, setRecentWins] = useState<{ id: string; description: string; amount: number }[]>([]);
@@ -264,9 +274,18 @@ export default function IntentPage() {
   }, [confirmOpen, countdown, confirmed]);
 
   useEffect(() => {
-    if (isReleasing && releaseLock.isConfirmed) { setIsReleasing(null); setConfirmOpen(false); }
-    if (isReleasing && releaseLock.error) { setIsReleasing(null); }
-  }, [isReleasing, releaseLock.isConfirmed, releaseLock.error]);
+    if (isReleasing && releaseLock.isConfirmed) {
+      setConfirmOpen(false);
+      setReleaseError(null);
+      setReleaseSubmitting(false);
+    }
+    if (isReleasing && releaseLock.error) {
+      setIsReleasing(null);
+      setReleaseError(releaseLock.lifecycle.calmError ?? "Release was not completed.");
+      releaseSubmittingRef.current = false;
+      setReleaseSubmitting(false);
+    }
+  }, [isReleasing, releaseLock.isConfirmed, releaseLock.error, releaseLock.lifecycle.calmError]);
 
   useEffect(() => {
     if (!isReleasing || !releaseLock.isConfirmed || !releaseLock.hash || loggedReleaseHash.current === releaseLock.hash) return;
@@ -287,8 +306,14 @@ export default function IntentPage() {
         }),
       });
       await syncFromServer();
+      setIsReleasing(null);
+      releaseSubmittingRef.current = false;
+      setReleaseSubmitting(false);
     })().catch(() => {
       loggedReleaseHash.current = undefined;
+      setReleaseError("Capital state could not be updated. Please refresh before trying again.");
+      releaseSubmittingRef.current = false;
+      setReleaseSubmitting(false);
     });
   }, [capital.activeHorizons, isReleasing, releaseLock.hash, releaseLock.isConfirmed, syncFromServer]);
 
@@ -326,18 +351,25 @@ export default function IntentPage() {
   }), [capital.formatted.protected, releasableHorizons.length, capital.pendingReleaseCount, recentWins.length]);
 
   const handleReleaseClick = useCallback((id: string) => {
-    setConfirmingId(id); setCountdown(10); setConfirmed(false); setConfirmOpen(true);
-  }, []);
+    if (releaseLock.lifecycle.isActive || releaseSubmittingRef.current) return;
+    setReleaseError(null); setConfirmingId(id); setCountdown(10); setConfirmed(false); setConfirmOpen(true);
+  }, [releaseLock.lifecycle.isActive]);
 
   const handleConfirmRelease = useCallback(() => {
-    if (!confirmingId) return;
+    if (!confirmingId || releaseSubmittingRef.current || releaseLock.lifecycle.isActive) return;
     const lockId = parseInt(confirmingId, 10);
     if (isNaN(lockId)) return;
+    releaseSubmittingRef.current = true;
+    setReleaseSubmitting(true);
+    setReleaseError(null);
     setIsReleasing(confirmingId);
     releaseLock.releaseLock(lockId);
   }, [confirmingId, releaseLock]);
 
-  const handleKeepProtected = useCallback(() => { setConfirmOpen(false); setConfirmingId(null); }, []);
+  const handleKeepProtected = useCallback(() => {
+    if (releaseLock.lifecycle.isActive || releaseSubmittingRef.current) return;
+    setConfirmOpen(false); setConfirmingId(null); setReleaseError(null);
+  }, [releaseLock.lifecycle.isActive]);
 
   const confirmingAmount = useMemo(() => {
     if (!confirmingId) return "0.00";
@@ -435,6 +467,8 @@ export default function IntentPage() {
       <ReleaseConfirmModal
         open={confirmOpen} amount={confirmingAmount} countdown={countdown}
         confirmed={confirmed} onConfirm={handleConfirmRelease} onKeepProtected={handleKeepProtected}
+        isSubmitting={releaseLock.lifecycle.isActive || releaseSubmitting}
+        errorMessage={releaseError}
       />
     </PageShell>
   );

@@ -12,6 +12,7 @@ import {
   useCreateLock,
   useUSDCBalance,
 } from "@/lib/web3/tx-hooks";
+import { shouldBlockSubmit } from "@/lib/tx/transaction-state";
 
 /* ── Amount Input ────────────────────────────────────── */
 
@@ -185,7 +186,9 @@ export function DepositModal({ open, onClose }: DepositModalProps) {
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<"input" | "approve" | "pending" | "success" | "error">("input");
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const loggedDepositHash = useRef<`0x${string}` | undefined>(undefined);
+  const submittingRef = useRef(false);
 
   // Real hooks
   const { allowance, refetch: refetchAllowance } = useUSDCAllowance();
@@ -196,27 +199,34 @@ export function DepositModal({ open, onClose }: DepositModalProps) {
 
   const numericAmount = parseFloat(amount || "0");
   const needsApproval = numericAmount > allowance && allowance >= 0;
+  const depositBlocked = shouldBlockSubmit(deposit.lifecycle) || shouldBlockSubmit(approve.lifecycle) || isSubmitting;
 
   // Reset state when modal opens
   useEffect(() => {
-    if (open) {
+    if (open && !deposit.lifecycle.isActive && !approve.lifecycle.isActive) {
       setAmount("");
       setStep("input");
       setErrorMsg("");
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
-  }, [open]);
+  }, [open, deposit.lifecycle.isActive, approve.lifecycle.isActive]);
 
   // Track deposit tx state
   useEffect(() => {
     if (step === "pending" && deposit.isConfirmed) {
       setStep("success");
+      submittingRef.current = false;
+      setIsSubmitting(false);
       refetchAllowance();
     }
     if (step === "pending" && deposit.error) {
-      setErrorMsg("Deposit failed. Please try again.");
+      setErrorMsg(deposit.lifecycle.calmError ?? "Deposit was not completed.");
       setStep("error");
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
-  }, [deposit.isConfirmed, deposit.error, step, refetchAllowance]);
+  }, [deposit.isConfirmed, deposit.error, deposit.lifecycle.calmError, step, refetchAllowance]);
 
   useEffect(() => {
     if (!deposit.isConfirmed || !deposit.hash || loggedDepositHash.current === deposit.hash) return;
@@ -243,16 +253,22 @@ export function DepositModal({ open, onClose }: DepositModalProps) {
     if (step === "approve" && approve.isConfirmed) {
       refetchAllowance().then(() => {
         setStep("input");
+        submittingRef.current = false;
+        setIsSubmitting(false);
       });
     }
     if (step === "approve" && approve.error) {
-      setErrorMsg("Authorization failed. Please try again.");
+      setErrorMsg(approve.lifecycle.calmError ?? "Authorization was not completed.");
       setStep("error");
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
-  }, [approve.isConfirmed, approve.error, step, refetchAllowance]);
+  }, [approve.isConfirmed, approve.error, approve.lifecycle.calmError, step, refetchAllowance]);
 
   const handleDeposit = useCallback(() => {
-    if (numericAmount <= 0) return;
+    if (numericAmount <= 0 || depositBlocked) return;
+    submittingRef.current = true;
+    setIsSubmitting(true);
     if (needsApproval) {
       setStep("approve");
       approve.approve(numericAmount);
@@ -260,19 +276,23 @@ export function DepositModal({ open, onClose }: DepositModalProps) {
       setStep("pending");
       deposit.deposit(numericAmount);
     }
-  }, [numericAmount, needsApproval, approve, deposit]);
+  }, [numericAmount, depositBlocked, needsApproval, approve, deposit]);
 
   const handleRetry = useCallback(() => {
     setErrorMsg("");
+    submittingRef.current = false;
+    setIsSubmitting(false);
     setStep("input");
   }, []);
 
   const handleClose = useCallback(() => {
+    if (deposit.lifecycle.isActive || approve.lifecycle.isActive) return;
     setAmount("");
     setStep("input");
     setErrorMsg("");
+    setIsSubmitting(false);
     onClose();
-  }, [onClose]);
+  }, [deposit.lifecycle.isActive, approve.lifecycle.isActive, onClose]);
 
   const pendingMessage = needsApproval
     ? "Authorizing capital access..."
@@ -320,10 +340,10 @@ export function DepositModal({ open, onClose }: DepositModalProps) {
             <button
               type="button"
               onClick={handleDeposit}
-              disabled={numericAmount <= 0 || numericAmount > balance}
+              disabled={numericAmount <= 0 || numericAmount > balance || depositBlocked}
               className={cn(
                 "w-full rounded-lg py-2.5 text-small font-medium transition-all",
-                numericAmount > 0 && numericAmount <= balance
+                numericAmount > 0 && numericAmount <= balance && !depositBlocked
                   ? "bg-green-500 text-white hover:bg-green-600 shadow-sm"
                   : "bg-surface-hover text-text-muted cursor-not-allowed",
               )}
@@ -371,6 +391,8 @@ export function WithdrawModal({ open, onClose, maxAmount }: WithdrawModalProps) 
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<"input" | "confirm" | "pending" | "success" | "error">("input");
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   const numericAmount = parseFloat(amount || "0");
   const isValid = numericAmount > 0 && numericAmount <= maxAmount;
@@ -396,25 +418,35 @@ export function WithdrawModal({ open, onClose, maxAmount }: WithdrawModalProps) 
   }, [isValid]);
 
   const handleConfirm = useCallback(async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setIsSubmitting(true);
     setStep("pending");
     try {
       // WithdrawUnlocked pulls all unlocked — set amount for display only
       // Future: implement partial withdrawal via approve + transfer from vault
       setStep("success");
     } catch {
-      setErrorMsg("Withdrawal failed. Please try again.");
+      setErrorMsg("Withdrawal was not completed.");
       setStep("error");
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
   }, []);
 
   const handleRetry = useCallback(() => {
     setErrorMsg("");
+    submittingRef.current = false;
+    setIsSubmitting(false);
     setStep("input");
   }, []);
 
   const handleClose = useCallback(() => {
     setAmount("");
     setStep("input");
+    submittingRef.current = false;
+    setIsSubmitting(false);
     onClose();
   }, [onClose]);
 
@@ -448,6 +480,7 @@ export function WithdrawModal({ open, onClose, maxAmount }: WithdrawModalProps) 
             <button
               type="button"
               onClick={handleConfirm}
+              disabled={isSubmitting}
               className="w-full rounded-lg py-2.5 text-small font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm transition-colors"
             >
               Confirm withdrawal
@@ -533,34 +566,43 @@ export function ProtectCapitalModal({
   const [horizon, setHorizon] = useState<number | null>(null);
   const [step, setStep] = useState<"input" | "pending" | "success" | "error">("input");
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [now] = useState(() => Date.now());
   const loggedLockHash = useRef<`0x${string}` | undefined>(undefined);
+  const submittingRef = useRef(false);
 
   const createLock = useCreateLock();
   const { syncFromServer } = useWalletStore();
 
   const numericAmount = parseFloat(amount || "0");
   const isValid = numericAmount > 0 && numericAmount <= maxAmount && horizon !== null;
+  const protectionBlocked = shouldBlockSubmit(createLock.lifecycle) || isSubmitting;
 
   useEffect(() => {
-    if (open) {
+    if (open && !createLock.lifecycle.isActive) {
       setAmount("");
       setHorizon(null);
       setStep("input");
       setErrorMsg("");
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
-  }, [open]);
+  }, [open, createLock.lifecycle.isActive]);
 
   // Track createLock tx state
   useEffect(() => {
     if (step === "pending" && createLock.isConfirmed) {
       setStep("success");
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
     if (step === "pending" && createLock.error) {
-      setErrorMsg("Protection failed. Please try again.");
+      setErrorMsg(createLock.lifecycle.calmError ?? "Protection was not completed.");
       setStep("error");
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
-  }, [createLock.isConfirmed, createLock.error, step]);
+  }, [createLock.isConfirmed, createLock.error, createLock.lifecycle.calmError, step]);
 
   useEffect(() => {
     if (!createLock.isConfirmed || !createLock.hash || loggedLockHash.current === createLock.hash || horizon === null) return;
@@ -584,23 +626,28 @@ export function ProtectCapitalModal({
   }, [createLock.hash, createLock.isConfirmed, horizon, now, numericAmount, syncFromServer]);
 
   const handleConfirm = useCallback(() => {
-    if (!isValid || horizon === null) return;
+    if (!isValid || horizon === null || protectionBlocked) return;
+    submittingRef.current = true;
+    setIsSubmitting(true);
     const durationSeconds = horizon * 86400;
     setStep("pending");
     createLock.createLock(numericAmount, durationSeconds);
-  }, [isValid, numericAmount, horizon, createLock]);
+  }, [isValid, numericAmount, horizon, protectionBlocked, createLock]);
 
   const handleRetry = useCallback(() => {
     setErrorMsg("");
+    submittingRef.current = false;
+    setIsSubmitting(false);
     setStep("input");
   }, []);
 
   const handleClose = useCallback(() => {
+    if (createLock.lifecycle.isActive) return;
     setAmount("");
     setHorizon(null);
     setStep("input");
     onClose();
-  }, [onClose]);
+  }, [createLock.lifecycle.isActive, onClose]);
 
   return (
     <CapitalModal open={open} onClose={handleClose} title={step === "success" ? "Capital protected" : "Protect capital"}>
@@ -655,10 +702,10 @@ export function ProtectCapitalModal({
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={!isValid}
+              disabled={!isValid || protectionBlocked}
               className={cn(
                 "w-full rounded-lg py-2.5 text-small font-medium transition-all",
-                isValid
+                isValid && !protectionBlocked
                   ? "bg-green-500 text-white hover:bg-green-600 shadow-sm"
                   : "bg-surface-hover text-text-muted cursor-not-allowed",
               )}
