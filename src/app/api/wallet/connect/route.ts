@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { getAddress } from "viem";
+import { connectWalletSchema, formatZodErrors } from "@/lib/validation";
 
 /**
  * POST /api/wallet/connect
@@ -21,14 +22,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { walletAddress } = await request.json();
-
-    if (!walletAddress || typeof walletAddress !== "string") {
+    const body = await request.json();
+    const parsed = connectWalletSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "walletAddress is required" },
+        { error: "Invalid request", details: formatZodErrors(parsed.error) },
         { status: 400 },
       );
     }
+    const { walletAddress } = parsed.data;
 
     // Validate and checksum the address
     let checksummedAddress: `0x${string}`;

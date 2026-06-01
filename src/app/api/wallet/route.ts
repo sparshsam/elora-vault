@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { STORED_TX_TYPES } from "@/lib/transaction-types";
+import { depositSchema, formatZodErrors } from "@/lib/validation";
 
 /**
  * Ensure the Prisma User record exists for the given Supabase user.
@@ -73,14 +74,15 @@ export async function POST(request: Request) {
     // Ensure Prisma User record exists before wallet operations
     await ensureUser(user);
 
-    const { amount } = await request.json();
-
-    if (!amount || amount <= 0) {
+    const body = await request.json();
+    const parsed = depositSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Amount must be greater than 0" },
+        { error: "Invalid request", details: formatZodErrors(parsed.error) },
         { status: 400 },
       );
     }
+    const { amount } = parsed.data;
 
     let wallet = await prisma.wallet.findUnique({
       where: { userId: user.id },

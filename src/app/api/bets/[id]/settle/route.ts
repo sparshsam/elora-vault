@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { STORED_TX_TYPES } from "@/lib/transaction-types";
+import { settlePredictionSchema, formatZodErrors } from "@/lib/validation";
 
 export async function PATCH(
   request: Request,
@@ -13,11 +14,15 @@ export async function PATCH(
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
-    const { result } = await request.json();
-
-    if (!["WIN", "LOSS", "PUSH"].includes(result)) {
-      return NextResponse.json({ error: "Result must be WIN, LOSS, or PUSH" }, { status: 400 });
+    const body = await request.json();
+    const parsed = settlePredictionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: formatZodErrors(parsed.error) },
+        { status: 400 },
+      );
     }
+    const { result } = parsed.data;
 
     const prediction = await prisma.bet.findUnique({ where: { id } });
     if (!prediction) return NextResponse.json({ error: "Prediction not found" }, { status: 404 });
@@ -56,42 +61,51 @@ export async function PATCH(
         : "Prediction pushed: stake returned";
     }
 
-    await prisma.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        available_vault_balance: newAvailableBalance,
-        at_risk_balance: Math.max(0, newCommitted),
-        ...(result === "LOSS" ? { total_saved_from_losses: { increment: prediction.stake } } : {}),
-        ...(result === "WIN" ? { total_profit_won: { increment: prediction.potentialProfit } } : {}),
-      },
-    });
+    const updatedPrediction = await prisma.$transaction(async (tx) => {
+      const settlementClaim = await tx.bet.updateMany({
+        where: { id, userId: user.id, status: "OPEN" },
+        data: {
+          status,
+          settledAt: new Date(),
+          user_balance_after: wallet.user_balance,
+          at_risk_before: wallet.at_risk_balance,
+          at_risk_after: Math.max(0, newCommitted),
+        },
+      });
 
-    const updatedPrediction = await prisma.bet.update({
-      where: { id },
-      data: {
-        status,
-        settledAt: new Date(),
-        user_balance_after: wallet.user_balance,
-        at_risk_before: wallet.at_risk_balance,
-        at_risk_after: Math.max(0, newCommitted),
-      },
-    });
+      if (settlementClaim.count !== 1) throw new Error("ALREADY_SETTLED");
 
-    await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: transactionType,
-        amount: transactionAmount,
-        balanceBefore: wallet.available_vault_balance,
-        balanceAfter: newAvailableBalance,
-        betId: prediction.id,
-        description,
-      },
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: {
+          available_vault_balance: newAvailableBalance,
+          at_risk_balance: Math.max(0, newCommitted),
+          ...(result === "LOSS" ? { total_saved_from_losses: { increment: prediction.stake } } : {}),
+          ...(result === "WIN" ? { total_profit_won: { increment: prediction.potentialProfit } } : {}),
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          userId: user.id,
+          type: transactionType,
+          amount: transactionAmount,
+          balanceBefore: wallet.available_vault_balance,
+          balanceAfter: newAvailableBalance,
+          betId: prediction.id,
+          description,
+        },
+      });
+
+      return tx.bet.findUniqueOrThrow({ where: { id } });
     });
 
     return NextResponse.json({ prediction: updatedPrediction, bet: updatedPrediction });
   } catch (error) {
     console.error("[settle] error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (error instanceof Error && error.message === "ALREADY_SETTLED") {
+      return NextResponse.json({ error: "Prediction is already settled." }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Prediction settlement could not be completed." }, { status: 500 });
   }
 }
