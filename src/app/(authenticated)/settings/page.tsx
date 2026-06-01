@@ -12,6 +12,7 @@ import {
   Shield,
   Sparkles,
   ArrowRightLeft,
+  ClipboardList,
 } from "lucide-react";
 import { BaseAccountBadge, WalletCapabilitiesInfo, SubAccountHierarchy } from "@/components/web3/base-account-badge";
 import { useWalletCapabilities } from "@/lib/web3/use-wallet-capabilities";
@@ -22,6 +23,10 @@ import {
   FLOW_BATCH_STRATEGIES,
   type OrchestrationFlowId,
 } from "@/lib/account/orchestration-flows";
+import {
+  readPolicyActivity,
+  type PolicyActivityEvent,
+} from "@/lib/policies/policy-suggestions";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -31,6 +36,7 @@ export default function SettingsPage() {
   const [email, setEmail] = useState("");
   const [defaultDuration, setDefaultDuration] = useState<7 | 30 | 90>(30);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [policyActivity, setPolicyActivity] = useState<PolicyActivityEvent[]>([]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -45,6 +51,7 @@ export default function SettingsPage() {
       const d = parseInt(savedDuration);
       if ([7, 30, 90].includes(d)) setDefaultDuration(d as 7 | 30 | 90);
     }
+    setPolicyActivity(readPolicyActivity());
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -62,6 +69,9 @@ export default function SettingsPage() {
   const shortAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
     : null;
+  const recentPolicyActivity = [...policyActivity]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 8);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10 md:py-12">
@@ -169,6 +179,48 @@ export default function SettingsPage() {
           <p className="text-tiny text-text-subtle mt-2 italic">
             Future-ready — available when notifications are supported.
           </p>
+        </div>
+      </div>
+
+      {/* Policy Activity */}
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-4">
+          <ClipboardList className="h-4 w-4 text-text-tertiary" />
+          <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary">
+            Policy activity
+          </h2>
+        </div>
+        <div className="rounded-xl border border-border bg-surface px-5 py-4">
+          <p className="text-sm font-medium text-text-primary mb-1">
+            Assisted execution history
+          </p>
+          <p className="text-small text-text-tertiary mb-4">
+            Suggestions are recorded here. Policies never move capital without your confirmation.
+          </p>
+          {recentPolicyActivity.length > 0 ? (
+            <div className="space-y-3">
+              {recentPolicyActivity.map((event) => (
+                <div key={event.id} className="flex items-start justify-between gap-3 border-t border-border pt-3 first:border-t-0 first:pt-0">
+                  <div className="min-w-0">
+                    <p className="text-small font-medium text-text-primary">{event.title}</p>
+                    <p className="text-tiny text-text-tertiary mt-0.5">
+                      {event.sourcePolicy} - {event.status}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-tiny text-text-muted">
+                    {new Date(event.timestamp).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-border bg-surface-subtle px-4 py-3 text-small text-text-tertiary">
+              No policy suggestions recorded yet.
+            </p>
+          )}
         </div>
       </div>
 

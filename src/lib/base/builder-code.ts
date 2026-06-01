@@ -63,8 +63,6 @@
  *   so getBuilderDataSuffix() can be spread unconditionally.
  */
 
-import { Attribution } from "ox/erc8021";
-
 /**
  * Returns the configured Builder Code string, or undefined if not set.
  *
@@ -100,13 +98,9 @@ export function getBuilderDataSuffix(): `0x${string}` | undefined {
   const code = getBuilderCode();
   if (!code) return undefined;
 
-  try {
-    return Attribution.toDataSuffix({ codes: [code] });
-  } catch {
-    // If encoding fails (e.g., invalid code format), return undefined safely.
-    // This ensures attribution failures never block transaction execution.
-    return undefined;
-  }
+  // The installed ox version does not expose an ERC-8021 encoder yet.
+  // Keep attribution disabled until the dependency provides a stable API.
+  return undefined;
 }
 
 /**
