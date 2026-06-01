@@ -3,23 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { STORED_TX_TYPES } from "@/lib/transaction-types";
+import { onchainEventSchema, formatZodErrors } from "@/lib/validation";
 
-/**
- * POST /api/onchain/event
- * Log an onchain vault event to the backend database.
- * This is called from the frontend after a successful transaction.
- * The contract is the source of truth for balances; the backend
- * tracks metadata for charts, timelines, and UX.
- *
- * Body: {
- *   type: "ONCHAIN_DEPOSIT" | "ONCHAIN_LOCK_CREATED" | "ONCHAIN_LOCK_RELEASED" | "ONCHAIN_WITHDRAWAL",
- *   amount: number,
- *   txHash: string,
- *   lockId?: number,
- *   unlockAt?: string, // ISO date string
- *   notes?: string,
- * }
- */
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -31,29 +16,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { type, amount, txHash, lockId, unlockAt, notes } =
-      await request.json();
-
-    if (!type || !amount || !txHash) {
+    const body = await request.json();
+    const parsed = onchainEventSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "type, amount, and txHash are required" },
+        { error: "Invalid request", details: formatZodErrors(parsed.error) },
         { status: 400 },
       );
     }
 
-    const validTypes = [
-      "ONCHAIN_DEPOSIT",
-      "ONCHAIN_LOCK_CREATED",
-      "ONCHAIN_LOCK_RELEASED",
-      "ONCHAIN_WITHDRAWAL",
-    ];
-
-    if (!validTypes.includes(type)) {
-      return NextResponse.json(
-        { error: `Invalid type. Must be one of: ${validTypes.join(", ")}` },
-        { status: 400 },
-      );
-    }
+    const { type, amount, txHash, lockId, unlockAt, notes } = parsed.data;
 
     const existingTransaction = await prisma.transaction.findFirst({
       where: { userId: user.id, tx_hash: txHash },
