@@ -279,9 +279,9 @@ export function DepositModal({ open, onClose }: DepositModalProps) {
     : "Deposit submitted for confirmation.";
 
   return (
-    <CapitalModal open={open} onClose={handleClose} title="Deposit">
+    <CapitalModal open={open} onClose={handleClose} title="Deposit complete">
       {step === "success" ? (
-        <SuccessState message="Capital added to your available balance." />
+        <SuccessState message="Capital is now available inside Elora." />
       ) : step === "error" ? (
         <ErrorState message={errorMsg} onRetry={handleRetry} />
       ) : step === "approve" || step === "pending" ? (
@@ -603,9 +603,9 @@ export function ProtectCapitalModal({
   }, [onClose]);
 
   return (
-    <CapitalModal open={open} onClose={handleClose} title="Protect capital">
+    <CapitalModal open={open} onClose={handleClose} title={step === "success" ? "Capital protected" : "Protect capital"}>
       {step === "success" ? (
-        <SuccessState message="Capital protected within its chosen horizon." />
+        <SuccessState message="Capital has been moved into a protection horizon." />
       ) : step === "error" ? (
         <ErrorState message={errorMsg} onRetry={handleRetry} />
       ) : step === "pending" ? (

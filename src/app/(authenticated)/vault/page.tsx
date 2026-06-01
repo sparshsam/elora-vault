@@ -44,24 +44,19 @@ export default function VaultPage() {
     );
   }
 
-  // ── Loading ──
-  if (capital.isLoading) {
-    return (
-      <PageShell>
-        <div className="max-w-3xl mx-auto">
-          <VaultSkeleton />
-        </div>
-      </PageShell>
-    );
-  }
-
-  const hasHorizons = capital.activeHorizonCount > 0;
-  const hasReleasing = capital.balances.releasing > 0;
-  const hasCommitted = capital.balances.committed > 0;
+  const { activeHorizonCount, balances } = capital;
+  const hasHorizons = activeHorizonCount > 0;
+  const hasReleasing = balances.releasing > 0;
+  const hasCommitted = balances.committed > 0;
 
   return (
     <PageShell>
-      <div className="max-w-3xl mx-auto space-y-8">
+      {capital.isLoading ? (
+        <div className="max-w-3xl mx-auto">
+          <VaultSkeleton />
+        </div>
+      ) : (
+        <div className="max-w-3xl mx-auto space-y-8">
         {/* ── Page Heading ── */}
         <div>
           <h1 className="text-[28px] font-light tracking-tight text-text-primary">
@@ -270,6 +265,7 @@ export default function VaultPage() {
           Four states of capital. One coherent system.
         </p>
       </div>
+      )}
 
       {/* ── Operation Modals ── */}
       <DepositModal
