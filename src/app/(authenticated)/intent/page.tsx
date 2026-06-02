@@ -464,19 +464,19 @@ export default function IntentPage() {
   const recentGainsAmount = useMemo(() => recentWins.reduce((sum, win) => sum + win.amount, 0), [recentWins]);
   const releasableAmount = useMemo(() => releasableHorizons.reduce((sum, horizon) => sum + horizon.amount, 0), [releasableHorizons]);
   const policySuggestions = useMemo(() => evaluatePolicySuggestions({
-    available: capital.balances.available,
-    protected: capital.balances.protected,
-    releasing: capital.balances.releasing,
-    committed: capital.balances.committed,
+    available: capital.balances.availableCapital,
+    protected: capital.balances.protectedCapital,
+    releasing: capital.balances.releasingCapital,
+    committed: capital.balances.committedCapital,
     recentGains: recentGainsAmount,
     releasableAmount,
     activeHorizonCount: activeHorizons.length,
     defaultDurationDays,
   }, policyActivity), [
-    capital.balances.available,
-    capital.balances.protected,
-    capital.balances.releasing,
-    capital.balances.committed,
+    capital.balances.availableCapital,
+    capital.balances.protectedCapital,
+    capital.balances.releasingCapital,
+    capital.balances.committedCapital,
     recentGainsAmount,
     releasableAmount,
     activeHorizons.length,

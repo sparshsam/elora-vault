@@ -50,6 +50,19 @@ export interface PolicySuggestionContext {
 export const POLICY_ACTIVITY_STORAGE_KEY = "elora_policy_activity_v1";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const POLICY_SUGGESTION_STATUSES = new Set<PolicySuggestionStatus>([
+  "generated",
+  "accepted",
+  "dismissed",
+  "snoozed",
+  "expired",
+]);
+const POLICY_SUGGESTION_ACTIONS = new Set<PolicySuggestionAction>([
+  "protect-capital",
+  "delay-withdrawal",
+  "reprotect-capital",
+  "extend-horizon",
+]);
 
 function roundCurrency(value: number): number {
   return Math.round(value * 100) / 100;
@@ -57,6 +70,28 @@ function roundCurrency(value: number): number {
 
 function expiresIn(days: number, now: number): string {
   return new Date(now + days * ONE_DAY_MS).toISOString();
+}
+
+function isValidDateString(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(new Date(value).getTime());
+}
+
+function isPolicyActivityEvent(value: unknown): value is PolicyActivityEvent {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Partial<PolicyActivityEvent>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.suggestionId === "string" &&
+    typeof candidate.title === "string" &&
+    typeof candidate.sourcePolicy === "string" &&
+    typeof candidate.status === "string" &&
+    POLICY_SUGGESTION_STATUSES.has(candidate.status as PolicySuggestionStatus) &&
+    typeof candidate.action === "string" &&
+    POLICY_SUGGESTION_ACTIONS.has(candidate.action as PolicySuggestionAction) &&
+    isValidDateString(candidate.timestamp) &&
+    (candidate.expiresAt === undefined || isValidDateString(candidate.expiresAt))
+  );
 }
 
 function hasTerminalActivity(
@@ -155,7 +190,8 @@ export function readPolicyActivity(): PolicyActivityEvent[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    const reconciled = reconcileExpiredPolicyActivity(parsed);
+    const validActivity = parsed.filter(isPolicyActivityEvent);
+    const reconciled = reconcileExpiredPolicyActivity(validActivity);
     if (reconciled.length !== parsed.length) writePolicyActivity(reconciled);
     return reconciled;
   } catch {
