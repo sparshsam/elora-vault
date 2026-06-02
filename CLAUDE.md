@@ -242,4 +242,81 @@ totalEloraCapital = available + protected + releasing + committed
 ## CI Status
 - **ESLint:** ✅ 0 errors, 0 warnings
 - **TypeScript:** ✅ clean
-- **Next.js build:** ✅ 27 routes, 0 errors
+- **Next.js build:** ✅ 28 routes, 0 errors
+
+## Agent Coordination
+
+This repository is worked on by multiple AI agents. Coordination rules:
+
+### Source of Truth
+- `CLAUDE.md` is the primary source of truth. Read it at the start of every session.
+- Refresh repository state from `CLAUDE.md` before doing work.
+- Update `CLAUDE.md` after meaningful architectural, infrastructure, UX, policy, security, or Behavioral OS changes.
+- Do not rely only on chat memory, stale assumptions, or previous summaries.
+
+### Required Workflow
+1. Pull latest `main`.
+2. Read `CLAUDE.md`.
+3. Read relevant supporting docs if needed (`README.md`, `docs/security/current-security-state.md`, `docs/policy-orchestration.md`).
+4. Complete only your assigned task.
+5. Avoid overlapping with other agents' likely files unless absolutely necessary.
+6. Run validation (`npm run lint`, `npm run typecheck`, `npm run build`; also `npm run contracts:test` if contract-adjacent).
+7. Update `CLAUDE.md` with your completed work under `## Recent Agent Updates`.
+8. Sign your update clearly using your assigned agent name.
+9. Commit and push to `main`.
+
+### Do
+- Keep changes scoped
+- Preserve Behavioral OS coherence
+- Preserve explicit user confirmation
+- Preserve EOA fallback
+- Preserve RLS/security posture
+- Preserve Builder Code fallback behavior
+- Preserve transaction safety
+- Update documentation when project state changes
+- Preserve multi-agent repository continuity
+
+### Do Not
+- Commit secrets
+- Modify unrelated systems
+- Introduce automatic policy execution
+- Bypass user confirmation
+- Disable RLS
+- Expose service-role keys
+- Break existing wallet flows
+- Assume Base Account or batching support
+- Delete other agents' work without justification
+
+### Security Rules
+Never commit: `.env`, `.env.local`, `.env.production`, private keys, RPC secrets, Supabase service-role keys, WalletConnect secrets, Base.dev credentials, deployment credentials, or database passwords.
+
+## Recent Agent Updates
+
+### Claude — 2026-06-02 — Behavioral OS product state documentation + Security posture
+
+Commit: `88a6f9e`
+
+Changed:
+- `docs/security/current-security-state.md` — Created: 8-section production security posture document
+- `README.md` — Added Security section linking to security doc, enhanced disclaimer
+- `.env.example` — Fixed merge conflict from remote integration
+- `CLAUDE.md` — Added Agent Coordination section, updated route count to 28, added Security docs reference
+
+Summary:
+- Created comprehensive security posture document covering security philosophy, auth model, database security (RLS), transaction safety model, Builder Code attribution safety, Base Account lab safety, secret handling rules, Policy Runtime safety invariants, and infrastructure maturity snapshot.
+- Linked security document from README under new Security section.
+- Added agent coordination rules to CLAUDE.md so future agents have a consistent operating model.
+- Fixed stale `.env.example` merge conflict.
+
+Validation:
+- lint: ✅ pass
+- typecheck: ✅ pass
+- build: ✅ pass (28 routes)
+- contracts:test: not run (no contract-adjacent changes)
+
+Notes:
+- No functional code changes. Documentation and operational hardening only.
+- Security posture document is a living document — update when security-relevant changes occur.
+- Agent signing convention established. Future agents should add their own entries under `## Recent Agent Updates`.
+
+Signed: Claude
