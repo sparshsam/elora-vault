@@ -74,9 +74,10 @@ export default function LabsPage() {
           Back to Settings
         </Link>
         <h1 className="text-xl font-semibold text-text-primary">Labs</h1>
-        <p className="text-small text-text-tertiary mt-1.5">
-          Experimental infrastructure and capability research kept outside
-          production settings.
+        <p className="text-small text-text-tertiary mt-1.5 max-w-lg leading-relaxed">
+          Experimental features and architecture research — kept separate from
+          day-to-day settings. Nothing here moves capital or changes how your
+          wallet works.
         </p>
       </div>
 

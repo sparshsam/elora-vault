@@ -249,10 +249,14 @@ function EmptyState() {
           <Target className="h-5 w-5 text-text-tertiary" />
         </div>
         <p className="text-sm font-medium text-text-primary">No decisions need your attention right now.</p>
-        <p className="text-small text-text-tertiary mt-2 max-w-sm leading-relaxed">
-          Intent is where releases, protections, and decisions converge.
-          Completed horizons, protection opportunities, and policy suggestions
-          will appear here when there is something to consider.
+        <p className="text-small text-text-tertiary mt-2 max-w-md leading-relaxed">
+          Intent is where you slow down before capital moves. When a protection
+          horizon completes, a policy suggests an action, or a prediction returns
+          a result, you will find it here to consider before confirming.
+        </p>
+        <p className="text-small text-text-tertiary mt-3 max-w-md leading-relaxed">
+          Nothing needs your attention yet. Use the vault to deposit and protect
+          capital, and Intent will be here when you need it.
         </p>
       </div>
     </div>
@@ -642,7 +646,7 @@ export default function IntentPage() {
         {/* ── Page Header ── */}
         <div className="mb-8">
           <h1 className="text-display text-text-primary">Intent</h1>
-          <p className="text-body text-text-secondary mt-1">A place to slow down before capital moves.</p>
+          <p className="text-body text-text-secondary mt-1">A place to pause before capital moves. Review decisions, confirm releases, and consider what comes next.</p>
         </div>
 
         {/* ── Summary Cards ── */}

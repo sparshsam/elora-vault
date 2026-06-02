@@ -92,7 +92,8 @@ export default function PoliciesPage() {
               Policies
             </h1>
             <p className="text-body text-text-secondary mt-1.5 leading-relaxed">
-              Define how capital should behave before emotion arrives.
+              Describe how you want your capital to behave. Policies suggest actions
+              but never execute without your confirmation.
             </p>
           </div>
           <button
@@ -179,9 +180,11 @@ export default function PoliciesPage() {
                 <FileText className="h-5 w-5 text-text-tertiary" />
               </div>
               <p className="text-sm font-medium text-text-primary">No policies yet.</p>
-              <p className="text-small text-text-tertiary mt-2 max-w-xs">
+              <p className="text-small text-text-tertiary mt-2 max-w-sm leading-relaxed">
                 Policies let you describe how capital should behave before urgency
-                arrives.
+                arrives. Set rules like protecting a portion of wins or taking time
+                before large withdrawals — Elora will surface suggestions, but never
+                move capital without your confirmation.
               </p>
               <button
                 type="button"

@@ -69,8 +69,9 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-xl font-semibold text-text-primary">Settings</h1>
-        <p className="text-small text-text-tertiary mt-1.5">
-          A quiet place to configure your environment.
+        <p className="text-small text-text-tertiary mt-1.5 max-w-lg leading-relaxed">
+          Configure your account, set preferences, and review how your protection
+          policies and capital decisions have been shaping up.
         </p>
       </div>
 

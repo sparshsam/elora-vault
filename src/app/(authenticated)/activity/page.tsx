@@ -431,8 +431,10 @@ function EmptyState() {
           <History className="h-6 w-6 text-text-tertiary" />
         </div>
         <p className="text-sm font-medium text-text-primary">No capital movement yet</p>
-        <p className="text-small text-text-tertiary mt-2 max-w-sm leading-relaxed">
-          Your activity timeline will record every deposit, protection, release, and prediction as it happens. Elora builds a quiet chronicle of how your capital moves over time.
+        <p className="text-small text-text-tertiary mt-2 max-w-md leading-relaxed">
+          Your activity timeline will show every deposit, protection, release, and
+          prediction as they happen. Start by depositing capital into your vault —
+          each movement from that point forward builds your capital ledger.
         </p>
       </div>
     </div>
