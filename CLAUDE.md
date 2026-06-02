@@ -520,7 +520,7 @@ Signed: Codex
 
 ### Hermes — 2026-06-02 — v1.0 Freeze Mobile Refinement Pass
 
-Commit: (pending)
+Commit: `30ee5b1`
 
 Changed:
 - `src/components/layout/mobile-nav.tsx` — Added overflow-x-auto + scrollbar-hide for 7-item nav on small screens
