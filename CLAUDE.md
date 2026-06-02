@@ -324,7 +324,7 @@ Signed: Claude 1
 
 ### Codex — 2026-06-02 — Agent Coordination Source of Truth
 
-Commit: pending
+Commit: 932d408
 
 Changed:
 - `CLAUDE.md`
