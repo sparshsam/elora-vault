@@ -407,6 +407,29 @@ The product should feel less like a dashboard and more like a calm financial ope
 
 ---
 
+## Security
+
+Elora's security posture is documented in [`docs/security/current-security-state.md`](docs/security/current-security-state.md). That document covers:
+
+- **Security philosophy** — self-custodied, non-custodial, explicit-confirmation oriented
+- **Authentication & identity model** — Supabase Auth SSR, UUID-based user mapping, middleware-gated routes
+- **Database security** — RLS on all user-data tables, owner-only access, service-role for backend flows only
+- **Transaction safety model** — explicit wallet confirmations, wrong-network handling, lifecycle tracking, no silent execution
+- **Builder Code attribution safety** — production-wired, no-op fallback when unset, no contract behavior changes
+- **Base Account / smart wallet safety** — lab-scoped, capability detection before execution, sequential fallback always preserved
+- **Secret handling rules** — pre-commit hooks, git history remediation, rotation requirements
+- **Policy Runtime safety** — suggestions-only architecture, `requiresConfirmation: true` at the type level, no auto-execution
+- **Infrastructure maturity snapshot** — RLS, Builder Code, Policy Runtime, activity ledger, transaction lifecycle, and research surfaces
+
+Key operational guarantees:
+
+- No automatic fund movement. All capital actions require deliberate user confirmation.
+- No hidden automation, background jobs, cron-based execution, or autonomous agents move funds.
+- No AI-driven capital management. Policy evaluation is deterministic and rules-based.
+- No formal audit has been conducted — this is experimental software.
+
+---
+
 ## Roadmap
 
 ### Near-term priorities
