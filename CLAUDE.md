@@ -1,4 +1,4 @@
-# Elora Vault v0.9 — Self-Custodied Protocol on Base
+# Elora Vault v1.0 Freeze — Behavioral Protection Core
 
 ## Core Concept
 Elora Vault is a **self-custodied behavioral capital vault** on Base. NOT a sportsbook, casino, or gambling protocol.
@@ -7,6 +7,115 @@ Elora Vault is a **self-custodied behavioral capital vault** on Base. NOT a spor
 - "Protect your capital from yourself."
 - "Not every dollar should feel equally available."
 - "Quiet by default. Present when needed. Invisible when not."
+
+---
+
+## Elora v1.0 Freeze Mission Plan
+
+Elora is approaching a hard feature-freeze wall. The goal is no longer to add major systems. The goal is to make the current Behavioral OS loop **stable, coherent, calm, secure, and polished** before real users.
+
+### The Behavioral OS Loop
+```
+Capital State
+→ Policy Runtime
+→ Intent Suggestions
+→ User Confirmation
+→ Transaction Execution
+→ Activity Memory
+→ Future Policy Evaluation
+```
+
+### v1.0 Included
+- Core capital system
+- Available / Protected / Releasing / Committed capital states
+- Canonical capital engine (capital-state.ts)
+- Timed protection horizons (VaultLock model + onchain locks)
+- Release and re-protection flows
+- Behavioral OS loop (capital → policy → intent → confirm → execute → remember → re-evaluate)
+- Policy Studio MVP (CRUD + state-based evaluator)
+- Policy Runtime suggestions-only evaluator (no auto-execution)
+- Intent decision cockpit (/intent page with release confirmations + protection prompts)
+- Activity memory / event ledger (/activity page + API)
+- Transaction lifecycle hardening (tx-hooks, confirmations, error states)
+- Wallet timeout recovery
+- Wrong-network handling
+- Builder Code production wiring (meta tags, env vars, utility functions)
+- Supabase RLS / security hardening
+- Base capability detection (isolated lab, not production wallet flow)
+- EOA-safe fallback architecture
+- Calm, restrained, non-DeFi, non-gamified UX philosophy
+
+### Explicitly Not v1
+Out of scope before real users validate the current loop:
+- Automatic policy execution
+- Autonomous capital movement
+- Paymasters
+- Gas sponsorship
+- Production batching
+- Sub-account routing
+- Full Base Account migration (from lab to production wallet flow)
+- Productive protection / yield integrations
+- AI capital management
+- Advanced analytics
+- Social features
+- Mobile app (native)
+- Push notifications
+- Collaborative systems
+- Vault composability
+- Any feature that increases architectural complexity without user validation
+
+### Allowed Work During Freeze
+- UX polish
+- Copy / microcopy polish
+- Empty state improvements
+- Onboarding clarity
+- Mobile responsiveness
+- Accessibility
+- Performance
+- Transaction reliability
+- State consistency
+- Bug fixes
+- Security hardening
+- Simplification
+- Reducing architecture exposure from normal UI (tuck labs/research away)
+- Settings / Labs separation
+- Documentation updates
+- Test coverage if applicable
+
+### Forbidden Work During Freeze
+Unless explicitly approved by Sparsh:
+- New major architectural layers
+- Auto-execution of any kind
+- New financial primitives
+- Production smart-wallet orchestration
+- Yield integrations
+- Paymaster integrations
+- Hidden automation
+- Schema-heavy redesigns
+- Major routing changes
+- Gamification
+- DeFi dashboard features
+- Sportsbook-like language
+- AI systems that can move capital
+
+### Definition of v1.0 Done
+Elora v1.0 is ready to stop building major features when:
+- Capital states are stable (no flickering, triple-source resolved)
+- Activity is trustworthy (complete, accurate, no gaps)
+- Intent is coherent (clear options, calm framing, no noise)
+- Policy Runtime works safely (no false positives, sensible suggestions)
+- All policy suggestions require confirmation (`requiresConfirmation: true` invariant)
+- Transaction UX is resilient (timeout recovery, error messages, retry guidance)
+- RLS / security posture is hardened (no exposed service-role keys)
+- Builder Code infrastructure is stable (env var, meta tags, utility all wired)
+- Base capability detection is isolated (lab only, not leaking into production wallets)
+- Onboarding is understandable (new user can deposit, protect, predict in < 5 min)
+- Mobile UX is reliable (touch targets, responsive, no layout breakage)
+- Settings is no longer a technical dumping ground (clean separation of concerns)
+- Labs / Research are clearly separated from production surfaces
+- The product feels calm, restrained, and coherent end-to-end
+
+---
 
 ## Layer Maturity (Single Source of Truth)
 
@@ -230,15 +339,49 @@ totalEloraCapital = available + protected + releasing + committed
 - Phase 6.1A — Behavioral protection policy engine
 - Phases 3.9–4.9A — Capital state, onchain, sessions, predictions, UI, language
 
-## Remaining Items (Roadmap)
-1. **Policy execution wiring** — Wire accepted suggestions (protect-profit, delayed-withdrawal) to vault operations
-2. **Loss→onchain lock creation** — Call createLock on ProtectedVault when prediction loses
-3. **Base Account → production** — Move from lab to real wallet option
-4. **Prediction terminology migration** — "Bet" → "Prediction" in API and DB
-5. **Horizon detail surfaces** — Individual horizon cards
-6. **Stronger empty states** — New user onboarding
-7. **Delayed release → production** — Wire release windows to onchain
-8. **Yield strategy evaluation** — Aave/Morpho (future)
+## Recent Agent Updates
+
+### OC — 2026-06-02 — v1.0 Freeze Mission Plan
+Commit: pending
+Changed:
+- CLAUDE.md — Added v1.0 Freeze Mission Plan, feature freeze boundaries, reclassified roadmap
+Summary:
+- Updated title to "Elora Vault v1.0 Freeze — Behavioral Protection Core"
+- Added Elora v1.0 Freeze Mission Plan with Behavioral OS loop definition
+- Defined v1.0 Included (core capital, Policy Runtime, Intent, Activity, security hardening)
+- Defined Explicitly Not v1 (auto-execution, yield, paymasters, Base Account migration, etc.)
+- Defined Allowed Work During Freeze (UX polish, bugs, security, simplification, docs)
+- Defined Forbidden Work During Freeze (new layers, auto-execution, yield, gamification, AI capital)
+- Added Definition of v1.0 Done (15 criteria for feature-freeze readiness)
+- Reclassified Remaining Items into Freeze-Allowed Refinement / Post-User-Validation / Research Only
+- Preserved all existing agent coordination rules and history
+Validation:
+- lint: pass
+- typecheck: pass
+- build: pass
+- contracts:test: not run
+Notes:
+- Documentation / coordination work only — no application code changed
+- v1.0 freeze establishes a hard boundary against scope creep before real users arrive
+- All policy suggestions invariant (`requiresConfirmation: true`) is preserved and reinforced
+Signed: OC
+
+## Remaining Items (v1.0 Freeze Reclassification)
+
+### A. Freeze-Allowed Refinement
+- **Stronger empty states** — New user onboarding
+- **Horizon detail surfaces** — Individual horizon cards (if it simplifies clarity)
+- **Prediction terminology migration** — "Bet" → "Prediction" in API/DB (post-freeze unless needed for safety or clarity)
+
+### B. Post-User-Validation (v1.1+)
+- **Policy execution wiring** — Wire accepted suggestions (protect-profit, delayed-withdrawal) to vault operations
+- **Loss→onchain lock creation** — Call createLock on ProtectedVault when prediction loses
+- **Base Account → production** — Move from lab to real wallet option
+- **Delayed release → production** — Wire release windows to onchain
+- **Prediction terminology migration** — "Bet" → "Prediction" in API and DB
+
+### C. Research / Lab Only
+- **Yield strategy evaluation** — Aave/Morpho (future)
 
 ## CI Status
 - **ESLint:** ✅ 0 errors, 0 warnings
