@@ -518,10 +518,35 @@ Notes:
 
 Signed: Codex
 
+### OC — 2026-06-02 — Empty state & onboarding clarity improvements
+Commit: 8eaea0c
+Changed:
+- `src/app/(authenticated)/vault/page.tsx` — Added new-user explanation when all capital is $0
+- `src/app/(authenticated)/intent/page.tsx` — Improved empty state copy and header description
+- `src/app/(authenticated)/activity/page.tsx` — Improved empty state with first-step suggestion
+- `src/app/(authenticated)/policies/page.tsx` — Expanded empty state with examples + reassurance
+- `src/app/(authenticated)/settings/page.tsx` — Clearer header explaining what Settings covers
+- `src/app/(authenticated)/settings/labs/page.tsx` — Clearer explanation that Labs never moves capital
+Summary:
+- Vault: Added contextual explanation of the four capital states when a new user sees $0 everywhere
+- Intent: Rewrote empty state to explain what Intent is for and what types of events appear there; reduced jargon in header
+- Activity: Suggested depositing as a first step so new users know what to do next
+- Policies: Added concrete examples (profit protection, withdrawal cooling) and reinforced that policies never auto-execute
+- Settings: Made header explain what the page covers
+- Labs: Made it clearer that nothing in Labs moves capital or changes the wallet
+Validation:
+- lint: pass
+- typecheck: pass
+- build: pre-existing turbopack/postcss dependency issue
+- contracts:test: not run
+Notes:
+- No tutorials, popups, walkthroughs, marketing, or gamification added
+- 42 insertions, 16 deletions across 6 files
+- v1.0 Freeze-allowed work: UX polish, copy refinement, onboarding clarity
+Signed: OC
+
 ### Hermes — 2026-06-02 — v1.0 Freeze Mobile Refinement Pass
-
 Commit: `30ee5b1`
-
 Changed:
 - `src/components/layout/mobile-nav.tsx` — Added overflow-x-auto + scrollbar-hide for 7-item nav on small screens
 - `src/app/globals.css` — Fixed CSS nesting bug; extracted scrollbar-hide utility; added momentum scrolling
@@ -534,17 +559,14 @@ Changed:
 - `src/app/(authenticated)/policies/page.tsx` — Reduced section spacing
 - `src/components/policies/policy-card.tsx` — Reduced mobile padding p-6→p-5 md:p-6
 - `tsconfig.json` — Excluded untracked agent WIP files from typecheck
-
 Summary:
 - Full mobile refinement pass across all 8 authenticated pages
 - Fixed: cramped MobileNav on small screens, broken CSS nesting, hardcoded bottom padding (content hidden on notched phones), modal overflow, oversized spacing/padding on mobile
 - Preserved design philosophy, calm UX, all component structure
 - No new features, no animations, no desktop redesign
-
 Validation:
 - lint: pass
 - typecheck: pass
 - build: pass (29 routes)
 - contracts:test: not run
-
 Signed: Hermes
