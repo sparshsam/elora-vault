@@ -491,7 +491,7 @@ Signed: Codex
 
 ### Codex — 2026-06-02 — Settings Labs Research Separation
 
-Commit: pending
+Commit: 8586538
 
 Changed:
 - `src/app/(authenticated)/settings/page.tsx`
