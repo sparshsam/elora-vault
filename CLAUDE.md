@@ -342,7 +342,7 @@ totalEloraCapital = available + protected + releasing + committed
 ## Recent Agent Updates
 
 ### OC — 2026-06-02 — v1.0 Freeze Mission Plan
-Commit: pending
+Commit: ce3c4bb
 Changed:
 - CLAUDE.md — Added v1.0 Freeze Mission Plan, feature freeze boundaries, reclassified roadmap
 Summary:
