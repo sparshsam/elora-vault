@@ -146,7 +146,9 @@ External wallet balance is intentionally excluded from `totalEloraCapital`.
 | **Sessions / Predictions** | Log predictions, commit capital, calculate potential return, settle outcomes, and protect profit. |
 | **Activity** | Chronological record of deposits, protections, releases, withdrawals, prediction events, and policy lifecycle events. Unified capital memory. |
 | **Intent** | Decision cockpit. Release confirmations, protection opportunities, policy runtime suggestions, completed horizons, and active protection timelines. |
-| **Settings** | Account controls, Base Account lab card, Productive Protection research card. |
+| **Settings** | Account controls, connected wallet, preferences, policy activity summary, and outward links to labs/research. |
+| **Labs** | Experimental Base capability checks and infrastructure previews. Research-only; production wallet flows remain unchanged. |
+| **Research** | Productive protection concepts and future capital separation research. No strategies are active. |
 
 ---
 
@@ -206,7 +208,7 @@ The following surfaces are intentionally staged as research or lab prototypes. T
 |---|---|---|
 | **Base Account SDK Lab** | Lab page with capability diagnostics, sub-account detection, and strategy tests | `/settings/base-account-lab` |
 | **Transaction Orchestration Modes** | Conceptual execution modes documented for future architecture (direct, batched, sponsored, sub-account) | `src/lib/account/transaction-modes.ts` |
-| **Productive Protection** | Conceptual protection modes (static, productive, conservative-yield, treasury, stable-lending) with yield strategy research definitions | `/settings/productive-protection`, `src/types/productive-protection.ts`, `src/lib/yield/yield-strategies.ts` |
+| **Productive Protection** | Conceptual protection modes (static, productive, conservative-yield, treasury, stable-lending) with yield strategy research definitions | `/research`, `src/types/productive-protection.ts`, `src/lib/yield/yield-strategies.ts` |
 | **Delayed Release UX** | Interactive mock flows for delayed, scheduled, staged, and reviewed release types — no onchain wiring | Intent page mock demos, `src/components/capital/delayed-release-mocks.tsx` |
 
 ---
@@ -481,6 +483,6 @@ See [`LICENSE`](LICENSE) for details.
 
 **Productive Protection is research-only.** No yield strategies, productive capital modes, or lending integrations are active in production. All related code is conceptual or research-defined.
 
-**Base Account / transaction orchestration lab is read-only and research-only.** Lab surfaces at `/settings/base-account-lab` and `/settings/productive-protection` do not modify production wallet behavior, execute transactions, or affect capital movement unless explicitly stated otherwise.
+**Base Account / transaction orchestration lab is read-only and research-only.** Lab and research surfaces at `/settings/labs`, `/settings/base-account-lab`, and `/research` do not modify production wallet behavior, execute transactions, or affect capital movement unless explicitly stated otherwise.
 
 Use testnet deployments carefully. Do not deposit funds you cannot afford to lose into experimental software.

@@ -165,7 +165,7 @@ totalEloraCapital = available + protected + releasing + committed
 - Supabase + PostgreSQL via Prisma
 - Backend tracks: wallet state, predictions, vault locks, transactions, sessions, policies
 
-## Complete Route Tree (28 routes)
+## Complete Route Tree (29 routes)
 
 ### Pages (authenticated)
 ```
@@ -174,10 +174,11 @@ totalEloraCapital = available + protected + releasing + committed
 ○ /intent                    — Release confirmations + protection opportunities + policy runtime suggestions + delayed release previews
 ○ /policies                  — Behavioral protection policy engine
 ○ /sessions                  — Prediction logging + settlement
-○ /settings                  — Account, Base Account, Productive Protection cards
+○ /research                  — Research-only productive protection concepts
+○ /settings                  — Account, wallet, preferences, policy summary, outward links
 ○ /settings/base-account-lab — Base Account prototype (hidden lab)
 ○ /settings/labs             — Consolidated lab navigation
-○ /settings/productive-protection — Research surface (yield architecture)
+○ /settings/productive-protection — Redirects to /research
 ```
 
 ### Pages (unauthenticated)
@@ -386,7 +387,7 @@ Signed: OC
 ## CI Status
 - **ESLint:** ✅ 0 errors, 0 warnings
 - **TypeScript:** ✅ clean
-- **Next.js build:** ✅ 28 routes, 0 errors
+- **Next.js build:** ✅ 29 routes, 0 errors
 
 ## Agent Coordination
 
@@ -485,5 +486,34 @@ Validation:
 Notes:
 - Documentation-only coordination update; no contract-adjacent files touched.
 - Future agents must read and update `CLAUDE.md` for meaningful repo-state changes.
+
+Signed: Codex
+
+### Codex — 2026-06-02 — Settings Labs Research Separation
+
+Commit: pending
+
+Changed:
+- `src/app/(authenticated)/settings/page.tsx`
+- `src/app/(authenticated)/settings/labs/page.tsx`
+- `src/app/(authenticated)/research/page.tsx`
+- `src/app/(authenticated)/settings/productive-protection/page.tsx`
+- `README.md`
+- `CLAUDE.md`
+
+Summary:
+- Restored Settings as a calm account, wallet, preference, notification, and policy activity surface.
+- Moved productive protection research to `/research` and kept `/settings/productive-protection` as a compatibility redirect.
+- Strengthened Labs framing so Base capability detection, routing previews, and orchestration diagrams are explicitly research-only with no production transaction orchestration or automatic capital movement.
+
+Validation:
+- lint: pass
+- typecheck: pass
+- build: pass
+- contracts:test: not run
+
+Notes:
+- No contract-adjacent files touched.
+- Preserves Base capability detection, Builder Code infrastructure, EOA fallback behavior, and existing lab routes.
 
 Signed: Codex

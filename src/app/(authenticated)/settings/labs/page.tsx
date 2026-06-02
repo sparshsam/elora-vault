@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   FlaskConical,
   ArrowLeft,
+  AlertCircle,
 } from "lucide-react";
 import { BaseAccountBadge, WalletCapabilitiesInfo, SubAccountHierarchy } from "@/components/web3/base-account-badge";
 import { useWalletCapabilities, useCapabilityRouting } from "@/lib/web3/use-wallet-capabilities";
@@ -74,7 +75,20 @@ export default function LabsPage() {
         </Link>
         <h1 className="text-xl font-semibold text-text-primary">Labs</h1>
         <p className="text-small text-text-tertiary mt-1.5">
-          Experimental features and infrastructure research. Things here may evolve or change.
+          Experimental infrastructure and capability research kept outside
+          production settings.
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 mb-10">
+        <p className="text-tiny font-medium text-amber-700 flex items-center gap-1.5">
+          <AlertCircle className="h-3.5 w-3.5" />
+          Lab-only surface
+        </p>
+        <p className="text-tiny text-amber-600/80 mt-1 leading-relaxed">
+          No production transaction orchestration is active here. Base capability
+          checks, batching previews, and routing diagrams are research-only and
+          never move capital automatically.
         </p>
       </div>
 
@@ -99,14 +113,14 @@ export default function LabsPage() {
               </div>
               <p className="text-small text-text-tertiary">
                 Quiet infrastructure layer for Base-native wallets.
-                Detection is automatic — nothing changes unless
-                capabilities are found.
+                Detection is automatic and read-only. Production wallet flows
+                keep the same EOA-safe fallback behavior.
               </p>
               <p className="text-tiny text-text-muted mt-2 leading-relaxed">
                 When a Base Account is detected, Elora enhances the
                 experience with sub-account visibility, feature badges,
-                and future batching opportunities. External wallets
-                continue working exactly as before.
+                and future research context. External wallets continue working
+                exactly as before.
               </p>
             </div>
             <Link

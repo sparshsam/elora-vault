@@ -11,6 +11,7 @@ import {
   Clock,
   ClipboardList,
   FlaskConical,
+  BookOpen,
 } from "lucide-react";
 import {
   readPolicyActivity,
@@ -240,53 +241,39 @@ export default function SettingsPage() {
                   Labs
                 </p>
                 <p className="text-small text-text-tertiary">
-                  Experimental infrastructure features, execution architecture,
-                  and capability detection.
-                </p>
-              </div>
-              <span className="shrink-0 text-tiny text-text-muted mt-1">
-                Explore &rarr;
-              </span>
-            </div>
-          </Link>
-
-          <Link
-            href="/settings/productive-protection"
-            className="block rounded-xl border border-border bg-surface shadow-sm p-5 hover:bg-surface-hover transition-colors"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-text-primary mb-0.5">
-                  Productive Protection
-                </p>
-                <p className="text-small text-text-tertiary">
-                  Research on optional low-risk yield for protected capital.
+                  Experimental wallet capability checks and infrastructure
+                  previews kept separate from day-to-day settings.
                 </p>
                 <p className="text-tiny text-text-muted mt-1">
-                  No strategies are active. This is a research surface.
-                </p>
-              </div>
-              <span className="shrink-0 text-tiny text-text-muted mt-1">
-                View &rarr;
-              </span>
-            </div>
-          </Link>
-
-          <Link
-            href="/settings/base-account-lab"
-            className="block rounded-xl border border-border bg-surface shadow-sm p-5 hover:bg-surface-hover transition-colors"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-text-primary mb-0.5">
-                  Base Account Lab
-                </p>
-                <p className="text-small text-text-tertiary">
-                  Wallet capability detection and sub-account testing.
+                  Research-only. Production wallet flows remain unchanged.
                 </p>
               </div>
               <span className="shrink-0 text-tiny text-text-muted mt-1">
                 Open &rarr;
+              </span>
+            </div>
+          </Link>
+
+          <Link
+            href="/research"
+            className="block rounded-xl border border-border bg-surface shadow-sm p-5 hover:bg-surface-hover transition-colors"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-text-tertiary" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-primary mb-0.5">
+                  Research
+                </p>
+                <p className="text-small text-text-tertiary">
+                  Productive protection concepts and future capital separation
+                  research.
+                </p>
+                <p className="text-tiny text-text-muted mt-1">
+                  No strategies are active. No automatic capital movement.
+                </p>
+              </div>
+              <span className="shrink-0 text-tiny text-text-muted mt-1">
+                View &rarr;
               </span>
             </div>
           </Link>
