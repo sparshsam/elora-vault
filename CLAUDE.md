@@ -20,7 +20,7 @@ This table defines what's safe to rely on vs what's architecture-only:
 | Intent/release flows | **Production-built** | Intent page, release-windows.ts (5 types), release confirmation UI live. |
 | Policy engine | **Foundation-built** | Types, engine, components, CRUD APIs, state-based runtime evaluator, /api/policies/evaluate endpoint, Intent page integration — produces structured suggestions with requiresConfirmation: true. Execution wiring remains future. |
 | Base-native infra | **Foundation-built** | EIP-5792 capability detection, account architecture files, Base Account Lab page — SDK wrapper exists but no production wallet flow replacement. |
-| Builder attribution | **Infrastructure-built** | builder-code.ts utility done, env var set in Vercel, meta tag in layout — not wired into production transactions yet. |
+| Builder attribution | **Infrastructure-built** | builder-code.ts utility done, env var set in Vercel, meta tag in layout, dataSuffix wired into production write hooks with no-op fallback when unset. |
 | Productive protection | **Research-built** | Conceptual protection modes defined, yield strategy research done, research page — no protocol integrations or execution logic. |
 | Delayed liquidity | **UX/model-built** | Interactive mock UX flows in delayed-release-mocks.tsx, previews on Intent page — not wired to onchain release logic. |
 
@@ -56,7 +56,7 @@ totalEloraCapital = available + protected + releasing + committed
 - Supabase + PostgreSQL via Prisma
 - Backend tracks: wallet state, predictions, vault locks, transactions, sessions, policies
 
-## Complete Route Tree (27 routes)
+## Complete Route Tree (28 routes)
 
 ### Pages (authenticated)
 ```
@@ -67,6 +67,7 @@ totalEloraCapital = available + protected + releasing + committed
 ○ /sessions                  — Prediction logging + settlement
 ○ /settings                  — Account, Base Account, Productive Protection cards
 ○ /settings/base-account-lab — Base Account prototype (hidden lab)
+○ /settings/labs             — Consolidated lab navigation
 ○ /settings/productive-protection — Research surface (yield architecture)
 ```
 
@@ -320,3 +321,26 @@ Notes:
 - Agent signing convention established. Future agents should add their own entries under `## Recent Agent Updates`.
 
 Signed: Claude 1
+
+### Codex — 2026-06-02 — Agent Coordination Source of Truth
+
+Commit: pending
+
+Changed:
+- `CLAUDE.md`
+
+Summary:
+- Added persistent multi-agent coordination rules directly to the repository source of truth.
+- Refreshed stale source-of-truth details for route count, `/settings/labs`, and Builder Code production write-hook wiring.
+
+Validation:
+- lint: pass
+- typecheck: pass
+- build: pass
+- contracts:test: not run
+
+Notes:
+- Documentation-only coordination update; no contract-adjacent files touched.
+- Future agents must read and update `CLAUDE.md` for meaningful repo-state changes.
+
+Signed: Codex
