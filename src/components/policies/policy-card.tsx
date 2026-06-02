@@ -47,7 +47,7 @@ export function PolicyCard({ policy, onStatusChange, onDelete }: PolicyCardProps
   });
 
   return (
-    <div className="relative rounded-xl border border-border bg-surface shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+    <div className="relative rounded-xl border border-border bg-surface shadow-sm p-5 md:p-6 transition-all duration-200 hover:shadow-md">
       {/* Top row: type label + status */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3 min-w-0">

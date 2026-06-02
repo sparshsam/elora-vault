@@ -55,7 +55,7 @@ export default function VaultPage() {
           <VaultSkeleton />
         </div>
       ) : (
-        <div className="max-w-3xl mx-auto space-y-8">
+        <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
         {/* ── Page Heading ── */}
         <div>
           <h1 className="text-[28px] font-light tracking-tight text-text-primary">

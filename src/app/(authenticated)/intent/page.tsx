@@ -280,8 +280,8 @@ interface ReleaseConfirmModalProps {
 function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, onProtectInstead, onKeepProtected, isSubmitting, errorMessage }: ReleaseConfirmModalProps) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-xl p-6 md:p-8 pb-safe animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 backdrop-blur-sm px-4 overflow-y-auto pt-12 md:pt-0 md:items-center" role="dialog" aria-modal="true">
+      <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-xl p-5 md:p-8 pb-safe animate-in fade-in duration-200 my-auto">
         <div className="flex justify-center mb-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-green-200 bg-green-50">
             <Shield className="h-5 w-5 text-green-700" />

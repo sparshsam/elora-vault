@@ -407,7 +407,7 @@ function DateGroupSection({ label, events, isLastGroup }: DateGroupSectionProps)
       <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary mb-4 px-1">
         {label}
       </h2>
-      <div className="rounded-xl border border-border bg-surface shadow-sm p-6 md:p-8">
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-5 md:p-8">
         {events.map((event, index) => (
           <TimelineItem
             key={event.id}

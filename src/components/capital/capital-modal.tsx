@@ -44,7 +44,7 @@ export function CapitalModal({ open, onClose, title, children, className }: Capi
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/15 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/15 backdrop-blur-sm px-4 overflow-y-auto py-8"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}
@@ -52,7 +52,7 @@ export function CapitalModal({ open, onClose, title, children, className }: Capi
       <div
         className={cn(
           "w-full max-w-md rounded-xl border border-border bg-surface shadow-xl",
-          "p-6 md:p-8 pb-safe animate-in fade-in duration-200",
+          "p-5 md:p-8 pb-safe animate-in fade-in duration-200 my-auto",
           className,
         )}
       >

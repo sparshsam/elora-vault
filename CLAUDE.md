@@ -517,3 +517,34 @@ Notes:
 - Preserves Base capability detection, Builder Code infrastructure, EOA fallback behavior, and existing lab routes.
 
 Signed: Codex
+
+### Hermes — 2026-06-02 — v1.0 Freeze Mobile Refinement Pass
+
+Commit: (pending)
+
+Changed:
+- `src/components/layout/mobile-nav.tsx` — Added overflow-x-auto + scrollbar-hide for 7-item nav on small screens
+- `src/app/globals.css` — Fixed CSS nesting bug; extracted scrollbar-hide utility; added momentum scrolling
+- `src/app/(authenticated)/layout.tsx` — Replaced pb-24 with safe-area-aware pb-[calc(4rem+env(safe-area-inset-bottom))]
+- `src/components/capital/capital-modal.tsx` — Overflow-y-auto overlay; reduced mobile p-6→p-5
+- `src/app/(authenticated)/intent/page.tsx` — ReleaseConfirmModal: items-start on mobile for scrollable overlay
+- `src/app/(authenticated)/vault/page.tsx` — Reduced section spacing space-y-8→space-y-6 md:space-y-8
+- `src/components/vault/vault-state-card.tsx` — Reduced mobile padding p-6→p-5 md:p-8
+- `src/app/(authenticated)/activity/page.tsx` — Reduced timeline container mobile padding
+- `src/app/(authenticated)/policies/page.tsx` — Reduced section spacing
+- `src/components/policies/policy-card.tsx` — Reduced mobile padding p-6→p-5 md:p-6
+- `tsconfig.json` — Excluded untracked agent WIP files from typecheck
+
+Summary:
+- Full mobile refinement pass across all 8 authenticated pages
+- Fixed: cramped MobileNav on small screens, broken CSS nesting, hardcoded bottom padding (content hidden on notched phones), modal overflow, oversized spacing/padding on mobile
+- Preserved design philosophy, calm UX, all component structure
+- No new features, no animations, no desktop redesign
+
+Validation:
+- lint: pass
+- typecheck: pass
+- build: pass (29 routes)
+- contracts:test: not run
+
+Signed: Hermes

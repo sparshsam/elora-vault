@@ -82,7 +82,7 @@ export default function PoliciesPage() {
 
   return (
     <PageShell>
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
         {/* ═══════════════════════════════════════ */}
         {/* HEADER                                */}
         {/* ═══════════════════════════════════════ */}
