@@ -292,7 +292,7 @@ Never commit: `.env`, `.env.local`, `.env.production`, private keys, RPC secrets
 
 ## Recent Agent Updates
 
-### Claude — 2026-06-02 — Behavioral OS product state documentation + Security posture
+### Claude 1 — 2026-06-02 — Behavioral OS product state documentation + Security posture
 
 Commit: `88a6f9e`
 
@@ -319,4 +319,4 @@ Notes:
 - Security posture document is a living document — update when security-relevant changes occur.
 - Agent signing convention established. Future agents should add their own entries under `## Recent Agent Updates`.
 
-Signed: Claude
+Signed: Claude 1
