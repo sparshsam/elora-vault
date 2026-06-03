@@ -572,7 +572,7 @@ Validation:
 Signed: Hermes
 
 ### Hermes — 2026-06-03 — Repository Stabilization Sprint (P0/P1)
-Commit: `f95acca`
+Commit: `ba7f608`
 
 Changed:
 - `contracts/lib/` — Installed forge-std + OpenZeppelin Foundry dependencies
