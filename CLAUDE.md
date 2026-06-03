@@ -616,7 +616,7 @@ Notes:
 Signed: Hermes
 
 ### Hermes — 2026-06-03 — Build Environment Hardening Pass
-Commit: `pending`
+Commit: `5026df6`
 
 Changed:
 - `src/lib/env.ts` — Created. Centralized public env variable accessors with clear error messages. Validates NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID as required.
