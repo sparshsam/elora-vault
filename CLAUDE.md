@@ -650,3 +650,31 @@ Notes:
 - Previously the build failed with a cryptic Supabase error; now it fails with specific variable names and fix instructions
 - The env.ts/env-server.ts split ensures server-only credentials never reach client bundles
 Signed: Hermes
+
+### Hermes — 2026-06-03 — ARCHITECTURE.md Repository Compression Memory
+Commit: `pending`
+
+Changed:
+- `ARCHITECTURE.md` — Created. Lightweight architectural compression document covering product philosophy, core system overview, canonical ownership map (21 systems), repository boundaries, architectural invariants (9 rules), system flow diagrams (capital, policy, auth, tx lifecycle, build), repository rules (9), operational commands, and future evolution guidance.
+- `AGENTS.md` — readers should now also check ARCHITECTURE.md for architectural context before CLAUDE.md for project state.
+- `CLAUDE.md` — Added entry for this pass.
+
+Summary:
+- Created `ARCHITECTURE.md` as anti-drift infrastructure for the repository
+- Every canonical source reference verified against actual filesystem
+- Every referenced function/export verified against source code
+- No dead systems referenced (pruned modules shown as historical strikethrough)
+- Document is ~18KB — intentionally compressed, not exhaustive
+- All 9 architectural invariants document what must never break
+
+Validation:
+- lint: pass
+- typecheck: pass
+- build: pre-existing env var requirement
+- contracts:test: pass (22/22)
+
+Notes:
+- First thing future agents should read — architecture context before project state
+- Update this document whenever a new system is added or a canonical source changes
+- If this document drifts from reality, someone has broken the anti-drift contract
+Signed: Hermes

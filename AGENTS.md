@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Project Context
 
-**Canonical single source of truth for Elora Vault project context is `CLAUDE.md` in this directory.** Read it before making any changes. It contains:
+**Canonical single source of truth for Elora Vault project context is `CLAUDE.md` in this directory.** Read it before making any changes. For architectural context (system boundaries, ownership map, invariants), also read `ARCHITECTURE.md`. It contains:
 - Layer maturity table (what's safe to rely on)
 - Complete file map by layer
 - Capital state model and architecture
