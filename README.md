@@ -18,7 +18,7 @@
   <br />
 
   <div>
-    <img src="https://img.shields.io/badge/version-v0.9-green" alt="Version" />
+    <img src="https://img.shields.io/badge/version-v1.0-green" alt="Version" />
     <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License" />
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome" />
     <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js" />
@@ -208,7 +208,7 @@ The following surfaces are intentionally staged as research or lab prototypes. T
 |---|---|---|
 | **Base Account SDK Lab** | Lab page with capability diagnostics, sub-account detection, and strategy tests | `/settings/base-account-lab` |
 | **Transaction Orchestration Modes** | Conceptual execution modes documented for future architecture (direct, batched, sponsored, sub-account) | `src/lib/account/transaction-modes.ts` |
-| **Productive Protection** | Conceptual protection modes (static, productive, conservative-yield, treasury, stable-lending) with yield strategy research definitions | `/research`, `src/types/productive-protection.ts`, `src/lib/yield/yield-strategies.ts` |
+| **Productive Protection** | Conceptual protection modes (static, productive, conservative-yield, treasury, stable-lending) with yield strategy research definitions | `/research`, `src/types/productive-protection.ts` |
 | **Delayed Release UX** | Interactive mock flows for delayed, scheduled, staged, and reviewed release types — no onchain wiring | Intent page mock demos, `src/components/capital/delayed-release-mocks.tsx` |
 
 ---
@@ -284,7 +284,6 @@ Key architecture files:
 
 ```text
 src/lib/account/
-├── account-strategy.ts         → Strategy types (external-wallet, base-account, elora-sub-account)
 ├── base-account-client.ts      → Isolated Base Account SDK wrapper (lab only)
 ├── builder-code.ts             → Builder Code attribution utility (production-wired)
 ├── transaction-modes.ts        → Research execution modes (direct, batched, sponsored, sub-account)
@@ -300,6 +299,16 @@ Architecture layers:
 
 ## Quick Start
 
+### Prerequisites
+
+- **Node.js 22+** and **npm**
+- **Supabase project** — create one free at https://supabase.com
+- **WalletConnect Project ID** — get one free at https://cloud.walletconnect.com
+- **Base Sepolia-compatible wallet** (MetaMask, Coinbase Wallet, etc.)
+- **Foundry** (for contract development) — `curl -L https://foundry.paradigm.xyz | bash && foundryup`
+
+### Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/sparshsam/elora-vault.git
@@ -308,18 +317,62 @@ cd elora-vault
 # Install dependencies
 npm install
 
-# Configure environment
+# Configure environment — copy the template and fill in your values
 cp .env.example .env.local
-# Edit .env.local with Supabase, WalletConnect, and contract configuration
 
-# Push database schema and start
+# Edit .env.local — you need at minimum:
+#   NEXT_PUBLIC_SUPABASE_URL       — from Supabase Dashboard → Settings → API
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY  — same page
+#   SUPABASE_SERVICE_ROLE_KEY      — same page
+#   DATABASE_URL                   — Settings → Database → Connection string
+#   DIRECT_URL                     — Settings → Database → Direct connection
+#   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID — from https://cloud.walletconnect.com
+
+# Push database schema to your Supabase project
 npx prisma db push
+
+# Start development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-> **Prerequisites:** Node.js 22+, npm, a Supabase project, WalletConnect project ID, and Base Sepolia-compatible wallet setup.
+### Verify It Works
+
+```bash
+# Lint
+npm run lint
+
+# TypeScript check
+npm run typecheck
+
+# Build (may require .env.local for Supabase prerendering)
+npm run build
+
+# Contract tests (requires Foundry)
+cd contracts
+forge build
+forge test
+```
+
+### Environment Validation
+
+The app validates required environment variables at startup via `src/lib/env.ts`.
+If any required variable is missing, the app throws a clear error message
+pointing to the missing variable and how to fix it.
+
+| Variable | Required? | Public? | Default |
+| -------- | --------- | ------- | ------- |
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ Yes | ✅ Public (NEXT_PUBLIC_) | — |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Yes | ✅ Public (NEXT_PUBLIC_) | — |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | ✅ Yes | ✅ Public (NEXT_PUBLIC_) | — |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ Yes | ❌ Server-only | — |
+| `DATABASE_URL` | ✅ Yes | ❌ Server-only | — |
+| `DIRECT_URL` | ✅ Yes | ❌ Server-only | — |
+| `NEXT_PUBLIC_BASE_RPC_URL` | ❌ Optional | ✅ Public (NEXT_PUBLIC_) | `https://mainnet.base.org` |
+| `NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL` | ❌ Optional | ✅ Public (NEXT_PUBLIC_) | `https://sepolia.base.org` |
+| `NEXT_PUBLIC_SITE_URL` | ❌ Optional | ✅ Public (NEXT_PUBLIC_) | `http://localhost:3000` |
+| `NEXT_PUBLIC_BASE_BUILDER_CODE` | ❌ Optional | ✅ Public (NEXT_PUBLIC_) | (none — no-op) |
 
 ---
 

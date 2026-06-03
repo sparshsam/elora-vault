@@ -19,19 +19,7 @@
  * - This module imports no side-effect modules.
  */
 
-/**
- * Safely read the builder code from the environment.
- *
- * Returns the code if set and non-empty, or null if unset/empty.
- * This function throws nothing — it always returns safely.
- */
-function getBuilderCode(): string | null {
-  const code = process.env.NEXT_PUBLIC_BASE_BUILDER_CODE;
-  if (!code || code.trim() === "") {
-    return null;
-  }
-  return code.trim();
-}
+import { builderCode } from "@/lib/env";
 
 /**
  * Return a hex-encoded calldata suffix for ERC-8021 transaction
@@ -52,7 +40,7 @@ function getBuilderCode(): string | null {
  *   - withdrawUnlocked
  */
 export function getBuilderDataSuffix(): `0x${string}` {
-  const code = getBuilderCode();
+  const code = builderCode();
 
   if (!code) {
     return "0x";
@@ -65,24 +53,4 @@ export function getBuilderDataSuffix(): `0x${string}` {
     .join("");
 
   return `0x${hex}`;
-}
-
-/**
- * Check whether a builder code is configured in the environment.
- *
- * Useful for conditional UI or feature flags without exposing
- * the code value itself.
- */
-export function hasBuilderCode(): boolean {
-  return getBuilderCode() !== null;
-}
-
-/**
- * Get the raw builder code value.
- *
- * Returns the code string or null if not configured.
- * Do NOT expose this value in client-side code unless necessary.
- */
-export function getRawBuilderCode(): string | null {
-  return getBuilderCode();
 }

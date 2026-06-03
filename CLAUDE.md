@@ -614,3 +614,39 @@ Notes:
 - Dead policy modules archived to git history — recoverable if needed
 - Research artifacts preserved in docs/research/
 Signed: Hermes
+
+### Hermes — 2026-06-03 — Build Environment Hardening Pass
+Commit: `pending`
+
+Changed:
+- `src/lib/env.ts` — Created. Centralized public env variable accessors with clear error messages. Validates NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID as required.
+- `src/lib/env-server.ts` — Created. Server-only env accessors for SUPABASE_SERVICE_ROLE_KEY, DATABASE_URL, DIRECT_URL — separated from public env to prevent client bundle leakage.
+- `src/lib/supabase/client.ts` — Lazy singleton client creation; uses centralized env validation
+- `src/lib/supabase/server.ts` — Uses centralized env validation instead of raw process.env
+- `src/lib/web3/config.ts` — Uses centralized env validation for project ID and RPC URLs
+- `src/lib/account/builder-code.ts` — Uses centralized env for builder code
+- `src/middleware.ts` — Uses centralized env validation; preserves existing route protection
+- `src/app/auth/login/page.tsx` — Moved createClient() from module level to event handler (lazy init) — was crashing static prerender
+- `src/app/auth/signup/page.tsx` — Same lazy init fix
+- `.env.example` — Expanded with clear sections (required/public/server/optional), setup instructions, security notes
+- `README.md` — Expanded Quick Start with prerequisites, detailed setup, verification commands, full env variable reference table; updated version badge (v0.9→v1.0); fixed stale architecture references
+
+Summary:
+- **Build failure diagnosis**: Root cause identified — auth pages called createClient() at module level during SSR/prerender without env vars. Lazy init fix prevents prerender crashes.
+- **Env audit**: 12 env variables categorized. 6 required, 4 optional, 2 deployment-only. All server-only vars separated into env-server.ts.
+- **Client/server boundaries**: SUPABASE_SERVICE_ROLE_KEY, DATABASE_URL, DIRECT_URL never referenced in client code. All NEXT_PUBLIC_* vars are safe in client bundles.
+- **Build failure on missing env now has clear errors**: Instead of cryptic `@supabase/ssr: Your project's URL...`, users now see: `❌ Missing required environment variable: NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` with fix instructions.
+- Build still fails without env vars (expected — six required vars), but with actionable error messages pinpointing exactly what's missing.
+
+Validation:
+- lint: pass
+- typecheck: pass
+- build: pre-existing env var requirement (now with clear errors instead of cryptic Supabase errors)
+- contracts:test: pass (22/22)
+
+Notes:
+- npm run dev works without env validation issues locally (.env.local provides them)
+- Build failure is INTENTIONAL — required env vars are actually required for the app to function
+- Previously the build failed with a cryptic Supabase error; now it fails with specific variable names and fix instructions
+- The env.ts/env-server.ts split ensures server-only credentials never reach client bundles
+Signed: Hermes
