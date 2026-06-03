@@ -33,6 +33,7 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = [
     "/dashboard", "/settings",
     "/vault", "/activity", "/intent",
+    "/policies", "/sessions", "/insights", "/research",
   ];
   const isProtected = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path),

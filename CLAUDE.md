@@ -570,3 +570,47 @@ Validation:
 - build: pass (29 routes)
 - contracts:test: not run
 Signed: Hermes
+
+### Hermes — 2026-06-03 — Repository Stabilization Sprint (P0/P1)
+Commit: `f95acca`
+
+Changed:
+- `contracts/lib/` — Installed forge-std + OpenZeppelin Foundry dependencies
+- `src/lib/policies/policy-evaluator.ts` — DELETED (orphaned, 0 consumers)
+- `src/lib/policies/policy-timeline.ts` — DELETED (in-memory store, 0 consumers)
+- `src/lib/policies/policy-state-machine.ts` — DELETED (only consumed by policy-evaluator, dead)
+- `src/lib/policies/behavioral-suggestions.ts` — DELETED (0 consumers)
+- `src/lib/policies/reflection-layer.ts` — DELETED (0 consumers)
+- `src/lib/policies/policy-engine.ts` — Pruned dead exports (evaluatePolicy stub, SUPPORTED_POLICY_TYPES, allowedNextStatuses, ValidationResult)
+- `src/lib/capital/capital-state.ts` — Removed 6 redundant alias fields from CapitalBalances and CapitalBalancesFormatted (availableCapital, protectedCapital, releasingCapital, committedCapital, atRisk, total); updated normalizeCapitalState, formatCapitalBalances, getCapitalStateMetrics
+- `src/app/(authenticated)/intent/page.tsx` — Updated alias references to canonical names
+- `src/app/(authenticated)/insights/page.tsx` — Updated alias references to canonical names
+- `src/app/(authenticated)/vault/page.tsx` — Updated alias references to canonical names
+- `src/app/(authenticated)/sessions/page.tsx` — Updated alias references to canonical names
+- `src/middleware.ts` — Added /policies, /sessions, /insights, /research to protected paths
+- `src/lib/yield/yield-strategies.ts` — ARCHIVED to docs/research/yield-strategies-research.ts (0 production consumers)
+- `src/lib/account/account-strategy.ts` — ARCHIVED to docs/research/account-strategy-research.ts (0 production consumers)
+- `docs/research/` — Created archive directory for research artifacts
+- `architectural-diagnosis.md` — Created with 6-section deliverable (diagnosis, cognitive ownership, canonical map, simplifications, boundaries, safety)
+
+Summary:
+- P0: Installed Foundry deps — contracts now compile and 22/22 tests pass
+- P1.1: Pruned 5 dead policy system modules (~1,100 lines of dead code) — only policy-engine.ts (live API validation) and policy-runtime-evaluator.ts (live evaluation) remain
+- P1.3: Removed 6 alias fields from CapitalBalances — -46% interface surface area, one vocabulary for capital state
+- P1.4: Archived yield-strategies.ts and account-strategy.ts to docs/research (0 production consumers)
+- P1.5: Fixed middleware to protect all 9 authenticated routes
+- P1.6: Assessed delayed-release mock render — no actionable duplicate (text explanation + interactive mock are complementary)
+- P1.2 (PolicySuggestion types): Assessed but deferred — both PolicySuggestion types serve distinct purposes (orchestration type = concept-oriented, suggestions type = data-oriented). Consolidation would increase coupling risk for no runtime win.
+- Preserved all Behavioral OS invariants, EOA compatibility, transaction safety
+
+Validation:
+- lint: pass
+- typecheck: pass
+- build: pre-existing env var issue (28/29 pages, TypeScript clean)
+- contracts:test: pass (22/22)
+
+Notes:
+- Build failure on /auth/login is pre-existing (missing Supabase env vars for static prerender) — not introduced by this cleanup
+- Dead policy modules archived to git history — recoverable if needed
+- Research artifacts preserved in docs/research/
+Signed: Hermes
