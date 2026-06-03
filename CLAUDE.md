@@ -652,7 +652,7 @@ Notes:
 Signed: Hermes
 
 ### Hermes — 2026-06-03 — ARCHITECTURE.md Repository Compression Memory
-Commit: `pending`
+Commit: `b01732d`
 
 Changed:
 - `ARCHITECTURE.md` — Created. Lightweight architectural compression document covering product philosophy, core system overview, canonical ownership map (21 systems), repository boundaries, architectural invariants (9 rules), system flow diagrams (capital, policy, auth, tx lifecycle, build), repository rules (9), operational commands, and future evolution guidance.
