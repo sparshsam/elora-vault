@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { supabaseUrl, supabaseAnonKey } from "@/lib/env";
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl(),
+    supabaseAnonKey(),
     {
       cookies: {
         getAll() {
@@ -33,6 +34,7 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = [
     "/dashboard", "/settings",
     "/vault", "/activity", "/intent",
+    "/policies", "/sessions", "/insights", "/research",
   ];
   const isProtected = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path),
@@ -44,7 +46,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If logged in and visiting auth pages, redirect to dashboard
+  // If logged in and visiting auth pages, redirect to vault
   if (user && request.nextUrl.pathname.startsWith("/auth")) {
     const url = request.nextUrl.clone();
     url.pathname = "/vault";
