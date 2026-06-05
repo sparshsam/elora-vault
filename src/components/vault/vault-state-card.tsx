@@ -79,7 +79,7 @@ export function VaultStateCard({
           : undefined
       }
       className={cn(
-        "relative rounded-xl border p-6 md:p-8 transition-all duration-300",
+        "relative rounded-xl border p-5 md:p-8 transition-all duration-300",
         "shadow-sm",
         cfg.bg,
         cfg.border,

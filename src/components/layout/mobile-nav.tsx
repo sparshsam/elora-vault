@@ -21,8 +21,8 @@ export function MobileNav() {
     pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-xl pb-safe">
-      <div className="flex items-center justify-around py-1">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-xl pb-safe overflow-x-auto scrollbar-hide">
+      <div className="flex items-center justify-around min-w-max px-1 py-1">
         {primaryItems.map((item) => {
           const active = isActive(item.href);
           return (
@@ -30,7 +30,7 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-2 min-w-[56px] rounded-lg transition-colors",
+                "flex flex-col items-center gap-0.5 px-2.5 py-2 min-w-[52px] rounded-lg transition-colors",
                 active
                   ? "text-green-600"
                   : "text-text-tertiary hover:text-text-secondary",
@@ -44,7 +44,7 @@ export function MobileNav() {
               />
               <span
                 className={cn(
-                  "text-[10px] font-medium",
+                  "text-[10px] font-medium leading-tight text-center",
                   active ? "text-green-600" : "text-text-tertiary",
                 )}
               >
@@ -58,7 +58,7 @@ export function MobileNav() {
         <Link
           href="/settings"
           className={cn(
-            "flex flex-col items-center gap-0.5 px-3 py-2 min-w-[48px] rounded-lg transition-colors",
+            "flex flex-col items-center gap-0.5 px-2.5 py-2 min-w-[44px] rounded-lg transition-colors",
             isActive("/settings")
               ? "text-green-600"
               : "text-text-subtle hover:text-text-tertiary",
@@ -72,7 +72,7 @@ export function MobileNav() {
           />
           <span
             className={cn(
-              "text-[9px] font-medium",
+              "text-[9px] font-medium leading-tight text-center",
               isActive("/settings") ? "text-green-600" : "text-text-subtle",
             )}
           >

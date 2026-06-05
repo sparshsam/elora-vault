@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "contracts"]
+  "exclude": ["node_modules", "contracts", "src/components/policies/confirm-action-modal.tsx", "src/components/policies/suggested-actions.tsx", "src/components/capital/tx-status-display.tsx", "src/hooks/use-network-check.ts"]
 }

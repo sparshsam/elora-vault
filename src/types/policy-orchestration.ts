@@ -151,6 +151,86 @@ export type TimelineEntryType =
 
 /* ── Evaluation Context ────────────────────────── */
 
+/* ── Runtime Suggestion ───────────────────────── */
+
+/**
+ * A structured suggestion from the policy runtime evaluation engine.
+ *
+ * This is the canonical output of evaluating active policies against
+ * current capital state. It describes what a policy recommends, why,
+ * and requires explicit user confirmation before any execution layer
+ * should act on it.
+ *
+ * Design invariants:
+ *   - NEVER auto-execute based on this type
+ *   - requiresConfirmation is always true
+ *   - confidence reflects how strongly the condition was met
+ *   - priority orders suggestions within a batch (1 = highest)
+ */
+export interface PolicyRuntimeSuggestion {
+  /** The policy that produced this suggestion. */
+  policyId: string;
+  policyTitle: string;
+  policyType: PolicyType;
+  /** Human-readable explanation of why this suggestion was generated. */
+  reason: string;
+  /** What the policy recommends doing. */
+  suggestedAction: SuggestionType;
+  /** Dollar amount the suggestion involves, if applicable. */
+  amount?: number;
+  /**
+   * How confident the evaluation is that the condition is genuinely met.
+   * - high: condition clearly met (e.g., recent win above threshold with capital available)
+   * - medium: condition partially met (e.g., win exists but amount is small)
+   * - low: faint signal, worth a quiet mention
+   */
+  confidence: "low" | "medium" | "high";
+  /**
+   * Priority within a batch of suggestions (1 = highest).
+   * Derived from urgency and capital impact.
+   */
+  priority: number;
+  /** Always true — policy runtime never auto-executes. */
+  requiresConfirmation: true;
+  /** When this suggestion expires and should be re-evaluated. */
+  expiresAt: number;
+  /** When the evaluation was performed. */
+  evaluatedAt: number;
+}
+
+/* ── Runtime Evaluation Context ──────────────── */
+
+/**
+ * Compact state snapshot used by the policy runtime evaluator.
+ * Unlike EvaluationContext (event-driven), this is built from
+ * current capital state and recent activity — no event required.
+ */
+export interface RuntimeEvaluationInput {
+  /** Current capital state (onchain + DB derived). */
+  capital: {
+    available: number;
+    protected: number;
+    releasing: number;
+    committed: number;
+  };
+  /** Recent activity summary (last 7 days). */
+  recentActivity: {
+    predictionsWon: number;
+    predictionsLost: number;
+    totalDeposits: number;
+    totalWithdrawals: number;
+    totalProtected: number;
+    totalReleased: number;
+    consecutiveLosses: number;
+  };
+  /** Recent won predictions with their profit amounts. */
+  recentWins: { id: string; description: string; profit: number }[];
+  /** Active protection horizons. */
+  activeHorizons: { id: string; amount: number; durationDays: number }[];
+}
+
+/* ── Evaluation Context (event-driven, existing) ─ */
+
 /**
  * Full context passed to the evaluation engine.
  * Built from the current capital event plus the user's
