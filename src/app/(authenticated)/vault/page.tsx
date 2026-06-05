@@ -44,8 +44,9 @@ export default function VaultPage() {
 
   const { activeHorizonCount, balances } = capital;
   const hasHorizons = activeHorizonCount > 0;
-  const hasReleasing = balances.releasingCapital > 0;
-  const hasCommitted = balances.committedCapital > 0;
+  const hasReleasing = balances.releasing > 0;
+  const hasCommitted = balances.committed > 0;
+  const isEmpty = balances.available === 0 && balances.protected === 0 && balances.releasing === 0 && balances.committed === 0;
 
   return (
     <PageShell>
@@ -54,7 +55,7 @@ export default function VaultPage() {
           <VaultSkeleton />
         </div>
       ) : (
-        <div className="max-w-3xl mx-auto space-y-8">
+        <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
         {/* ── Page Heading ── */}
         <div>
           <h1 className="text-[28px] font-light tracking-tight text-text-primary">
@@ -105,7 +106,21 @@ export default function VaultPage() {
           </div>
 
           <div className="space-y-5">
-            {/* ── ① AVAILABLE ── */}
+            {/* ── First-time explanation ── */}
+          {isEmpty && (
+            <div className="rounded-xl border border-border bg-surface-subtle px-6 py-5">
+              <p className="text-sm text-text-primary font-medium mb-1">
+                Your vault is ready
+              </p>
+              <p className="text-small text-text-tertiary leading-relaxed">
+                Elora separates your capital into states: Available, Protected, Releasing, and Committed.
+                Deposit USDC from your connected wallet to get started, then protect what matters and
+                use the rest with intention.
+              </p>
+            </div>
+          )}
+
+          {/* ── ① AVAILABLE ── */}
             <VaultStateCard
               state="available"
               label="Available"

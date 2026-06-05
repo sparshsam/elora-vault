@@ -163,10 +163,34 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Bottom safe-area for fixed elements ── */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Hide scrollbar but keep scrollable (for mobile nav, modals) ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Motion + Interaction ────────────── */
 @media (prefers-reduced-motion: no-preference) {
   .motion-safe-transition {
     transition: all var(--duration-normal) var(--ease-elora);
+  }
+}
+
+/* ── No hover effects on touch devices ──── */
+@media (hover: none) and (pointer: coarse) {
+  .hover\:-translate-y-0\.5 {
+    transform: none;
+  }
+  .hover\:shadow-md {
+    box-shadow: var(--shadow-sm);
   }
 }
 
@@ -217,21 +241,12 @@
     animation-duration: 2.5s;
   }
 
-/* ── No hover effects on touch devices ──── */
-@media (hover: none) and (pointer: coarse) {
-  .hover\:-translate-y-0\.5 {
-    transform: none;
+  /* Scrollable content areas get momentum scrolling */
+  .overflow-auto,
+  .overflow-x-auto,
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
   }
-  .hover\:shadow-md {
-    box-shadow: var(--shadow-sm);
-  }
-}
-
-/* ── Bottom safe-area for fixed elements ── */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
 }
 
 /* ── Desktop-only safe-area reset ─────── */

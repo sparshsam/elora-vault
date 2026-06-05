@@ -723,12 +723,12 @@ export default function SessionsPage() {
       }, 0);
 
     return {
-      committed: capital.balances.committedCapital,
+      committed: capital.balances.committed,
       activeCount: activePredictions.length,
       potentialReturn,
       settledPnl,
     };
-  }, [bets, capital.balances.committedCapital]);
+  }, [bets, capital.balances.committed]);
 
   const handleSettle = useCallback(async (id: string, result: PredictionSettleResult) => {
     if (settlingId) return;
