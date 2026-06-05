@@ -13,6 +13,8 @@ import {
   type PolicyActivityEvent,
   type PolicySuggestion,
 } from "@/lib/policies/policy-suggestions";
+import type { PolicyRuntimeSuggestion } from "@/types/policy-orchestration";
+import { POLICY_TYPE_META } from "@/types/policy";
 import {
   Lock,
   Clock,
@@ -247,10 +249,14 @@ function EmptyState() {
           <Target className="h-5 w-5 text-text-tertiary" />
         </div>
         <p className="text-sm font-medium text-text-primary">No decisions need your attention right now.</p>
-        <p className="text-small text-text-tertiary mt-2 max-w-sm leading-relaxed">
-          Intent is where releases, protections, and decisions converge.
-          Completed horizons, protection opportunities, and policy suggestions
-          will appear here when there is something to consider.
+        <p className="text-small text-text-tertiary mt-2 max-w-md leading-relaxed">
+          Intent is where you slow down before capital moves. When a protection
+          horizon completes, a policy suggests an action, or a prediction returns
+          a result, you will find it here to consider before confirming.
+        </p>
+        <p className="text-small text-text-tertiary mt-3 max-w-md leading-relaxed">
+          Nothing needs your attention yet. Use the vault to deposit and protect
+          capital, and Intent will be here when you need it.
         </p>
       </div>
     </div>
@@ -274,8 +280,8 @@ interface ReleaseConfirmModalProps {
 function ReleaseConfirmModal({ open, amount, countdown, confirmed, onConfirm, onProtectInstead, onKeepProtected, isSubmitting, errorMessage }: ReleaseConfirmModalProps) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-xl p-6 md:p-8 pb-safe animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 backdrop-blur-sm px-4 overflow-y-auto pt-12 md:pt-0 md:items-center" role="dialog" aria-modal="true">
+      <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-xl p-5 md:p-8 pb-safe animate-in fade-in duration-200 my-auto">
         <div className="flex justify-center mb-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-green-200 bg-green-50">
             <Shield className="h-5 w-5 text-green-700" />
@@ -365,6 +371,9 @@ export default function IntentPage() {
   const [protectSuggestion, setProtectSuggestion] = useState<{ amount: number; durationDays: number } | null>(null);
   const [protectModalOpen, setProtectModalOpen] = useState(false);
   const [defaultDurationDays, setDefaultDurationDays] = useState(30);
+
+  // ── Policy Runtime Suggestions (from server-side evaluation) ──
+  const [runtimeSuggestions, setRuntimeSuggestions] = useState<PolicyRuntimeSuggestion[]>([]);
 
   useEffect(() => {
     if (!confirmOpen || confirmed) return;
@@ -459,6 +468,20 @@ export default function IntentPage() {
     })();
   }, []);
 
+  // ── Fetch policy runtime evaluations ──
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/policies/evaluate");
+        if (!res.ok) return;
+        const data = await res.json();
+        setRuntimeSuggestions(data.suggestions ?? []);
+      } catch {
+        // Silently degrade — not critical UI
+      }
+    })();
+  }, []);
+
   const releasableHorizons = useMemo(() => capital.activeHorizons.filter((h) => h.canRelease), [capital.activeHorizons]);
   const activeHorizons = useMemo(() => capital.activeHorizons.filter((h) => !h.canRelease), [capital.activeHorizons]);
   const recentGainsAmount = useMemo(() => recentWins.reduce((sum, win) => sum + win.amount, 0), [recentWins]);
@@ -484,17 +507,55 @@ export default function IntentPage() {
     policyActivity,
   ]);
 
+  // ── Map runtime suggestions to PolicySuggestion format ──
+  const runtimeAsPolicySuggestions: PolicySuggestion[] = useMemo(
+    () =>
+      runtimeSuggestions.map((r) => {
+        const meta = POLICY_TYPE_META[r.policyType];
+        const actionMap: Record<string, PolicySuggestion["action"]> = {
+          "protection-prompt": "protect-capital",
+          "reflection-prompt": "delay-withdrawal",
+          "cooling-notice": "delay-withdrawal",
+          "behavioral-observation": "extend-horizon",
+          "hesitation-check": "delay-withdrawal",
+          "pause-suggestion": "extend-horizon",
+        };
+        return {
+          id: `runtime-${r.policyId}-${r.evaluatedAt}`,
+          title: r.policyTitle,
+          body: r.reason,
+          sourcePolicy: meta?.label ?? r.policyType,
+          action: actionMap[r.suggestedAction] ?? "protect-capital",
+          amount: r.amount,
+          durationDays: 30,
+          priority: r.priority <= 2 ? "high" : r.priority <= 3 ? "medium" : "low",
+          createdAt: new Date(r.evaluatedAt).toISOString(),
+          expiresAt: new Date(r.expiresAt).toISOString(),
+        };
+      }),
+    [runtimeSuggestions],
+  );
+
+  // Combine generic + policy-based suggestions
+  const allSuggestions = useMemo(
+    () => [...policySuggestions, ...runtimeAsPolicySuggestions],
+    [policySuggestions, runtimeAsPolicySuggestions],
+  );
+
   const summary = useMemo(() => ({
     protected: capital.formatted.protected,
     releasing: String(releasableHorizons.length),
-    intent: String(capital.pendingReleaseCount + recentWins.length + policySuggestions.length),
-  }), [capital.formatted.protected, releasableHorizons.length, capital.pendingReleaseCount, recentWins.length, policySuggestions.length]);
+    intent: String(capital.pendingReleaseCount + recentWins.length + allSuggestions.length),
+  }), [capital.formatted.protected, releasableHorizons.length, capital.pendingReleaseCount, recentWins.length, allSuggestions.length]);
+
+  const hasContent = releasableHorizons.length > 0 || activeHorizons.length > 0 || recentWins.length > 0 || allSuggestions.length > 0;
 
   useEffect(() => {
     const untracked = policySuggestions.filter((suggestion) => (
       !policyActivity.some((event) => event.suggestionId === suggestion.id && event.status === "generated")
     ));
     if (untracked.length === 0) return;
+
 
     setPolicyActivity((current) => {
       let next = current;
@@ -579,15 +640,13 @@ export default function IntentPage() {
     return h?.amountFormatted ?? "0.00";
   }, [confirmingId, capital.activeHorizons]);
 
-  const hasContent = releasableHorizons.length > 0 || activeHorizons.length > 0 || recentWins.length > 0 || policySuggestions.length > 0;
-
   return (
     <PageShell>
       <div className="mx-auto max-w-4xl">
         {/* ── Page Header ── */}
         <div className="mb-8">
           <h1 className="text-display text-text-primary">Intent</h1>
-          <p className="text-body text-text-secondary mt-1">A place to slow down before capital moves.</p>
+          <p className="text-body text-text-secondary mt-1">A place to pause before capital moves. Review decisions, confirm releases, and consider what comes next.</p>
         </div>
 
         {/* ── Summary Cards ── */}
@@ -597,14 +656,14 @@ export default function IntentPage() {
           <SummaryCard label="Intent" value={summary.intent} subtext="Decisions awaiting attention" iconType="intent" />
         </div>
 
-        {policySuggestions.length > 0 && (
+        {allSuggestions.length > 0 && (
           <div className="mb-8">
             <h2 className="text-sm font-medium text-text-primary mb-4 flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-green-600" />
               Suggestions based on your protection settings
             </h2>
             <div className="space-y-4">
-              {policySuggestions.map((suggestion) => (
+              {allSuggestions.map((suggestion) => (
                 <PolicySuggestionCard
                   key={suggestion.id}
                   suggestion={suggestion}

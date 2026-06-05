@@ -114,10 +114,10 @@ export default function InsightsPage() {
   // ── Generate behavioral observations ──
   const observations = useMemo(() => {
     return generateObservations({
-      protectedAmount: capital.balances.protectedCapital,
-      availableAmount: capital.balances.availableCapital,
-      committedAmount: capital.balances.committedCapital,
-      releasingAmount: capital.balances.releasingCapital,
+      protectedAmount: capital.balances.protected,
+      availableAmount: capital.balances.available,
+      committedAmount: capital.balances.committed,
+      releasingAmount: capital.balances.releasing,
       totalCapital: rhythmMetrics.total,
       activeHorizons: capital.activeHorizons.map((h) => ({
         amount: h.amount,
@@ -230,7 +230,7 @@ export default function InsightsPage() {
                   <CapitalRhythmCard
                     label="Capital protected"
                     value={`${rhythmMetrics.protectedPct}%`}
-                    description={`$${formatUSD(capital.balances.protectedCapital)} in protection`}
+                    description={`$${formatUSD(capital.balances.protected)} in protection`}
                   />
                 )}
 
@@ -269,7 +269,7 @@ export default function InsightsPage() {
                   <CapitalRhythmCard
                     label="Committed vs protected"
                     value={`${rhythmMetrics.commitVsProtect}%`}
-                    description={`$${formatUSD(capital.balances.committedCapital)} committed to predictions`}
+                    description={`$${formatUSD(capital.balances.committed)} committed to predictions`}
                   />
                 )}
 

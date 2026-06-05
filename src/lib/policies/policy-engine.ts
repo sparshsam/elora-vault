@@ -1,37 +1,19 @@
 /**
  * Behavioral Protection Policy Engine
  *
- * This is the core of Elora's policy system — definitions, validation,
- * normalization, orchestration, and behavioral evaluation.
- *
- * Policies describe how capital should behave under specific conditions.
- * The engine evaluates policies against capital events, generates calm
- * suggestions, manages reflection periods, and records a quiet timeline
- * of behavioral interventions.
+ * Validation, normalization, and status-transition logic for
+ * user-defined protection policies.
  *
  * The engine does NOT move funds automatically, create aggressive
  * automation, use AI-agent behavior, or build dashboards.
  */
 
 import type {
-  PolicyType,
   PolicyStatus,
   PolicyCondition,
   PolicyAction,
-  ProtectionPolicy,
   CreatePolicyRequest,
 } from "@/types/policy";
-
-// ─── Supported Policy Types ────────────────────────────────────────
-
-/** Registry of all supported policy types with behavioral descriptions. */
-export const SUPPORTED_POLICY_TYPES: PolicyType[] = [
-  "protect-profit-percentage",
-  "delayed-withdrawal",
-  "large-transfer-cooling",
-  "release-reflection-required",
-  "prediction-profit-protection",
-];
 
 // ─── Validation ────────────────────────────────────────────────────
 
@@ -58,7 +40,14 @@ export function validatePolicy(request: CreatePolicyRequest): ValidationResult {
   }
 
   // Type
-  if (!SUPPORTED_POLICY_TYPES.includes(request.type)) {
+  const supportedTypes: ReadonlyArray<string> = [
+    "protect-profit-percentage",
+    "delayed-withdrawal",
+    "large-transfer-cooling",
+    "release-reflection-required",
+    "prediction-profit-protection",
+  ];
+  if (!supportedTypes.includes(request.type)) {
     errors.push(`"${request.type}" is not a supported policy type.`);
   }
 
@@ -177,25 +166,6 @@ export function normalizePolicyRequest(
   };
 }
 
-// ─── Evaluation Stubs ──────────────────────────────────────────────
-
-/**
- * Evaluate whether a policy's trigger conditions are met.
- *
- * ⚠ STUB — not wired to execution yet.
- * Future phases will connect this to onchain events, balance changes,
- * and prediction settlements.
- */
-export function evaluatePolicy(
-  _policy: ProtectionPolicy,
-  _context: Record<string, unknown>,
-): { triggered: boolean; reason?: string } {
-  // Stub: always returns not triggered.
-  void _policy;
-  void _context;
-  return { triggered: false, reason: "Evaluation not yet implemented." };
-}
-
 // ─── Status Transitions ────────────────────────────────────────────
 
 const VALID_TRANSITIONS: Record<PolicyStatus, PolicyStatus[]> = {
@@ -212,11 +182,4 @@ export function canTransitionTo(
   to: PolicyStatus,
 ): boolean {
   return VALID_TRANSITIONS[from]?.includes(to) ?? false;
-}
-
-/**
- * Get the allowed next statuses for a given status.
- */
-export function allowedNextStatuses(status: PolicyStatus): PolicyStatus[] {
-  return VALID_TRANSITIONS[status] ?? [];
 }

@@ -9,8 +9,13 @@ import {
   walletConnectWallet,
   rainbowWallet,
 } from "@rainbow-me/rainbowkit/wallets";
+import {
+  walletConnectProjectId,
+  baseRpcUrl,
+  baseSepoliaRpcUrl,
+} from "@/lib/env";
 
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "";
+const projectId = walletConnectProjectId();
 
 /**
  * Explicit wallet connectors for RainbowKit.
@@ -40,13 +45,8 @@ export const wagmiConfig = createConfig({
   connectors,
   chains: [base, baseSepolia] as const,
   transports: {
-    [base.id]: http(
-      process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://mainnet.base.org",
-    ),
-    [baseSepolia.id]: http(
-      process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL ??
-        "https://sepolia.base.org",
-    ),
+    [base.id]: http(baseRpcUrl()),
+    [baseSepolia.id]: http(baseSepoliaRpcUrl()),
   },
   ssr: true,
   storage: createStorage({

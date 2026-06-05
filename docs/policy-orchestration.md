@@ -7,31 +7,48 @@ The policy orchestration layer transforms the policy system from "configuration 
 ## System Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│               Capital Events                 │
-│  (deposit, withdraw, protect, release,       │
-│   prediction settle, session end)            │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────┐
-│           Policy Evaluator                   │
-│  • Evaluates all active policies             │
-│  • Checks conditions against event context   │
-│  • Respects cooldowns and schedules          │
-│  • Returns suggestions + reflections         │
-└──────────────────┬──────────────────────────┘
-                   │
-        ┌──────────┼──────────┐
-        ▼          ▼          ▼
-┌────────────┐ ┌────────┐ ┌────────────┐
-│ Reflection │ │Suggest │ │  Timeline  │
-│   Layer    │ │ Engine │ │   Store    │
-│ • Delays   │ │• Policy│ │ • Quiet    │
-│ • Pauses   │ │ • Cont │ │   history  │
-│ • Reconsid │ │  extual│ │ • No alerts│
-└────────────┘ └────────┘ └────────────┘
+┌──────────────────────────────────────────────┐
+│           Capital Events + State             │
+│  (deposit, withdraw, protect, release,        │
+│   prediction settle, session end, state snap) │
+└────────────┬──────────────────┬───────────────┘
+             │                  │
+    ┌────────▼────────┐  ┌─────▼──────────┐
+    │ Event-Driven    │  │  State-Based   │
+    │ Evaluation      │  │  Evaluation    │
+    │ (policy-        │  │ (policy-       │
+    │  evaluator.ts)  │  │  runtime-      │
+    │                 │  │  evaluator.ts) │
+    │ Per-event       │  │ Per-page-load  │
+    │ condition check │  │ state snapshot │
+    └────────┬────────┘  └─────┬──────────┘
+             │                  │
+             └────────┬─────────┘
+                      ▼
+    ┌─────────────────────────────────┐
+    │     Policy Runtime Suggestion   │
+    │  (PolicyRuntimeSuggestion)      │
+    │  • policyId, reason, action     │
+    │  • amount, confidence, priority │
+    │  • requiresConfirmation: true   │
+    └────────────────┬────────────────┘
+                     │
+            ┌────────┼────────┐
+            ▼        ▼        ▼
+    ┌──────────┐ ┌──────┐ ┌──────────┐
+    │Reflection│ │Suggest│ │ Timeline │
+    │  Layer   │ │Engine │ │  Store   │
+    │ • Delays │ │•State │ │ • Quiet  │
+    │ • Pauses │ │•Event │ │  history │
+    └──────────┘ └──────┘ └──────────┘
 ```
+
+### Two Evaluation Modes
+
+| Mode | Module | Trigger | Cooldown |
+|---|---|---|---|
+| **State-based** | `policy-runtime-evaluator.ts` | Page load / `GET /api/policies/evaluate` | 30 min in-memory |
+| **Event-driven** | `policy-evaluator.ts` | Capital events (deposit, withdrawal, settlement) | Per-policy config (6h default) |
 
 ## Policy State Machine
 
@@ -70,7 +87,7 @@ The policy orchestration layer transforms the policy system from "configuration 
 
 ## Event Model
 
-Events trigger policy evaluation. Each event carries context about what happened.
+Events trigger evaluation in the event-driven mode. The state-based mode uses a snapshot instead of a specific event.
 
 ```
 Capital Events:
@@ -84,29 +101,17 @@ Capital Events:
   time.window          — Temporal evaluation trigger
 ```
 
-## Evaluation Lifecycle
+## State-Based Evaluation Logic
 
-1. **Event occurs** — capital action is taken
-2. **Policy scan** — all active policies checked against event
-3. **Condition check** — each policy evaluates its trigger conditions
-4. **Schedule check** — cooldown and temporal windows respected
-5. **Suggestion generation** — matching policies produce calm suggestions
-6. **Reflection check** — certain actions trigger "Are you sure?" delays
-7. **Timeline record** — evaluation recorded for quiet history
+When `GET /api/policies/evaluate` is called, the runtime evaluates each active policy type differently:
 
-## Reflection Layer
-
-Reflections create space between impulse and action:
-
-| Trigger | Duration | Behavior |
-|---------|----------|----------|
-| Release (normal) | 60s | Brief confirmation pause |
-| Release (frequent) | 300s | Extended pause with context |
-| Withdrawal (>50%) | 300s | Extended pause for large withdrawals |
-| Consecutive losses (2+) | 300s | Pause with loss context |
-| Early release | 300s | Extended pause with horizon context |
-
-Users can always proceed after reflection. Reflections are not blocks.
+| Policy Type | State Check | Produces |
+|---|---|---|
+| protect-profit-percentage | Recent won predictions with profits in available capital | protection-prompt with amount |
+| prediction-profit-protection | Same, framed as timed horizon | protection-prompt with amount |
+| release-reflection-required | Capital releasing or frequent releases detected | reflection-prompt |
+| delayed-withdrawal | Skipped — event-activated | Evaluated at withdrawal time via event-driven path |
+| large-transfer-cooling | Skipped — event-activated | Evaluated at deposit time via event-driven path |
 
 ## Suggestion Types
 
@@ -123,51 +128,41 @@ Users can always proceed after reflection. Reflections are not blocks.
 
 After each evaluation, policies enter a cooldown period:
 
-| Policy Type | Default Cooldown |
-|-------------|-----------------|
-| Profit protection | 6 hours |
-| Delayed withdrawal | 6 hours |
-| Large transfer cooling | 6 hours |
-| Release reflection | 1 hour |
-| Prediction profit protection | 6 hours |
+| Evaluation Mode | Default Cooldown |
+|---|---|
+| State-based (runtime evaluator) | 30 minutes (in-memory, session lifetime) |
+| Event-driven | 6 hours (configurable per policy) |
 
-Cooldowns prevent the same policy from triggering repeatedly on the same event pattern.
+Cooldowns prevent the same policy from triggering repeatedly on the same event or state pattern.
 
-## Future Execution Boundaries
+## Design Invariants
 
-The orchestration layer is designed for guidance, not execution.
-The following boundaries are maintained:
-
-### In Scope (Future)
-- User-configurable schedule windows
-- Persistent timeline (database-backed)
-- Suggestion dismissal preferences
-- Reflection duration customization
-- Cooldown duration customization
-
-### Out of Scope (Will Not Build)
-- Automatic fund movement
-- AI-agent behavioral prediction
-- Gamification or scoring
-- Performance metrics or optimization
-- Trading automation
-- Invisible or background execution
-- Predictive manipulation
-- Urgency creation
+- **No auto-execution** — All suggestions require user confirmation (`requiresConfirmation: true`)
+- **No automatic locking, releasing, withdrawing, or protecting**
+- **No AI-agent behavioral prediction**
+- **No gamification or scoring**
+- **No performance metrics or optimization**
+- **No urgency creation**
 
 ## File Map
 
 ```
 src/types/
-  policy.ts                         — Base policy types (unchanged)
-  policy-orchestration.ts           — Extended orchestration types
+  policy.ts                         — Base policy types
+  policy-orchestration.ts           — Extended orchestration types + PolicyRuntimeSuggestion
 
 src/lib/policies/
-  policy-engine.ts                  — Entry point (re-exports all modules)
-  events.ts                         — Capital event model
-  policy-state-machine.ts           — State machine, scheduling, cooldowns
+  policy-engine.ts                  — Validation, normalization, status transitions
   policy-evaluator.ts               — Event-driven evaluation engine
-  reflection-layer.ts               — "Are you sure?" delays and pauses
-  behavioral-suggestions.ts         — Adaptive suggestion engine
+  policy-runtime-evaluator.ts       — State-based evaluation layer (Runtime v1)
+  policy-state-machine.ts           — State machine, scheduling, cooldowns
+  events.ts                         — Capital event model
+  policy-suggestions.ts             — Client-side generic suggestion engine
   policy-timeline.ts                — Quiet chronology of interventions
+
+src/app/api/policies/
+  route.ts                          — GET list, POST create
+  [id]/route.ts                     — PATCH update, DELETE
+  activity/route.ts                 — Policy lifecycle events
+  evaluate/route.ts                 — State-based evaluation endpoint (Runtime v1)
 ```

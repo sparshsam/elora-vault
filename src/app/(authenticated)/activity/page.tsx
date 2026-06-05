@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TX_TYPES, normalizeTransactionType } from "@/lib/transaction-types";
-import { POLICY_ACTIVITY_STORAGE_KEY } from "@/lib/policies/policy-suggestions";
+import { readPolicyActivity } from "@/lib/policies/policy-suggestions";
 import type { PolicyActivityEvent } from "@/app/api/policies/activity/route";
 import type { PolicyActivityEvent as SuggestionEvent } from "@/lib/policies/policy-suggestions";
 
@@ -76,7 +76,9 @@ const RECONCILIATION_CONFIG: Record<ReconciliationStatus, {
 function determineStatus(txHash?: string, createdAt?: string, now: number = Date.now()): ReconciliationStatus {
   if (txHash) return "confirmed";
   if (!createdAt) return "needs-review";
-  const age = now - new Date(createdAt).getTime();
+  const createdAtMs = safeDateMs(createdAt);
+  if (createdAtMs === null) return "needs-review";
+  const age = now - createdAtMs;
   if (age < 60 * 60 * 1000) return "pending";
   return "local-record";
 }
@@ -215,11 +217,13 @@ function formatShortDate(dateStr: string): string {
 
 function formatTime(dateStr: string): string {
   const d = new Date(dateStr);
+  if (!Number.isFinite(d.getTime())) return "Unknown";
   return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 function getDateGroup(dateStr: string): string {
   const d = new Date(dateStr);
+  if (!Number.isFinite(d.getTime())) return "Undated";
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const eventDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -233,6 +237,12 @@ function getDateGroup(dateStr: string): string {
 
 function capitalizeType(type: ActivityEventType): string {
   return EVENT_LABELS[type] || type;
+}
+
+function safeDateMs(value: unknown): number | null {
+  if (typeof value !== "string") return null;
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : null;
 }
 
 // ── Summary Card ────────────────────────────────
@@ -397,7 +407,7 @@ function DateGroupSection({ label, events, isLastGroup }: DateGroupSectionProps)
       <h2 className="text-xs font-medium uppercase tracking-wider text-text-tertiary mb-4 px-1">
         {label}
       </h2>
-      <div className="rounded-xl border border-border bg-surface shadow-sm p-6 md:p-8">
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-5 md:p-8">
         {events.map((event, index) => (
           <TimelineItem
             key={event.id}
@@ -421,8 +431,10 @@ function EmptyState() {
           <History className="h-6 w-6 text-text-tertiary" />
         </div>
         <p className="text-sm font-medium text-text-primary">No capital movement yet</p>
-        <p className="text-small text-text-tertiary mt-2 max-w-sm leading-relaxed">
-          Your activity timeline will record every deposit, protection, release, and prediction as it happens. Elora builds a quiet chronicle of how your capital moves over time.
+        <p className="text-small text-text-tertiary mt-2 max-w-md leading-relaxed">
+          Your activity timeline will show every deposit, protection, release, and
+          prediction as they happen. Start by depositing capital into your vault —
+          each movement from that point forward builds your capital ledger.
         </p>
       </div>
     </div>
@@ -459,14 +471,19 @@ function TimelineSkeleton() {
  * Convert a PolicyActivityEvent (from DB-derived API) to an ActivityEvent.
  */
 function policyEventToActivity(policy: PolicyActivityEvent): ActivityEvent {
+  const occurredAtMs = safeDateMs(policy.occurredAt) ?? Date.now();
+  const occurredAt = safeDateMs(policy.occurredAt) === null
+    ? new Date(occurredAtMs).toISOString()
+    : policy.occurredAt;
+
   return {
-    id: policy.id,
+    id: `policy:${policy.id}`,
     type: policy.type as ActivityEventType,
     amount: "—",
     rawAmount: 0,
-    description: policy.description,
-    occurredAt: policy.occurredAt,
-    occurredAtMs: new Date(policy.occurredAt).getTime(),
+    description: policy.description || "Policy activity recorded.",
+    occurredAt,
+    occurredAtMs,
     status: "local-record",
   };
 }
@@ -488,33 +505,19 @@ function suggestionEventToActivity(event: SuggestionEvent): ActivityEvent | null
   // Skip "expired" and "snoozed" — they're not useful timeline entries
   if (event.status === "expired" || event.status === "snoozed") return null;
 
+  const occurredAtMs = safeDateMs(event.timestamp);
+  if (occurredAtMs === null) return null;
+
   return {
-    id: event.id,
+    id: `suggestion:${event.id}`,
     type: mapped,
     amount: "—",
     rawAmount: 0,
     description: `${event.title} — ${event.sourcePolicy}`,
     occurredAt: event.timestamp,
-    occurredAtMs: new Date(event.timestamp).getTime(),
+    occurredAtMs,
     status: "local-record",
   };
-}
-
-/**
- * Read policy suggestion events from localStorage.
- * Uses the same key as the policy-suggestions module.
- */
-function readSuggestionEvents(): SuggestionEvent[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(POLICY_ACTIVITY_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed;
-  } catch {
-    return [];
-  }
 }
 
 // ── Transaction → ActivityEvent ─────────────────
@@ -538,6 +541,7 @@ function txToEvent(tx: Record<string, unknown>): ActivityEvent | null {
   const amount = typeof tx.amount === "number" ? tx.amount : 0;
   const description = (tx.description as string) || "";
   const createdAt = (tx.createdAt as string) || new Date().toISOString();
+  const occurredAtMs = safeDateMs(createdAt) ?? Date.now();
   const txHash = (tx.tx_hash as string) || undefined;
   const now = Date.now();
 
@@ -561,13 +565,13 @@ function txToEvent(tx: Record<string, unknown>): ActivityEvent | null {
   }
 
   return {
-    id: tx.id as string,
+    id: `tx:${tx.id as string}`,
     type: mapped,
     amount: formatUSD(amount),
     rawAmount: amount,
     description: displayDescription,
     occurredAt: createdAt,
-    occurredAtMs: new Date(createdAt).getTime(),
+    occurredAtMs,
     txHash,
     status: determineStatus(txHash, createdAt, now),
     balanceBefore: typeof tx.balanceBefore === "number" ? tx.balanceBefore : undefined,
@@ -617,16 +621,18 @@ export default function ActivityPage() {
 
       // 3. Policy suggestion events from localStorage
       //    (generated, accepted, dismissed — tracked client-side)
-      const suggestionRecords = readSuggestionEvents();
+      const suggestionRecords = readPolicyActivity();
       const suggestionEvents: ActivityEvent[] = suggestionRecords
         .map(suggestionEventToActivity)
         .filter(Boolean) as ActivityEvent[];
       allEvents.push(...suggestionEvents);
 
-      // Sort all events by time, most recent first
-      allEvents.sort((a, b) => b.occurredAtMs - a.occurredAtMs);
+      const uniqueEvents = Array.from(new Map(allEvents.map((event) => [event.id, event])).values());
 
-      setRawEvents(allEvents);
+      // Sort all events by time, most recent first
+      uniqueEvents.sort((a, b) => b.occurredAtMs - a.occurredAtMs);
+
+      setRawEvents(uniqueEvents);
       setLoading(false);
     })();
   }, []);

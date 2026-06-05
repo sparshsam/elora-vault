@@ -43,26 +43,18 @@ export interface HorizonInfo {
 }
 
 export interface CapitalBalances {
-  // External connected-wallet USDC. This is outside Elora and never enters totalEloraCapital.
+  /** External connected-wallet USDC. This is outside Elora and never enters totalEloraCapital. */
   walletBalance: number;
-  // Deposited capital inside Elora that can be used now.
+  /** Deposited capital inside Elora that can be used now. */
   available: number;
-  // Capital inside active protection horizons.
+  /** Capital inside active protection horizons. */
   protected: number;
-  // Capital transitioning from a released horizon back into availability.
+  /** Capital transitioning from a released horizon back into availability. */
   releasing: number;
-  // Capital allocated to active predictions. Legacy DB field: at_risk_balance.
+  /** Capital allocated to active predictions. Legacy DB field: at_risk_balance. */
   committed: number;
-  // Backward-compatible alias for older UI/state code.
-  atRisk: number;
-  // Sum of available + protected + releasing + committed. Wallet balance is excluded.
+  /** Sum of available + protected + releasing + committed. Wallet balance is excluded. */
   totalEloraCapital: number;
-  // Backward-compatible alias for totalEloraCapital.
-  total: number;
-  availableCapital: number;
-  protectedCapital: number;
-  releasingCapital: number;
-  committedCapital: number;
 }
 
 export interface CapitalBalancesFormatted {
@@ -71,13 +63,7 @@ export interface CapitalBalancesFormatted {
   protected: string;
   releasing: string;
   committed: string;
-  atRisk: string;
   totalEloraCapital: string;
-  total: string;
-  availableCapital: string;
-  protectedCapital: string;
-  releasingCapital: string;
-  committedCapital: string;
 }
 
 export interface CapitalStateMetrics {
@@ -137,30 +123,24 @@ function formatReleaseDate(unlockAt: number): string {
  */
 export function normalizeCapitalState(input: NormalizeCapitalStateInput): CapitalBalances {
   const walletBalance = nonNegative(input.walletBalance ?? input.fallbackWalletBalance);
-  const availableCapital = nonNegative(input.availableBalance);
-  const committedCapital = nonNegative(input.committedBalance);
-  const releasingCapital = nonNegative(input.releasingBalance);
-  const protectedCapital = [
+  const available = nonNegative(input.availableBalance);
+  const committed = nonNegative(input.committedBalance);
+  const releasing = nonNegative(input.releasingBalance);
+  const protected_ = [
     input.protectedLocksTotal,
     input.vaultSummaryLockedTotal,
     input.protectedBalance,
   ].map(nonNegative).find((amount) => amount > 0) ?? 0;
 
-  const totalEloraCapital = availableCapital + protectedCapital + releasingCapital + committedCapital;
+  const totalEloraCapital = available + protected_ + releasing + committed;
 
   return {
     walletBalance,
-    available: availableCapital,
-    protected: protectedCapital,
-    releasing: releasingCapital,
-    committed: committedCapital,
-    atRisk: committedCapital,
+    available,
+    protected: protected_,
+    releasing,
+    committed,
     totalEloraCapital,
-    total: totalEloraCapital,
-    availableCapital,
-    protectedCapital,
-    releasingCapital,
-    committedCapital,
   };
 }
 
@@ -171,22 +151,16 @@ export function formatCapitalBalances(balances: CapitalBalances): CapitalBalance
     protected: formatCapitalUSD(balances.protected),
     releasing: formatCapitalUSD(balances.releasing),
     committed: formatCapitalUSD(balances.committed),
-    atRisk: formatCapitalUSD(balances.atRisk),
     totalEloraCapital: formatCapitalUSD(balances.totalEloraCapital),
-    total: formatCapitalUSD(balances.total),
-    availableCapital: formatCapitalUSD(balances.availableCapital),
-    protectedCapital: formatCapitalUSD(balances.protectedCapital),
-    releasingCapital: formatCapitalUSD(balances.releasingCapital),
-    committedCapital: formatCapitalUSD(balances.committedCapital),
   };
 }
 
 export function getCapitalStateMetrics(balances: CapitalBalances): CapitalStateMetrics {
   const activeStates: CapitalStateMetrics["activeStates"] = [];
-  if (balances.availableCapital > 0) activeStates.push("available");
-  if (balances.protectedCapital > 0) activeStates.push("protected");
-  if (balances.releasingCapital > 0) activeStates.push("releasing");
-  if (balances.committedCapital > 0) activeStates.push("committed");
+  if (balances.available > 0) activeStates.push("available");
+  if (balances.protected > 0) activeStates.push("protected");
+  if (balances.releasing > 0) activeStates.push("releasing");
+  if (balances.committed > 0) activeStates.push("committed");
 
   return {
     activeStates,
@@ -194,10 +168,10 @@ export function getCapitalStateMetrics(balances: CapitalBalances): CapitalStateM
     hasEloraCapital: balances.totalEloraCapital > 0,
     hasAnyCapital: balances.totalEloraCapital > 0 || balances.walletBalance > 0,
     protectedPct: balances.totalEloraCapital > 0
-      ? Math.round((balances.protectedCapital / balances.totalEloraCapital) * 100)
+      ? Math.round((balances.protected / balances.totalEloraCapital) * 100)
       : 0,
-    committedProtectedRatio: balances.protectedCapital > 0
-      ? Math.round((balances.committedCapital / balances.protectedCapital) * 100)
+    committedProtectedRatio: balances.protected > 0
+      ? Math.round((balances.committed / balances.protected) * 100)
       : null,
   };
 }
