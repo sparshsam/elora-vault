@@ -383,6 +383,7 @@ Signed: OC
 
 ### C. Research / Lab Only
 - **Yield strategy evaluation** — Aave/Morpho (future)
+- **Agent-readable interface / MCP-style access** — Research-only. Any future implementation must be read-only by default, require explicit user approval, expose no signing capability, and never allow autonomous capital movement.
 
 ## CI Status
 - **ESLint:** ✅ 0 errors, 0 warnings
