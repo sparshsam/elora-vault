@@ -63,5 +63,17 @@
   "engines": {
     "node": ">=22.0.0 <25.0.0",
     "npm": ">=10.0.0"
-  }
+  },
+  "description": "Behavioral financial infrastructure for user-controlled vault mechanics and capital separation.",
+  "license": "MIT",
+  "author": "Sparsh Sam",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sparshsam/elora-vault.git"
+  },
+  "homepage": "https://github.com/sparshsam/elora-vault#readme",
+  "bugs": {
+    "url": "https://github.com/sparshsam/elora-vault/issues"
+  },
+  "keywords": []
 }

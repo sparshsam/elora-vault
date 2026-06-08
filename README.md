@@ -539,3 +539,7 @@ See [`LICENSE`](LICENSE) for details.
 **Base Account / transaction orchestration lab is read-only and research-only.** Lab and research surfaces at `/settings/labs`, `/settings/base-account-lab`, and `/research` do not modify production wallet behavior, execute transactions, or affect capital movement unless explicitly stated otherwise.
 
 Use testnet deployments carefully. Do not deposit funds you cannot afford to lose into experimental software.
+
+---
+
+*Last updated: June 2026*
